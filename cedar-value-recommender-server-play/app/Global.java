@@ -1,15 +1,10 @@
-import com.typesafe.config.ConfigFactory;
 import play.Application;
-import play.Configuration;
 import play.GlobalSettings;
 import play.Logger;
-import play.Mode;
 import play.libs.F.Promise;
 import play.mvc.Action;
 import play.mvc.Http;
 import play.mvc.Result;
-
-import java.io.File;
 
 import static play.mvc.Results.badRequest;
 import static play.mvc.Results.notFound;
