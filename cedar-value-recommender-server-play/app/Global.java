@@ -15,15 +15,10 @@ import static play.mvc.Results.badRequest;
 import static play.mvc.Results.notFound;
 
 public class Global extends GlobalSettings {
-//  @Override public Configuration onLoadConfig(Configuration config, File path, ClassLoader classloader, Mode mode)
-//  {
-//    // System.out.println("Execution mode: " + mode.name());
-//    // Modifies the configuration according to the execution mode (DEV, TEST, PROD)
-//    if (mode.name().compareTo("TEST") == 0)
-//      return new Configuration(ConfigFactory.load("application." + mode.name().toLowerCase() + ".conf"));
-//    else
-//      return onLoadConfig(config, path, classloader); // default implementation
-//  }
+
+  // TODO: load specific configuration file depending on execution mode.
+  // Instructions for Play 2.4.6: http://stackoverflow
+  // .com/questions/31294723/play-framework-2-3-8-java-overriding-default-configuration-load-with-mode-spec
 
   // If the framework doesn’t find an action method for a request, the onHandlerNotFound operation will be called:
   @Override
