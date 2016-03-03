@@ -11,8 +11,10 @@ import play.mvc.Result;
 
 import java.io.File;
 
-public class Global extends GlobalSettings
-{
+import static play.mvc.Results.badRequest;
+import static play.mvc.Results.notFound;
+
+public class Global extends GlobalSettings {
 //  @Override public Configuration onLoadConfig(Configuration config, File path, ClassLoader classloader, Mode mode)
 //  {
 //    // System.out.println("Execution mode: " + mode.name());
@@ -23,27 +25,38 @@ public class Global extends GlobalSettings
 //      return onLoadConfig(config, path, classloader); // default implementation
 //  }
 
-      @Override
-      public void onStart(Application app) {
-          Logger.info("Application has started");
-      }
+  // If the framework doesn’t find an action method for a request, the onHandlerNotFound operation will be called:
+  @Override
+  public Promise<Result> onHandlerNotFound(Http.RequestHeader request) {
+    return Promise.<Result>pure(notFound(request.uri()));
+  }
 
-      @Override
-      public void onStop(Application app) {
-          Logger.info("Application shutdown...");
-      }
+  // The onBadRequest operation will be called if a route was found, but it was not possible to bind the request
+  // parameters
+  @Override
+  public Promise<Result> onBadRequest(Http.RequestHeader request, String error) {
+    return Promise.<Result>pure(badRequest(error));
+  }
+
+  @Override
+  public void onStart(Application app) {
+    Logger.info("Application has started");
+  }
+
+  @Override
+  public void onStop(Application app) {
+    Logger.info("Application shutdown...");
+  }
 
   /* For CORS */
 
-  private class ActionWrapper extends Action.Simple
-  {
-    public ActionWrapper(Action<?> action)
-    {
+  private class ActionWrapper extends Action.Simple {
+    public ActionWrapper(Action<?> action) {
       this.delegate = action;
     }
 
-    @Override public Promise<Result> call(Http.Context ctx) throws java.lang.Throwable
-    {
+    @Override
+    public Promise<Result> call(Http.Context ctx) throws java.lang.Throwable {
       Promise<Result> result = this.delegate.call(ctx);
       Http.Response response = ctx.response();
       response.setHeader("Access-Control-Allow-Origin", "*");
@@ -51,8 +64,8 @@ public class Global extends GlobalSettings
     }
   }
 
-  @Override public Action<?> onRequest(Http.Request request, java.lang.reflect.Method actionMethod)
-  {
+  @Override
+  public Action<?> onRequest(Http.Request request, java.lang.reflect.Method actionMethod) {
     return new ActionWrapper(super.onRequest(request, actionMethod));
   }
 }
