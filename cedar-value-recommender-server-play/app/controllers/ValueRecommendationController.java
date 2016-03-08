@@ -2,13 +2,14 @@ package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.metadatacenter.intelligentauthoring.valuerecommender.Field;
-import org.metadatacenter.intelligentauthoring.valuerecommender.Recommendation;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import play.mvc.Controller;
 import play.mvc.Result;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 //@Api(value = "/", description = "Value Suggestion Server")
@@ -26,8 +27,11 @@ public class ValueRecommendationController extends Controller {
     Recommendation recommendation;
     JsonNode output;
     try {
-      List<Field> populatedFields = mapper.readValue(input.get("populatedFields").traverse(),
-          mapper.getTypeFactory().constructCollectionType(List.class, Field.class));
+      List<Field> populatedFields = new ArrayList<>();
+      if (input.get("populatedFields") != null) {
+        populatedFields = mapper.readValue(input.get("populatedFields").traverse(),
+            mapper.getTypeFactory().constructCollectionType(List.class, Field.class));
+      }
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
       recommendation =
           suggestionService.getRecommendation(populatedFields, targetField);

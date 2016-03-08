@@ -34,7 +34,7 @@
     <maven.surefire.plugin.version>2.16</maven.surefire.plugin.version>
     <play-java-ws.version>2.4.6</play-java-ws.version>
     <swagger-play2.version>1.5.1</swagger-play2.version>
-    <es.version>2.2.0</es.version>
+    <es.version>2.1.2</es.version>
     <groovy.version>2.4.5</groovy.version>
     <lexpressions.version>5.3.1</lexpressions.version>
     <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>

@@ -1,4 +1,4 @@
-package org.metadatacenter.intelligentauthoring.valuerecommender;
+package org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects;
 
 public class RecommendedValue
 {

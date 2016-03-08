@@ -11,7 +11,7 @@
 # Home page
 GET         /                    controllers.Application.index()
 
-POST        /suggest             controllers.ValueRecommendationController.recommendValues()
+POST        /recommend           controllers.ValueRecommendationController.recommendValues()
 
 # For CORS - preflight request
 #OPTIONS        /*all                controllers.Application.preflight(all)

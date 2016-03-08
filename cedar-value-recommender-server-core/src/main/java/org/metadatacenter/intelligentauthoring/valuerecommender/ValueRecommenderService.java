@@ -1,58 +1,76 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class ValueRecommenderService {
 
-  Node node;
+  public Recommendation getRecommendation(List<Field> populatedFields, Field targetField) throws UnknownHostException {
+    // Create the bool filter for populated fields
+    BoolQueryBuilder populatedFieldsFilter = QueryBuilders.boolQuery();
+    for (Field f : populatedFields) {
+      populatedFieldsFilter =
+          populatedFieldsFilter.must(QueryBuilders.termQuery(f.getFieldName().toLowerCase(), f.getFieldValue()
+              .toLowerCase()));
+    }
 
-  public ValueRecommenderService() {
-    String esHome = "/usr/local/Cellar/elasticsearch21/2.1.2/libexec";
-    // on startup
-    node = NodeBuilder.nodeBuilder().settings(Settings.builder().put("path.home", esHome)).node();
-  }
+    // Create the aggregation for the target field
+    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").field(targetField.getFieldName()
+        .toLowerCase());
 
-  public Recommendation getRecommendation(List<Field> populatedFields, Field targetField) {
-    // Search
-    // MatchAll on the whole cluster with all default options
-    String index1 = "test";
-    String type1 = "cars";
+    // Create the filter aggregation using the previously defined aggregation and filter
+    FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation")
+        .filter(populatedFieldsFilter).subAggregation(aggTargetField);
 
-    String field = targetField.getFieldName();
-    String agg1 = "agg1";
-    Client client = node.client();
+    Settings settings = Settings.settingsBuilder()
+        .put("cluster.name", Constants.CLUSTER_NAME).build();
+    Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+        InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
 
-    SearchResponse response = client.prepareSearch(index1)
-        .setTypes(type1)
-        .addAggregation(AggregationBuilders.terms(agg1).field(field)).execute().actionGet();
-    Terms terms = response.getAggregations().get(agg1);
+    SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
+        .addAggregation(aggRecommendation);
+    //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
 
-    client.close();
+    // Execute the request
+    SearchResponse response = search.execute().actionGet();
+    //System.out.println("Search response: " + response.toString());
+
+    // Retrieve the relevant information and generate output
+    Filter f = response.getAggregations().get(aggRecommendation.getName());
+    Terms terms = f.getAggregations().get(aggTargetField.getName());
 
     Collection<Terms.Bucket> buckets = terms.getBuckets();
-    List<RecommendedValue> suggestedValues = new ArrayList<>();
+    List<RecommendedValue> recommendedValues = new ArrayList<>();
     for (Terms.Bucket b : buckets) {
-      RecommendedValue sv = new RecommendedValue(b.getKeyAsString(), b.getDocCount());
-      suggestedValues.add(sv);
+      recommendedValues.add(new RecommendedValue(b.getKeyAsString(), b.getDocCount()));
     }
-    Recommendation r = new Recommendation(targetField.getFieldName(), suggestedValues);
+    Recommendation recommendation = new Recommendation(targetField.getFieldName(), recommendedValues);
 
-    return r;
+    // Close client
+    client.close();
+
+    return recommendation;
   }
-
-//  public void shutdown() {
-//    // on shutdown
-//    node.close();
-//  }
 
 }
