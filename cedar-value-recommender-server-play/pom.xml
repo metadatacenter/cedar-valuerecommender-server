@@ -124,6 +124,13 @@
       <version>${swagger-play2.version}</version>
     </dependency>
 
+    <!-- JSON schema validator -->
+    <dependency>
+      <groupId>com.github.fge</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>2.2.6</version>
+    </dependency>
+
   </dependencies>
 
   <build>

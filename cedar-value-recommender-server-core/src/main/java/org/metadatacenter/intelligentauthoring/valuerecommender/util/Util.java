@@ -26,7 +26,7 @@ public class Util {
    * Index all files in a folder in ElasticSearch.
    *
    * Example: call to index GEO instances:
-   * Util.indexAllFilesInFolder(client, "cedar", "geo", "data/sample-data/GEOFlatSamples");
+   * Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
    */
   public static void indexAllFilesInFolder(Client client, String indexName, String typeName, String folderPath)
       throws IOException {

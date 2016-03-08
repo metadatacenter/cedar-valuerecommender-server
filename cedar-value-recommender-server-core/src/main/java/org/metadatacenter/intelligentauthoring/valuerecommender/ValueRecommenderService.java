@@ -26,7 +26,8 @@ import java.util.List;
 
 public class ValueRecommenderService {
 
-  public Recommendation getRecommendation(List<Field> populatedFields, Field targetField) throws UnknownHostException {
+  public Recommendation getRecommendation(List<Field> populatedFields, Field targetField) throws
+      UnknownHostException {
     // Create the bool filter for populated fields
     BoolQueryBuilder populatedFieldsFilter = QueryBuilders.boolQuery();
     for (Field f : populatedFields) {
@@ -72,5 +73,16 @@ public class ValueRecommenderService {
 
     return recommendation;
   }
+
+  /**
+   * Index GEO data
+   */
+//  public void indexGEO() throws IOException {
+//    Settings settings = Settings.settingsBuilder()
+//        .put("cluster.name", Constants.CLUSTER_NAME).build();
+//    Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+//        InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
+//    Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
+//  }
 
 }

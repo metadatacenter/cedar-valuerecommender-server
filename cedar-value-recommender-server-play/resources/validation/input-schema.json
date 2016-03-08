@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "populatedFields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fieldName": {
+            "type": "string"
+          },
+          "fieldValue": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fieldName",
+          "fieldValue"
+        ]
+      }
+    },
+    "targetField": {
+      "type": "object",
+      "properties": {
+        "fieldName": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "targetField"
+  ],
+  "additionalProperties" : false
+}

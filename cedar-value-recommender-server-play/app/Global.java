@@ -5,9 +5,12 @@ import play.libs.F.Promise;
 import play.mvc.Action;
 import play.mvc.Http;
 import play.mvc.Result;
+import utils.ErrorMsgBuilder;
 
 import static play.mvc.Results.badRequest;
 import static play.mvc.Results.notFound;
+import static utils.Constants.ERROR_NOT_FOUND;
+import static utils.Constants.ERROR_BAD_REQUEST;
 
 public class Global extends GlobalSettings {
 
@@ -18,14 +21,14 @@ public class Global extends GlobalSettings {
   // If the framework doesn’t find an action method for a request, the onHandlerNotFound operation will be called:
   @Override
   public Promise<Result> onHandlerNotFound(Http.RequestHeader request) {
-    return Promise.<Result>pure(notFound(request.uri()));
+    return Promise.<Result>pure(notFound(ErrorMsgBuilder.build(badRequest().status(), ERROR_NOT_FOUND, request.uri())));
   }
 
   // The onBadRequest operation will be called if a route was found, but it was not possible to bind the request
   // parameters
   @Override
   public Promise<Result> onBadRequest(Http.RequestHeader request, String error) {
-    return Promise.<Result>pure(badRequest(error));
+    return Promise.<Result>pure(badRequest(ErrorMsgBuilder.build(badRequest().status(), ERROR_BAD_REQUEST, error)));
   }
 
   @Override
