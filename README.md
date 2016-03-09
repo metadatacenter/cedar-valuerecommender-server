@@ -5,7 +5,7 @@ A service that provides intelligent value suggestions for metadata template fiel
 This project is implemented in Java using [Play Framework](http://www.playframework.com/).
 
 The multimodule structure of this project is based on the template [play-cedar-service](https://github.com/metadatacenter/play-cedar-service),
-which allows the use Maven with the Play Framework.
+which allows the use of Maven with the Play Framework.
 
 The project contains two subdirectories:
 
@@ -16,26 +16,48 @@ The project contains two subdirectories:
 
 * Java: 1.8
 * Play Framework: 2.4.6
+* Elasticsearch: 2.1.2
 
 ## Getting started
 
 Clone the project:
 
-    git clone https://github.com/metadatacenter/cedar-value-recommender-server.git
+    $ git clone https://github.com/metadatacenter/cedar-value-recommender-server.git
+    
+Install Elasticsearch (using Homebrew):
+    
+    $ brew install elasticsearch21
+    
+Start Elasticsearch on the 'elasticsearch_cedar' cluster:
+    
+    $ elasticsearch --cluster.name elasticsearch_cedar
+
+Install Kibana and Sense and run Kibana (optional)
+    
+    $ brew install kibana
+    $ kibana plugin --install elastic/sense
+    $ kibana
+
+Access to Sense using the browser: http://localhost:5601/app/sense
+
+Index some JSON template instances in Elasticsearch using the following index and type:
+
+* Index: cedar
+* Type: template_instances
 
 ## Running the tests
 
 Go to the project root folder and execute the Maven "test" goal:
 
-    mvn test
+    $ mvn test
 
-## Starting the services
+## Starting the service
 
 At the project root folder:
 
-    mvn install
-    cd cedar-value-recommender-server-play
-    mvn play2:run
+    $ mvn install
+    $ cd cedar-value-recommender-server-play
+    $ mvn play2:run
 
 By default, the services will be running at http://localhost:9005.
 
