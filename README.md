@@ -29,9 +29,15 @@ Install Elasticsearch (using Homebrew):
     $ brew install elasticsearch21
     
 Start Elasticsearch on the 'elasticsearch_cedar' cluster:
+     
+* Option 1: Update the elasticsearch.yml file (in '/usr/local/etc/elasticsearch')
     
-    $ elasticsearch --cluster.name elasticsearch_cedar
-
+        cluster.name: elasticsearch_cedar
+    
+* Option 2:
+        
+        $ elasticsearch --cluster.name elasticsearch_cedar
+    
 Install Kibana and Sense and run Kibana (optional)
     
     $ brew install kibana
