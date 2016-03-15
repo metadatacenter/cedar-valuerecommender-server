@@ -1,10 +1,14 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * A Template field
  */
 public class Field {
+  @JsonProperty("name")
   private String fieldName;
+  @JsonProperty("value")
   private String fieldValue;
 
   // Required for deserialization

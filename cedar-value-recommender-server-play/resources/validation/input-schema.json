@@ -7,23 +7,23 @@
       "items": {
         "type": "object",
         "properties": {
-          "fieldName": {
+          "name": {
             "type": "string"
           },
-          "fieldValue": {
+          "value": {
             "type": "string"
           }
         },
         "required": [
-          "fieldName",
-          "fieldValue"
+          "name",
+          "value"
         ]
       }
     },
     "targetField": {
       "type": "object",
       "properties": {
-        "fieldName": {
+        "name": {
           "type": "string"
         }
       }
