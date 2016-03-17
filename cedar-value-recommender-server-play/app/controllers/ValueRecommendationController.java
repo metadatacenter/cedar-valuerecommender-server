@@ -31,7 +31,6 @@ public class ValueRecommendationController extends Controller {
 
   public static Result recommendValues() {
     JsonNode input = request().body().asJson();
-
     ObjectMapper mapper = new ObjectMapper();
     Recommendation recommendation;
     JsonNode output = null;

@@ -17,7 +17,9 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.Util;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -38,7 +40,7 @@ public class ValueRecommenderService {
 
     // Create the aggregation for the target field
     TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").field(targetField.getFieldName()
-        .toLowerCase());
+        );
 
     // Create the filter aggregation using the previously defined aggregation and filter
     FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation")
@@ -48,6 +50,13 @@ public class ValueRecommenderService {
         .put("cluster.name", Constants.CLUSTER_NAME).build();
     Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
         InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
+
+    /** This block can be used to index some data **/
+//    try {
+//      Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    }
 
     SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
         .addAggregation(aggRecommendation);
