@@ -168,7 +168,7 @@
         <version>${play2.maven.plugin.version}</version>
         <extensions>true</extensions>
         <configuration>
-          <httpPort>9005</httpPort>
+          <httpPort>9006</httpPort>
         </configuration>
       </plugin>
 
