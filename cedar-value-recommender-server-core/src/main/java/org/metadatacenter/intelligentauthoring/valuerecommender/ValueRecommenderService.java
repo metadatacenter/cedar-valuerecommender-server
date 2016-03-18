@@ -73,7 +73,9 @@ public class ValueRecommenderService {
     Collection<Terms.Bucket> buckets = terms.getBuckets();
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     for (Terms.Bucket b : buckets) {
-      recommendedValues.add(new RecommendedValue(b.getKeyAsString(), b.getDocCount()));
+      if (b.getKeyAsString().trim().length() > 0) {
+        recommendedValues.add(new RecommendedValue(b.getKeyAsString(), b.getDocCount()));
+      }
     }
     Recommendation recommendation = new Recommendation(targetField.getFieldName(), recommendedValues);
 
