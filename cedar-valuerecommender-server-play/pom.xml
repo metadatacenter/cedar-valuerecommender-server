@@ -109,17 +109,17 @@
       <version>${play-java-ws.version}</version>
     </dependency>
 
-    <!-- required for: "run", "start" and "dist" -->
-    <dependency>
-      <groupId>com.typesafe.play</groupId>
-      <artifactId>play-netty-server_2.11</artifactId>
-      <version>${play2.version}</version>
-      <scope>runtime</scope>
-    </dependency>
+    <!--&lt;!&ndash; required for: "run", "start" and "dist" &ndash;&gt;-->
+    <!--<dependency>-->
+      <!--<groupId>com.typesafe.play</groupId>-->
+      <!--<artifactId>play-netty-server_2.11</artifactId>-->
+      <!--<version>${play2.version}</version>-->
+      <!--<scope>runtime</scope>-->
+    <!--</dependency>-->
 
-    <!-- Swagger -->
+    <!-- Swagger-Play2 -->
     <dependency>
-      <groupId>io.swagger</groupId>
+      <groupId>com.wordnik</groupId>
       <artifactId>swagger-play2_2.11</artifactId>
       <version>${swagger-play2.version}</version>
     </dependency>
@@ -128,7 +128,7 @@
     <dependency>
       <groupId>com.github.fge</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>2.2.6</version>
+      <version>${json-schema-validator.version}</version>
     </dependency>
 
   </dependencies>
@@ -170,12 +170,6 @@
         <configuration>
           <httpPort>9006</httpPort>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>com.google.code.sbt-compiler-maven-plugin</groupId>
-        <artifactId>sbt-compiler-maven-plugin</artifactId>
-        <version>${sbt-compiler-maven-plugin.version}</version>
       </plugin>
 
       <plugin>

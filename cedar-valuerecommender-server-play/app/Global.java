@@ -1,34 +1,42 @@
-import play.Application;
-import play.GlobalSettings;
-import play.Logger;
+import com.typesafe.config.ConfigFactory;
+import org.apache.http.HttpStatus;
+import play.*;
 import play.libs.F.Promise;
 import play.mvc.Action;
 import play.mvc.Http;
 import play.mvc.Result;
 import utils.ErrorMsgBuilder;
 
+import java.io.File;
+
 import static play.mvc.Results.badRequest;
 import static play.mvc.Results.notFound;
-import static utils.Constants.ERROR_NOT_FOUND;
-import static utils.Constants.ERROR_BAD_REQUEST;
+import static utils.Constants.NOT_FOUND_MSG;
+import static utils.Constants.BAD_REQUEST_MSG;
 
 public class Global extends GlobalSettings {
 
-  // TODO: load specific configuration file depending on execution mode.
-  // Instructions for Play 2.4.6: http://stackoverflow
-  // .com/questions/31294723/play-framework-2-3-8-java-overriding-default-configuration-load-with-mode-spec
+//  @Override
+//  public Configuration onLoadConfig(Configuration config, File path, ClassLoader classloader, Mode mode) {
+//    // Modifies the configuration according to the execution mode (DEV, TEST, PROD)
+//    if (mode.name().compareTo("TEST") == 0) {
+//      return new Configuration(ConfigFactory.load("application." + mode.name().toLowerCase() + ".conf"));
+//    } else {
+//      return onLoadConfig(config, path, classloader); // default implementation
+//    }
+//  }
 
   // If the framework doesn’t find an action method for a request, the onHandlerNotFound operation will be called:
   @Override
   public Promise<Result> onHandlerNotFound(Http.RequestHeader request) {
-    return Promise.<Result>pure(notFound(ErrorMsgBuilder.build(badRequest().status(), ERROR_NOT_FOUND, request.uri())));
+    return Promise.<Result>pure(notFound(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, NOT_FOUND_MSG, request.uri())));
   }
 
   // The onBadRequest operation will be called if a route was found, but it was not possible to bind the request
   // parameters
   @Override
   public Promise<Result> onBadRequest(Http.RequestHeader request, String error) {
-    return Promise.<Result>pure(badRequest(ErrorMsgBuilder.build(badRequest().status(), ERROR_BAD_REQUEST, error)));
+    return Promise.<Result>pure(badRequest(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, BAD_REQUEST_MSG, error)));
   }
 
   @Override

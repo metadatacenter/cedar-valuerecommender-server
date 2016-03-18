@@ -17,9 +17,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.Util;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -39,8 +37,7 @@ public class ValueRecommenderService {
     }
 
     // Create the aggregation for the target field
-    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").field(targetField.getFieldName()
-        );
+    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").field(targetField.getFieldName());
 
     // Create the filter aggregation using the previously defined aggregation and filter
     FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation")

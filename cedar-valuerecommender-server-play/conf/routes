@@ -3,18 +3,18 @@
 # ~~~~
 
 # Swagger - UI
-#GET         /                          controllers.Assets.at(path="/public/swagger-ui", file="index.html")
+GET            /                    controllers.Assets.at(path="/public/swagger-ui", file="index.html")
 
 # Swagger - API documentation
-#GET         /api-docs                  controllers.ApiHelpController.getResources
+GET            /api-docs            controllers.ApiHelpController.getResources
 
 # Home page
-GET         /                    controllers.Application.index()
+GET            /                    controllers.Application.index()
 
-POST        /recommend           controllers.ValueRecommendationController.recommendValues()
+POST           /recommend           controllers.ValueRecommendationController.recommendValues()
 
 # For CORS - preflight request
 OPTIONS        /*all                controllers.Application.preflight(all)
 
 ## Map static resources from the /public folder to the /assets URL path
-GET         /assets/*file        controllers.Assets.at(path="/public", file)
+GET            /assets/*file        controllers.Assets.at(path="/public", file)

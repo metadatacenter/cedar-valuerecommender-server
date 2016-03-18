@@ -75,7 +75,14 @@
     <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna</artifactId>
-      <version>4.2.1</version>
+      <version>${jna.version}</version>
+    </dependency>
+
+    <!-- Google Guava -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${google-guava.version}</version>
     </dependency>
 
   </dependencies>

@@ -11,11 +11,10 @@ public class Constants {
   public static final String INPUT_SCHEMA_PATH = "resources/validation/input-schema.json";
 
   /* Error messages */
-  public static final String ERROR_NOT_FOUND = "Resource not found";
-  public static final String ERROR_BAD_REQUEST = "Bad request";
-  public static final String ERROR_VALIDATION = "Validation error";
-  public static final String ERROR_INTERNAL = "Internal error";
-
+  public static final String NOT_FOUND_MSG = "Resource not found";
+  public static final String BAD_REQUEST_MSG = "Bad request";
+  public static final String VALIDATION_ERROR_MSG = "Validation error";
+  public static final String INTERNAL_ERROR_MSG = "Internal error";
 
   // PRIVATE //
 
