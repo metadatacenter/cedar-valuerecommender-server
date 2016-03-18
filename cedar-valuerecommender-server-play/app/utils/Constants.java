@@ -6,8 +6,8 @@ package utils;
  */
 public class Constants {
 
-  public static final String PLAY_MODULE_FOLDER_NAME = "cedar-value-recommender-server-play";
-  public static final String PLAY_APP_FOLDER_NAME = "cedar-value-recommender-server";
+  public static final String PLAY_MODULE_FOLDER_NAME = "cedar-valuerecommender-server-play";
+  public static final String PLAY_APP_FOLDER_NAME = "cedar-valuerecommender-server";
   public static final String INPUT_SCHEMA_PATH = "resources/validation/input-schema.json";
 
   /* Error messages */

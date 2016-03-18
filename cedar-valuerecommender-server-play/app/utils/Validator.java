@@ -40,7 +40,7 @@ public class Validator {
     else if (folder.compareTo(Constants.PLAY_APP_FOLDER_NAME)==0) {
       path = Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH;
     }
-    // Working directory for test execution from IntelliJ (working directory: ...cedar-value-recommender-server/.idea/modules)
+    // Working directory for test execution from IntelliJ (working directory: ...cedar-valuerecommender-server/.idea/modules)
     else {
       path = "../../" + Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH;
     }

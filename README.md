@@ -1,4 +1,4 @@
-# cedar-value-recommender-server
+# cedar-valuerecommender-server
 
 A service that provides intelligent value suggestions for metadata template field.
 
@@ -9,8 +9,8 @@ which allows the use of Maven with the Play Framework.
 
 The project contains two subdirectories:
 
-- cedar-value-recommender-server-core: Core server functionality
-- cedar-value-recommender-server-play: Play-based interface to server
+- cedar-valuerecommender-server-core: Core server functionality
+- cedar-valuerecommender-server-play: Play-based interface to server
 
 ## Versions
 
@@ -22,7 +22,7 @@ The project contains two subdirectories:
 
 Clone the project:
 
-    $ git clone https://github.com/metadatacenter/cedar-value-recommender-server.git
+    $ git clone https://github.com/metadatacenter/cedar-valuerecommender-server.git
     
 Install Elasticsearch (using Homebrew):
     
@@ -62,7 +62,7 @@ Go to the project root folder and execute the Maven "test" goal:
 At the project root folder:
 
     $ mvn install
-    $ cd cedar-value-recommender-server-play
+    $ cd cedar-valuerecommender-server-play
     $ mvn play2:run
 
 By default, the services will be running at http://localhost:9005.

@@ -4,14 +4,14 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.metadatacenter</groupId>
-  <artifactId>cedar-value-recommender-server-play</artifactId>
+  <artifactId>cedar-valuerecommender-server-play</artifactId>
   <name>CEDAR Value Recommender Server Play</name>
   <version>0.1.0</version>
   <packaging>play2</packaging>
 
   <parent>
     <groupId>org.metadatacenter</groupId>
-    <artifactId>cedar-value-recommender-server</artifactId>
+    <artifactId>cedar-valuerecommender-server</artifactId>
     <version>0.1.0</version>
   </parent>
 
@@ -52,7 +52,7 @@
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-value-recommender-server-core</artifactId>
+      <artifactId>cedar-valuerecommender-server-core</artifactId>
       <version>${project.version}</version>
     </dependency>
 

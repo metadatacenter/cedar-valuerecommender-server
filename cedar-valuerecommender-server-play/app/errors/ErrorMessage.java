@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class represents an error returned by the application. It is a simplification of the model suggested at
- * http://jsonapi
- * .org/format/#errors
+ * This class represents an error returned by the server. It is a simplification of the model suggested at
+ * http://jsonapi.org/format/#errors
  */
 // Ignore null values
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -4,15 +4,15 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.metadatacenter</groupId>
-  <artifactId>cedar-value-recommender-server</artifactId>
+  <artifactId>cedar-valuerecommender-server</artifactId>
   <name>CEDAR Value Recommender Server</name>
   <description>CEDAR service that provides intelligent value suggestions for metadata template fields</description>
   <version>0.1.0</version>
   <packaging>pom</packaging>
 
   <modules>
-    <module>cedar-value-recommender-server-core</module>
-    <module>cedar-value-recommender-server-play</module>
+    <module>cedar-valuerecommender-server-core</module>
+    <module>cedar-valuerecommender-server-play</module>
   </modules>
 
   <properties>
