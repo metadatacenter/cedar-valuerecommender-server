@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
+import com.wordnik.swagger.annotations.*;
 import org.apache.http.HttpStatus;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
@@ -20,8 +21,8 @@ import java.util.List;
 import static utils.Constants.VALIDATION_ERROR_MSG;
 import static utils.Constants.INTERNAL_ERROR_MSG;
 
-//@Api(value = "/", description = "Value Suggestion Server")
-public class ValueRecommendationController extends Controller {
+@Api(value = "/valuerecommender", description = "Value Recommender Server")
+public class ValueRecommenderController extends Controller {
 
   public static ValueRecommenderService recommenderService;
 
@@ -29,6 +30,17 @@ public class ValueRecommendationController extends Controller {
     recommenderService = new ValueRecommenderService();
   }
 
+  @ApiOperation(
+      value = "Get value recommendations for metadata template fields",
+      //notes = "The search scope can be specified using comma separated strings",
+      httpMethod = "POST")
+  @ApiResponses(value = {
+      @ApiResponse(code = 200, message = "Success!"),
+      @ApiResponse(code = 400, message = "Bad Request"),
+      @ApiResponse(code = 401, message = "Unauthorized"),
+      @ApiResponse(code = 500, message = "Internal Server Error")})
+  @ApiImplicitParams(value = {
+      @ApiImplicitParam(value = "Populated fields and target field", required = true, dataType = "", paramType = "body")})
   public static Result recommendValues() {
     JsonNode input = request().body().asJson();
     ObjectMapper mapper = new ObjectMapper();

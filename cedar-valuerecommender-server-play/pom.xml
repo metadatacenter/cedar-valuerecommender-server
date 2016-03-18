@@ -109,14 +109,6 @@
       <version>${play-java-ws.version}</version>
     </dependency>
 
-    <!--&lt;!&ndash; required for: "run", "start" and "dist" &ndash;&gt;-->
-    <!--<dependency>-->
-      <!--<groupId>com.typesafe.play</groupId>-->
-      <!--<artifactId>play-netty-server_2.11</artifactId>-->
-      <!--<version>${play2.version}</version>-->
-      <!--<scope>runtime</scope>-->
-    <!--</dependency>-->
-
     <!-- Swagger-Play2 -->
     <dependency>
       <groupId>com.wordnik</groupId>
