@@ -40,7 +40,16 @@ public class ValueRecommenderController extends Controller {
       @ApiResponse(code = 401, message = "Unauthorized"),
       @ApiResponse(code = 500, message = "Internal Server Error")})
   @ApiImplicitParams(value = {
-      @ApiImplicitParam(value = "Populated fields and target field", required = true, dataType = "", paramType = "body")})
+      @ApiImplicitParam(value = "Populated fields and target field", required = true,
+          defaultValue = "{\n" +
+          "\t\"populatedFields\": [{\n" +
+          "\t\t\"name\": \"gse._value\",\n" +
+          "\t\t\"value\": \"GSE1\"\n" +
+          "\t}],\n" +
+          "\t\"targetField\": {\n" +
+          "\t\t\"name\": \"sampleTitle._value\"\n" +
+          "\t}\n" +
+          "}", paramType = "body")})
   public static Result recommendValues() {
     JsonNode input = request().body().asJson();
     ObjectMapper mapper = new ObjectMapper();
