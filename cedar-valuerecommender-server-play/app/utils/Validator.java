@@ -13,9 +13,9 @@ import java.io.IOException;
 
 public class Validator {
 
-  public static ProcessingReport validateInput(JsonNode input) throws IOException, ProcessingException {
+  public static ProcessingReport validateInput(JsonNode input, String schemaFileName) throws IOException, ProcessingException {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode schema = mapper.readTree(getInputSchemaFile());
+    JsonNode schema = mapper.readTree(getInputSchemaFile(schemaFileName));
     return validate(schema, input);
   }
 
@@ -27,22 +27,22 @@ public class Validator {
     return validator.validate(schema, instance);
   }
 
-  private static File getInputSchemaFile() {
+  private static File getInputSchemaFile(String schemaFileName) {
     String path;
     String workingDirectory = System.getProperty("user.dir");
     // Get last fragment of working directory
     String folder = workingDirectory.substring(workingDirectory.lastIndexOf("/") + 1, workingDirectory.length());
     // Working directory for Maven execution (mvn play2:run)
     if (folder.compareTo(Constants.PLAY_MODULE_FOLDER_NAME) == 0) {
-      path = Constants.INPUT_SCHEMA_PATH;
+      path = Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
     }
     // Working directory for execution from IntelliJ
     else if (folder.compareTo(Constants.PLAY_APP_FOLDER_NAME)==0) {
-      path = Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH;
+      path = Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
     }
     // Working directory for test execution from IntelliJ (working directory: ...cedar-valuerecommender-server/.idea/modules)
     else {
-      path = "../../" + Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH;
+      path = "../../" + Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + schemaFileName;
     }
     return new File(path);
   }

@@ -7,6 +7,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
@@ -26,13 +27,47 @@ import java.util.List;
 
 public class ValueRecommenderService {
 
-  public Recommendation getRecommendation(List<Field> populatedFields, Field targetField) throws
+  private Settings settings;
+
+  public ValueRecommenderService() {
+    settings = Settings.settingsBuilder()
+        .put("cluster.name", Constants.CLUSTER_NAME).build();
+  }
+
+  public boolean hasInstances(String templateId) throws UnknownHostException {
+
+    Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+        InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
+
+    QueryBuilder qb = QueryBuilders.matchQuery("_templateId", templateId);
+
+    SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
+        .setQuery(qb);
+    //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
+
+    SearchResponse response = search.execute().actionGet();
+
+    int hits = response.getHits().getHits().length;
+
+    if (hits > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
       UnknownHostException {
-    // Create the bool filter for populated fields
-    BoolQueryBuilder populatedFieldsFilter = QueryBuilders.boolQuery();
+    // TemplateId filter
+    BoolQueryBuilder queryFilter = QueryBuilders.boolQuery();
+    if (templateId != null) {
+      queryFilter = queryFilter.must(QueryBuilders.termQuery("_templateId", templateId.toLowerCase()));
+    }
+
+    // Add filters for populated fields
     for (Field f : populatedFields) {
-      populatedFieldsFilter =
-          populatedFieldsFilter.must(QueryBuilders.termQuery(f.getFieldName().toLowerCase(), f.getFieldValue()
+      queryFilter =
+          queryFilter.must(QueryBuilders.termQuery(f.getFieldName().toLowerCase(), f.getFieldValue()
               .toLowerCase()));
     }
 
@@ -40,11 +75,10 @@ public class ValueRecommenderService {
     TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").field(targetField.getFieldName());
 
     // Create the filter aggregation using the previously defined aggregation and filter
-    FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation")
-        .filter(populatedFieldsFilter).subAggregation(aggTargetField);
+    FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation");
 
-    Settings settings = Settings.settingsBuilder()
-        .put("cluster.name", Constants.CLUSTER_NAME).build();
+    aggRecommendation = aggRecommendation.filter(queryFilter).subAggregation(aggTargetField);
+
     Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
         InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
 

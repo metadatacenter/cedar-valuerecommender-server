@@ -8,7 +8,8 @@ public class Constants {
 
   public static final String PLAY_MODULE_FOLDER_NAME = "cedar-valuerecommender-server-play";
   public static final String PLAY_APP_FOLDER_NAME = "cedar-valuerecommender-server";
-  public static final String INPUT_SCHEMA_PATH = "resources/validation/input-schema.json";
+  public static final String INPUT_SCHEMA_PATH = "resources/validation";
+  public static final String RECOMMEND_VALUES_SCHEMA_FILE = "recommendValues-schema.json";
 
   /* Error messages */
   public static final String NOT_FOUND_MSG = "Resource not found";

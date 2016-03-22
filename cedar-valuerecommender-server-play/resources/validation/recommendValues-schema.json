@@ -2,6 +2,10 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
+    "templateId": {
+      "type": "string",
+      "format" : "uri"
+    },
     "populatedFields": {
       "type": "array",
       "items": {
@@ -32,5 +36,5 @@
   "required": [
     "targetField"
   ],
-  "additionalProperties" : false
+  "additionalProperties": false
 }
