@@ -44,7 +44,43 @@ Install Kibana and Sense and run Kibana (optional)
     $ kibana plugin --install elastic/sense
     $ kibana
 
-Access to Sense using the browser: http://localhost:5601/app/sense
+Access to Sense using the browser: http://localhost:5601/app/sense.
+
+Use sense to define a custom analyzer and apply it using a dynamic template. The default tokenizer used by Elasticsearch splits each string into individual words, but this default behavior is not appropriate for our value recommendation functionality. We need that the system recommends full values (e.g. "Longitudinal Study") instead of splitting them into individual words (e.g. "Longitudinal", "Study"). We use the keyword tokenizer to output exactly the same string as it received, without any tokenization. The lowercase filter normalizes the text to lower case. We also use a dynamic template to apply our custom analyzer to all fields.
+
+```
+PUT /cedar
+{
+  "settings":{
+     "index":{
+        "analysis":{
+           "analyzer":{
+              "analyzer_keyword":{
+                 "tokenizer":"keyword",
+                 "filter":"lowercase"
+              }
+           }
+        }
+     }
+  },
+  "mappings": {
+    "template_instances": {
+      "dynamic_templates": [
+        {
+          "my_template": {
+            "match": "*",
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "string",
+              "analyzer":"analyzer_keyword"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
 
 Index some JSON template instances in Elasticsearch using the following index and type:
 
