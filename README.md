@@ -46,7 +46,7 @@ Install Kibana and Sense and run Kibana (optional)
 
 Access to Sense using the browser: http://localhost:5601/app/sense.
 
-Use sense to define a custom analyzer and apply it using a dynamic template. The default tokenizer used by Elasticsearch splits each string into individual words, but this default behavior is not appropriate for our value recommendation functionality. We need that the system recommends full values (e.g. "Longitudinal Study") instead of splitting them into individual words (e.g. "Longitudinal", "Study"). We use the keyword tokenizer to output exactly the same string as it received, without any tokenization. The lowercase filter normalizes the text to lower case. We also use a dynamic template to apply our custom analyzer to all fields.
+Use Sense to define a custom analyzer and apply it using a dynamic template. The default tokenizer used by Elasticsearch splits each string into individual words, but that default behavior is not appropriate for our value recommendation functionality. We need that the system recommends full values (e.g. "Longitudinal Study") instead of splitting them into individual words (e.g. "Longitudinal", "Study"). We use the keyword tokenizer to output exactly the same string as it received, without any tokenization. The lowercase filter normalizes the text to lower case. We also use a dynamic template to apply our custom analyzer to all fields.
 
 ```
 PUT /cedar
