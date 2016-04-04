@@ -36,21 +36,24 @@ public class ValueRecommenderService {
 
   public boolean hasInstances(String templateId) throws UnknownHostException {
 
-    Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-        InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
-
-    QueryBuilder qb = QueryBuilders.matchQuery("_templateId", templateId);
-
-    SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
-        .setQuery(qb);
-    //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
-
-    SearchResponse response = search.execute().actionGet();
+    Client client = null;
+    SearchResponse response = null;
+    try {
+      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+          InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
+      QueryBuilder qb = QueryBuilders.matchQuery("_templateId", templateId);
+      SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
+          .setQuery(qb);
+      //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
+      response = search.execute().actionGet();
+    } catch (UnknownHostException e) {
+      throw e;
+    } finally {
+      // Close client
+      client.close();
+    }
 
     int hits = response.getHits().getHits().length;
-
-    // Close client
-    client.close();
 
     if (hits > 0) {
       return true;
@@ -82,23 +85,32 @@ public class ValueRecommenderService {
 
     aggRecommendation = aggRecommendation.filter(queryFilter).subAggregation(aggTargetField);
 
-    Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-        InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
+    Client client = null;
+    SearchResponse response = null;
+    try {
+      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+          InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
 
-    /** This block can be used to index some data **/
+      /** This block can be used to index some data **/
 //    try {
 //      Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
 //    } catch (IOException e) {
 //      e.printStackTrace();
 //    }
 
-    SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
-        .addAggregation(aggRecommendation);
-    //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
+      SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
+          .addAggregation(aggRecommendation);
+      //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
 
-    // Execute the request
-    SearchResponse response = search.execute().actionGet();
-    //System.out.println("Search response: " + response.toString());
+      // Execute the request
+      response = search.execute().actionGet();
+      //System.out.println("Search response: " + response.toString());
+    } catch (UnknownHostException e) {
+      throw e;
+    } finally {
+      // Close client
+      client.close();
+    }
 
     // Retrieve the relevant information and generate output
     Filter f = response.getAggregations().get(aggRecommendation.getName());
