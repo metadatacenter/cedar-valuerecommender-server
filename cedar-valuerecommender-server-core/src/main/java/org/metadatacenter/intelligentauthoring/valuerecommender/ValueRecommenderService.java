@@ -49,6 +49,9 @@ public class ValueRecommenderService {
 
     int hits = response.getHits().getHits().length;
 
+    // Close client
+    client.close();
+
     if (hits > 0) {
       return true;
     } else {
