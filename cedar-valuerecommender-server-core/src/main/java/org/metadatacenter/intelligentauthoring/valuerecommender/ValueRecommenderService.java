@@ -69,20 +69,16 @@ public class ValueRecommenderService {
     if (templateId != null) {
       queryFilter = queryFilter.must(QueryBuilders.termQuery("_templateId", templateId.toLowerCase()));
     }
-
     // Add filters for populated fields
     for (Field f : populatedFields) {
       queryFilter =
           queryFilter.must(QueryBuilders.termQuery(f.getFieldName().toLowerCase(), f.getFieldValue()
               .toLowerCase()));
     }
-
     // Create the aggregation for the target field
     TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").field(targetField.getFieldName());
-
     // Create the filter aggregation using the previously defined aggregation and filter
     FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation");
-
     aggRecommendation = aggRecommendation.filter(queryFilter).subAggregation(aggTargetField);
 
     Client client = null;
@@ -111,11 +107,9 @@ public class ValueRecommenderService {
       // Close client
       client.close();
     }
-
     // Retrieve the relevant information and generate output
     Filter f = response.getAggregations().get(aggRecommendation.getName());
     Terms terms = f.getAggregations().get(aggTargetField.getName());
-
     Collection<Terms.Bucket> buckets = terms.getBuckets();
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     for (Terms.Bucket b : buckets) {
@@ -124,10 +118,6 @@ public class ValueRecommenderService {
       }
     }
     Recommendation recommendation = new Recommendation(targetField.getFieldName(), recommendedValues);
-
-    // Close client
-    client.close();
-
     return recommendation;
   }
 
