@@ -23,6 +23,7 @@
     <play2.scala.version>2.11</play2.scala.version>
     <apache.httpclient.version>4.5.1</apache.httpclient.version>
     <jackson.core.version>2.7.1</jackson.core.version>
+    <checker.framework.version>1.9.12</checker.framework.version>
     <json-schema-validator.version>2.2.6</json-schema-validator.version>
     <junit.version>4.12</junit.version>
     <fge.version>2.2.6</fge.version>

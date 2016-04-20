@@ -18,20 +18,36 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.Util;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.config.PropertiesManager;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public class ValueRecommenderService {
 
   private Settings settings;
+  private String esCluster;
+  private String esHost;
+  private String esIndex;
+  private String esType;
+  private int esTransportPort;
+
 
   public ValueRecommenderService() {
+    esCluster = PropertiesManager.getProperty("es.cluster").get();
+    esHost = PropertiesManager.getProperty("es.host").get();
+    esIndex = PropertiesManager.getProperty("es.index").get();
+    esType = PropertiesManager.getProperty("es.type").get();
+    esTransportPort = PropertiesManager.getPropertyInt("es.transport-port").get();
+
     settings = Settings.settingsBuilder()
-        .put("cluster.name", Constants.CLUSTER_NAME).build();
+        .put("cluster.name", esCluster).build();
   }
 
   public boolean hasInstances(String templateId) throws UnknownHostException {
@@ -40,9 +56,9 @@ public class ValueRecommenderService {
     SearchResponse response = null;
     try {
       client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-          InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
+          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
       QueryBuilder qb = QueryBuilders.matchQuery("_templateId", templateId);
-      SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
+      SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
           .setQuery(qb);
       //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
       response = search.execute().actionGet();
@@ -85,16 +101,9 @@ public class ValueRecommenderService {
     SearchResponse response = null;
     try {
       client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-          InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
+          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
 
-      /** This block can be used to index some data **/
-//    try {
-//      Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
-//    } catch (IOException e) {
-//      e.printStackTrace();
-//    }
-
-      SearchRequestBuilder search = client.prepareSearch(Constants.ES_INDEX_NAME).setTypes(Constants.ES_TYPE_NAME)
+      SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
           .addAggregation(aggRecommendation);
       //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
 
@@ -124,12 +133,19 @@ public class ValueRecommenderService {
   /**
    * Index GEO data
    */
-//  public void indexGEO() throws IOException {
-//    Settings settings = Settings.settingsBuilder()
-//        .put("cluster.name", Constants.CLUSTER_NAME).build();
-//    Client client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-//        InetSocketTransportAddress(InetAddress.getByName(Constants.ES_HOST), Constants.ES_TRANSPORT_PORT));
-//    Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
-//  }
+  public void indexGEO() {
+    Client client = null;
+    try {
+      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
+
+      Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      // Close client
+      client.close();
+    }
+  }
 
 }

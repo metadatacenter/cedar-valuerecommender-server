@@ -32,6 +32,8 @@ public class ValueRecommenderController extends Controller {
 
   static {
     recommenderService = new ValueRecommenderService();
+    // The following line may be used to index some instances
+    //recommenderService.indexGEO();
   }
 
   @ApiOperation(

@@ -7,11 +7,8 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
  */
 public class Constants {
 
-  public static final String CLUSTER_NAME = "elasticsearch_cedar";
-  public static final String ES_INDEX_NAME = "cedar";
-  public static final String ES_TYPE_NAME = "template_instances";
-  public static final String ES_HOST = "localhost";
-  public static final int ES_TRANSPORT_PORT = 9300;
+  public static final String CEDAR_HOME = "CEDAR_HOME";
+  public static final String CONF_PATH = "cedar-valuerecommender-server/cedar-valuerecommender-server-core/src/main/config/config.properties";
 
   // PRIVATE //
 

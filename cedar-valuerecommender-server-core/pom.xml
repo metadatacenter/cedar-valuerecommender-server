@@ -35,6 +35,19 @@
       <version>${jackson.core.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker</artifactId>
+      <version>${checker.framework.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <version>${checker.framework.version}</version>
+    </dependency>
+
+
     <!--<dependency>-->
     <!--<groupId>edu.washington.cs.types.checker</groupId>-->
     <!--<artifactId>checker-framework</artifactId>-->
