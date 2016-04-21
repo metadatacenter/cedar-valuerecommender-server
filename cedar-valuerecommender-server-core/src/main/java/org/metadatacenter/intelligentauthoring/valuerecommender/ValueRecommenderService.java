@@ -88,7 +88,7 @@ public class ValueRecommenderService {
     // Add filters for populated fields
     for (Field f : populatedFields) {
       queryFilter =
-          queryFilter.must(QueryBuilders.termQuery(f.getFieldName().toLowerCase(), f.getFieldValue()
+          queryFilter.must(QueryBuilders.termQuery(f.getFieldName(), f.getFieldValue()
               .toLowerCase()));
     }
     // Create the aggregation for the target field
