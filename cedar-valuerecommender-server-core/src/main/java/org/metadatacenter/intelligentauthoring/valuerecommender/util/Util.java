@@ -31,7 +31,10 @@ public class Util {
   public static void indexAllFilesInFolder(Client client, String indexName, String typeName, String folderPath)
       throws IOException {
     File folder = new File(folderPath);
+    System.out.println("Indexing files in: " + folder.getPath());
+    System.out.println("Number of files: " + folder.listFiles().length);
     File[] listOfFiles = folder.listFiles();
+
 
     for (int i = 0; i < listOfFiles.length; i++) {
       File file = listOfFiles[i];

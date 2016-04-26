@@ -138,8 +138,8 @@ public class ValueRecommenderService {
     try {
       client = TransportClient.builder().settings(settings).build().addTransportAddress(new
           InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
-
-      Util.indexAllFilesInFolder(client, "cedar", "template_instances", "data/sample-data/GEOFlatSamples");
+      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat2Samples";
+      Util.indexAllFilesInFolder(client, "cedar", "template_instances", path);
     } catch (IOException e) {
       e.printStackTrace();
     } finally {
