@@ -37,6 +37,7 @@ public class ValueRecommenderService {
   private String esIndex;
   private String esType;
   private int esTransportPort;
+  private int size;
 
 
   public ValueRecommenderService() {
@@ -45,6 +46,7 @@ public class ValueRecommenderService {
     esIndex = PropertiesManager.getProperty("es.index").get();
     esType = PropertiesManager.getProperty("es.type").get();
     esTransportPort = PropertiesManager.getPropertyInt("es.transport-port").get();
+    size = PropertiesManager.getPropertyInt("es.results.size").get();
 
     settings = Settings.settingsBuilder()
         .put("cluster.name", esCluster).build();
@@ -92,7 +94,7 @@ public class ValueRecommenderService {
               .toLowerCase()));
     }
     // Create the aggregation for the target field
-    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").field(targetField.getFieldName());
+    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").size(size).field(targetField.getFieldName());
     // Create the filter aggregation using the previously defined aggregation and filter
     FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation");
     aggRecommendation = aggRecommendation.filter(queryFilter).subAggregation(aggTargetField);
@@ -110,6 +112,8 @@ public class ValueRecommenderService {
       // Execute the request
       response = search.execute().actionGet();
       //System.out.println("Search response: " + response.toString());
+      //System.out.println("Number of results returned: " + response.getHits().getHits().length);
+      //System.out.println("Total number of results: " + response.getHits().getTotalHits());
     } catch (UnknownHostException e) {
       throw e;
     } finally {
@@ -138,7 +142,7 @@ public class ValueRecommenderService {
     try {
       client = TransportClient.builder().settings(settings).build().addTransportAddress(new
           InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
-      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat2Samples";
+      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat3Samples";
       Util.indexAllFilesInFolder(client, "cedar", "template_instances", path);
     } catch (IOException e) {
       e.printStackTrace();
