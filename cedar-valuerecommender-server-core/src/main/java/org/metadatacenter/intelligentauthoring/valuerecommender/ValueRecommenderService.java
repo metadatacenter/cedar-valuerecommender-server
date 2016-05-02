@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public class ValueRecommenderService {
+public class ValueRecommenderService implements IValueRecommenderService {
 
   private Settings settings;
   private String esCluster;
@@ -125,9 +125,20 @@ public class ValueRecommenderService {
     Terms terms = f.getAggregations().get(aggTargetField.getName());
     Collection<Terms.Bucket> buckets = terms.getBuckets();
     List<RecommendedValue> recommendedValues = new ArrayList<>();
+
+    // Calculate total number of samples
+    double totalSamples = 0;
     for (Terms.Bucket b : buckets) {
       if (b.getKeyAsString().trim().length() > 0) {
-        recommendedValues.add(new RecommendedValue(b.getKeyAsString(), b.getDocCount()));
+        totalSamples += b.getDocCount();
+      }
+    }
+    // The score will be calculated as the percentage of samples for the particular value, with respect to the
+    // total number of samples for all values
+    for (Terms.Bucket b : buckets) {
+      if (b.getKeyAsString().trim().length() > 0) {
+        double score = b.getDocCount() / totalSamples;
+        recommendedValues.add(new RecommendedValue(b.getKeyAsString(), score));
       }
     }
     Recommendation recommendation = new Recommendation(targetField.getFieldName(), recommendedValues);
