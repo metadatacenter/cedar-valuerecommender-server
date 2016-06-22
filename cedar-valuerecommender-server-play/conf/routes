@@ -12,8 +12,9 @@ GET            /api-docs/valuerecommender        controllers.ApiHelpController.g
 # Home page
 GET            /                                 controllers.Application.index()
 
+# Value recommendations
 POST           /recommend                        controllers.ValueRecommenderController.recommendValues()
-GET            /has-instances                     controllers.ValueRecommenderController.hasInstances(template_id : String)
+GET            /has-instances                    controllers.ValueRecommenderController.hasInstances(template_id : String)
 
 # For CORS - preflight request
 OPTIONS        /*all                             controllers.Application.preflight(all)
