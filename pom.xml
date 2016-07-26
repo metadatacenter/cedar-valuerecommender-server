@@ -29,7 +29,7 @@
 
   <properties>
     <java.version>1.8</java.version>
-    <scala.version>2.12.0-M5</scala.version>
+    <scala.version>2.11.1</scala.version>
     <scala.dependencies.version>2.11</scala.dependencies.version>
     <play2.version>2.3.8</play2.version>
     <play2.scala.version>2.11</play2.scala.version>
