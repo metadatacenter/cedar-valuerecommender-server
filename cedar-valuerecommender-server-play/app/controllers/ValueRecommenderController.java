@@ -78,11 +78,11 @@ public class ValueRecommenderController extends Controller {
       @ApiImplicitParam(value = "Populated fields and target field", required = true,
           defaultValue = "{\n" +
               "\t\"populatedFields\": [{\n" +
-              "\t\t\"name\": \"gse._value\",\n" +
+              "\t\t\"name\": \"gse['@value']\",\n" +
               "\t\t\"value\": \"GSE1\"\n" +
               "\t}],\n" +
               "\t\"targetField\": {\n" +
-              "\t\t\"name\": \"sampleTitle._value\"\n" +
+              "\t\t\"name\": \"sampleTitle['@value']\"\n" +
               "\t}\n" +
               "}", paramType = "body")})
   public static Result recommendValues() {
