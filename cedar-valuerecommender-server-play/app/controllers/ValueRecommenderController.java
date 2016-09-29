@@ -7,19 +7,17 @@ import com.github.fge.jsonschema.core.report.ProcessingReport;
 import com.wordnik.swagger.annotations.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.http.HttpStatus;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
-import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import play.mvc.Controller;
 import play.mvc.Result;
+import utils.DataServices;
 import utils.ErrorMsgBuilder;
-import utils.Util;
 import utils.Validator;
 
 import javax.ws.rs.QueryParam;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +29,6 @@ public class ValueRecommenderController extends Controller {
   public static ValueRecommenderService recommenderService;
 
   static {
-    recommenderService = new ValueRecommenderService();
     // The following line may be used to index some instances
     //recommenderService.indexGEO();
   }
@@ -47,13 +44,14 @@ public class ValueRecommenderController extends Controller {
   public static Result hasInstances(@ApiParam(value = "Template identifier", required = true) @QueryParam
       ("template_id") String templateId) {
     if (templateId.isEmpty()) {
-      return badRequest(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, BAD_REQUEST_MSG, "template_id cannot be " +
+      return badRequest(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, BAD_REQUEST_MSG, "The template_id cannot be " +
           "empty"));
     }
     ObjectMapper mapper = new ObjectMapper();
     JsonNode output = null;
     try {
-      boolean result = recommenderService.hasInstances(templateId);
+
+      boolean result = DataServices.getInstance().getValueRecommenderService().hasInstances(templateId);
       output = mapper.valueToTree(result);
     } catch (IOException e) {
       return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, e

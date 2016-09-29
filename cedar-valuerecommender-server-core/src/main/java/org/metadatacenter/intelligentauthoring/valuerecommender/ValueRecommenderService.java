@@ -17,9 +17,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Util;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.config.PropertiesManager;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -27,26 +25,25 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public class ValueRecommenderService implements IValueRecommenderService {
 
-  private Settings settings;
   private String esCluster;
   private String esHost;
   private String esIndex;
   private String esType;
   private int esTransportPort;
   private int size;
+  private Settings settings;
 
-
-  public ValueRecommenderService() {
-    esCluster = PropertiesManager.getProperty("es.cluster").get();
-    esHost = PropertiesManager.getProperty("es.host").get();
-    esIndex = PropertiesManager.getProperty("es.index").get();
-    esType = PropertiesManager.getProperty("es.type").get();
-    esTransportPort = PropertiesManager.getPropertyInt("es.transport-port").get();
-    size = PropertiesManager.getPropertyInt("es.results.size").get();
+  public ValueRecommenderService(String esCluster, String esHost, String esIndex, String esType, int esTransportPort,
+                                 int size) {
+    this.esCluster = esCluster;
+    this.esHost = esHost;
+    this.esIndex = esIndex;
+    this.esType = esType;
+    this.esTransportPort = esTransportPort;
+    this.size = size;
 
     settings = Settings.settingsBuilder()
         .put("cluster.name", esCluster).build();
@@ -57,9 +54,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
     Client client = null;
     SearchResponse response = null;
     try {
-      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
-      QueryBuilder qb = QueryBuilders.matchQuery("_templateId", templateId);
+      client = getClient();
+      QueryBuilder qb = QueryBuilders.matchQuery("templateId", templateId);
       SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
           .setQuery(qb);
       //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
@@ -94,7 +90,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
               .toLowerCase()));
     }
     // Create the aggregation for the target field
-    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").size(size).field(targetField.getFieldName());
+    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").size(size).field(targetField
+        .getFieldName());
     // Create the filter aggregation using the previously defined aggregation and filter
     FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation");
     aggRecommendation = aggRecommendation.filter(queryFilter).subAggregation(aggTargetField);
@@ -102,8 +99,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     Client client = null;
     SearchResponse response = null;
     try {
-      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
+      client = getClient();
 
       SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
           .addAggregation(aggRecommendation);
@@ -148,19 +144,27 @@ public class ValueRecommenderService implements IValueRecommenderService {
   /**
    * Index GEO data
    */
-  public void indexGEO() {
-    Client client = null;
-    try {
-      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
-          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
-      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat3Samples";
-      Util.indexAllFilesInFolder(client, "cedar", "template_instances", path);
-    } catch (IOException e) {
-      e.printStackTrace();
-    } finally {
-      // Close client
-      client.close();
-    }
+//  public void indexGEO() {
+//    Client client = null;
+//    try {
+//      client = getClient();
+//      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat3Samples";
+//      Util.indexAllFilesInFolder(client, "cedar", "template_instances", path);
+//    } catch (IOException e) {
+//      e.printStackTrace();
+//    } finally {
+//      // Close client
+//      client.close();
+//    }
+//  }
+
+  /***
+   * Private methods
+   ***/
+
+  private Client getClient() throws UnknownHostException {
+    return TransportClient.builder().settings(settings).build().addTransportAddress(new
+        InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
   }
 
 }
