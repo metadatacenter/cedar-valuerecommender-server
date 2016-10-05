@@ -12,14 +12,15 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.filter.InternalFilter;
+import org.elasticsearch.search.aggregations.bucket.nested.InternalNested;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.Util;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -50,12 +51,12 @@ public class ValueRecommenderService implements IValueRecommenderService {
   }
 
   public boolean hasInstances(String templateId) throws UnknownHostException {
-
+    templateId = templateId.toLowerCase();
     Client client = null;
     SearchResponse response = null;
     try {
       client = getClient();
-      QueryBuilder qb = QueryBuilders.matchQuery("templateId", templateId);
+      QueryBuilder qb = QueryBuilders.termQuery("templateId", templateId);
       SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
           .setQuery(qb);
       //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
@@ -78,66 +79,89 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
   public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
       UnknownHostException {
-    // TemplateId filter
-    BoolQueryBuilder queryFilter = QueryBuilders.boolQuery();
-    if (templateId != null) {
-      queryFilter = queryFilter.must(QueryBuilders.termQuery("_templateId", templateId.toLowerCase()));
-    }
-    // Add filters for populated fields
-    for (Field f : populatedFields) {
-      queryFilter =
-          queryFilter.must(QueryBuilders.termQuery(f.getFieldName(), f.getFieldValue()
-              .toLowerCase()));
-    }
-    // Create the aggregation for the target field
-    TermsBuilder aggTargetField = AggregationBuilders.terms("agg_target_field").size(size).field(targetField
-        .getFieldName());
-    // Create the filter aggregation using the previously defined aggregation and filter
-    FilterAggregationBuilder aggRecommendation = AggregationBuilders.filter("agg_recommendation");
-    aggRecommendation = aggRecommendation.filter(queryFilter).subAggregation(aggTargetField);
 
-    Client client = null;
-    SearchResponse response = null;
-    try {
-      client = getClient();
-
-      SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
-          .addAggregation(aggRecommendation);
-      //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
-
-      // Execute the request
-      response = search.execute().actionGet();
-      //System.out.println("Search response: " + response.toString());
-      //System.out.println("Number of results returned: " + response.getHits().getHits().length);
-      //System.out.println("Total number of results: " + response.getHits().getTotalHits());
-    } catch (UnknownHostException e) {
-      throw e;
-    } finally {
-      // Close client
-      client.close();
-    }
-    // Retrieve the relevant information and generate output
-    Filter f = response.getAggregations().get(aggRecommendation.getName());
-    Terms terms = f.getAggregations().get(aggTargetField.getName());
-    Collection<Terms.Bucket> buckets = terms.getBuckets();
     List<RecommendedValue> recommendedValues = new ArrayList<>();
+    if (templateId != null) {
+      templateId = templateId.toLowerCase();
 
-    // Calculate total number of samples
-    double totalSamples = 0;
-    for (Terms.Bucket b : buckets) {
-      if (b.getKeyAsString().trim().length() > 0) {
-        totalSamples += b.getDocCount();
+      // Main query
+      BoolQueryBuilder mainQuery = QueryBuilders.boolQuery()
+          .must(QueryBuilders.termQuery("templateId", templateId));
+
+      // Bool query for populated fields
+      BoolQueryBuilder populatedFieldsQuery = QueryBuilders.boolQuery();
+      for (Field f : populatedFields) {
+        mainQuery = mainQuery.must(QueryBuilders.nestedQuery("resourceFields",
+            QueryBuilders.boolQuery().must(QueryBuilders.termQuery("resourceFields.fieldPath", f.getFieldPath().toLowerCase()))
+                .must(QueryBuilders.termQuery("resourceFields.valueLabel", f.getFieldValue().toLowerCase()))));
+      }
+      
+      // Now, we define the aggregations that will be applied to the results of the main query
+
+      // Nested aggregation to query the resourceFields array
+      NestedBuilder resourceFieldsAgg = AggregationBuilders.nested("resource_fields").path("resourceFields");
+
+      // Filter aggregation by fieldPath
+      FilterAggregationBuilder fieldPathAgg =
+          AggregationBuilders.filter("by_field_path")
+              .filter(QueryBuilders.termQuery("resourceFields.fieldPath", targetField.getFieldPath().toLowerCase()));
+
+      // Terms aggregation by value
+      TermsBuilder valueLabelAgg = AggregationBuilders.terms("by_value_label").field("resourceFields.valueLabel");
+
+      // Build aggregation
+      resourceFieldsAgg.subAggregation(fieldPathAgg.subAggregation(valueLabelAgg));
+
+      Client client = null;
+      SearchResponse response = null;
+      try {
+        client = getClient();
+
+        // Prepare search
+        SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
+            .setQuery(mainQuery).addAggregation(resourceFieldsAgg);
+        System.out.println("Search query in Query DSL: " + search.internalBuilder());
+
+        // Execute search
+        response = search.execute().actionGet();
+        System.out.println("Search response: " + response.toString());
+//      System.out.println("Number of results returned: " + response.getHits().getHits().length);
+//      System.out.println("Total number of results: " + response.getHits().getTotalHits());
+      } catch (UnknownHostException e) {
+        throw e;
+      } finally {
+        // Close client
+        client.close();
+      }
+      // Retrieve the relevant information and generate output
+      InternalNested n = response.getAggregations().get(resourceFieldsAgg.getName());
+      Filter f = n.getAggregations().get(fieldPathAgg.getName());
+      Terms t = f.getAggregations().get(valueLabelAgg.getName());
+
+      Collection<Terms.Bucket> buckets = t.getBuckets();
+
+      // Calculate total docs
+      double totalDocs = 0;
+      for (Terms.Bucket b : buckets) {
+        if (b.getKeyAsString().trim().length() > 0) {
+          totalDocs += b.getDocCount();
+        }
+      }
+      // The score will be calculated as the percentage of samples for the particular value, with respect to the
+      // total number of samples for all values
+      for (Terms.Bucket b : buckets) {
+        if (b.getKeyAsString().trim().length() > 0) {
+          double score = b.getDocCount() / totalDocs;
+          recommendedValues.add(new RecommendedValue(b.getKeyAsString(), score));
+        }
       }
     }
-    // The score will be calculated as the percentage of samples for the particular value, with respect to the
-    // total number of samples for all values
-    for (Terms.Bucket b : buckets) {
-      if (b.getKeyAsString().trim().length() > 0) {
-        double score = b.getDocCount() / totalSamples;
-        recommendedValues.add(new RecommendedValue(b.getKeyAsString(), score));
-      }
+    // If templateId == null
+    else {
+      // Do nothing
     }
-    Recommendation recommendation = new Recommendation(targetField.getFieldName(), recommendedValues);
+    System.out.println(recommendedValues);
+    Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
     return recommendation;
   }
 

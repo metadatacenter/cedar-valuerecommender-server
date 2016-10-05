@@ -26,8 +26,6 @@ import static utils.Constants.*;
 @Api(value = "/valuerecommender", description = "Value Recommender Server")
 public class ValueRecommenderController extends Controller {
 
-  public static ValueRecommenderService recommenderService;
-
   static {
     // The following line may be used to index some instances
     //recommenderService.indexGEO();
@@ -106,7 +104,7 @@ public class ValueRecommenderController extends Controller {
       }
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
       recommendation =
-          recommenderService.getRecommendation(templateId, populatedFields, targetField);
+          DataServices.getInstance().getValueRecommenderService().getRecommendation(templateId, populatedFields, targetField);
       output = mapper.valueToTree(recommendation);
     } catch (IOException e) {
       return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,  ExceptionUtils.getStackTrace(e)));

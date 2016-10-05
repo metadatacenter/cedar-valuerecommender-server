@@ -31,4 +31,12 @@ public class RecommendedValue
     this.value = value;
     this.score = score;
   }
+
+  @Override
+  public String toString() {
+    return "RecommendedValue{" +
+        "value='" + value + '\'' +
+        ", score=" + score +
+        '}';
+  }
 }
