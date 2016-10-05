@@ -1,5 +1,7 @@
 # cedar-valuerecommender-server
 
+[![Build Status](https://travis-ci.org/metadatacenter/cedar-valuerecommender-server.svg?branch=master)](https://travis-ci.org/metadatacenter/cedar-valuerecommender-server)
+
 A service that provides intelligent value suggestions for metadata template field.
 
 This project is implemented in Java using [Play Framework](http://www.playframework.com/).
