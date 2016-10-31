@@ -54,6 +54,9 @@ public class ValueRecommenderController extends Controller {
     } catch (IOException e) {
       return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, e
           .getMessage()));
+    } catch (InternalError e) {
+      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, e
+          .getMessage()));
     } catch (Exception e) {
       return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, e
           .getMessage()));
@@ -104,14 +107,24 @@ public class ValueRecommenderController extends Controller {
       }
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
       recommendation =
-          DataServices.getInstance().getValueRecommenderService().getRecommendation(templateId, populatedFields, targetField);
+          DataServices.getInstance().getValueRecommenderService().getRecommendation(templateId, populatedFields,
+              targetField);
       output = mapper.valueToTree(recommendation);
+    } catch (IllegalArgumentException e) {
+      return badRequest(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, BAD_REQUEST_MSG, ExceptionUtils
+          .getStackTrace(e)));
     } catch (IOException e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,  ExceptionUtils.getStackTrace(e)));
+      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
+          ExceptionUtils.getStackTrace(e)));
     } catch (ProcessingException e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, ExceptionUtils.getStackTrace(e)));
+      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
+          ExceptionUtils.getStackTrace(e)));
+    } catch (InternalError e) {
+      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
+          ExceptionUtils.getStackTrace(e)));
     } catch (Exception e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, ExceptionUtils.getStackTrace(e)));
+      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
+          ExceptionUtils.getStackTrace(e)));
     }
     return ok(output);
   }

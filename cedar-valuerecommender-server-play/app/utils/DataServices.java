@@ -17,9 +17,14 @@ public class DataServices {
   private DataServices() {
     cedarConfig = CedarConfig.getInstance();
     ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
-    valuerecommenderService = new ValueRecommenderService(esc.getCluster(), esc.getHost(), esc.getIndex(), esc
-        .getType(), esc
-        .getTransportPort(), esc.getSize());
+
+    valuerecommenderService = new ValueRecommenderService(
+        esc.getCluster(),
+        esc.getHost(),
+        esc.getIndex(),
+        esc.getType(),
+        esc.getTransportPort(),
+        esc.getSize());
   }
 
   public static ValueRecommenderService getValueRecommenderService() {
