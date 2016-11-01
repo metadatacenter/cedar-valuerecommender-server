@@ -11,17 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class Util {
-
-  /**
-   * Index a specific json content in Elastic Search
-   */
-  public static void indexJson(Client client, String indexName, String typeName, String json) {
-    IndexResponse response = client.prepareIndex(indexName, typeName)
-        .setSource(json)
-        .get();
-    System.out.println(response.toString());
-  }
-
   /**
    * Index all files in a folder in ElasticSearch.
    *
@@ -43,6 +32,16 @@ public class Util {
         indexJson(client, indexName, typeName, fileContent);
       }
     }
+  }
+
+  /**
+   * Index a specific json content in Elastic Search
+   */
+  public static void indexJson(Client client, String indexName, String typeName, String json) {
+    IndexResponse response = client.prepareIndex(indexName, typeName)
+        .setSource(json)
+        .get();
+    System.out.println(response.toString());
   }
 
   public static String readFile(String path, Charset encoding)
