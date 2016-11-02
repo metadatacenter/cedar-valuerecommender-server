@@ -2,7 +2,6 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.lucene.search.TermQuery;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -13,13 +12,11 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.filter.InternalFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.InternalNested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -118,11 +115,11 @@ public class ValueRecommenderService implements IValueRecommenderService {
       String esFieldValuePath = getElasticSearchFieldValuePath(templateId, targetField.getFieldPath());
       TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath);
       // Terms aggregation by value's semantic type
-      String esFieldValueStPath = getElasticSearchFieldValueSemanticTypePath(targetField.getFieldPath());
-      TermsBuilder targetFieldValueStAgg = AggregationBuilders.terms("by_target_field_value_st").field
-          (esFieldValueStPath);
+      String esFieldValueAndStPath = getElasticSearchFieldValueAndSemanticTypePath(targetField.getFieldPath());
+      TermsBuilder targetFieldValueAndStAgg = AggregationBuilders.terms("by_target_field_value_and_st").field
+          (esFieldValueAndStPath);
       // Build aggregation
-      nestedAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueStAgg);
+      nestedAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
 
       Client client = null;
       SearchResponse response = null;
@@ -144,8 +141,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // Retrieve the relevant information and generate output
       InternalNested n = response.getAggregations().get(nestedAgg.getName());
       Terms tValue = n.getAggregations().get(targetFieldValueAgg.getName());
-      Terms tValueSt = n.getAggregations().get(targetFieldValueStAgg.getName());
-      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueSt);
+      Terms tValueAndSt = n.getAggregations().get(targetFieldValueAndStAgg.getName());
+      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt);
     }
     // If templateId == null
     else {
@@ -167,8 +164,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
       String esFieldValuePath = getElasticSearchFieldValuePath(templateId, targetField.getFieldPath());
       TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath);
       // Terms aggregation by value's semantic type
-      String esFieldValueStPath = getElasticSearchFieldValueSemanticTypePath(targetField.getFieldPath());
-      TermsBuilder targetFieldValueStAgg = AggregationBuilders.terms("by_target_field_value_st").field(esFieldValueStPath);
+      String esFieldValueAndStPath = getElasticSearchFieldValueAndSemanticTypePath(targetField.getFieldPath());
+      TermsBuilder targetFieldValueAndStAgg = AggregationBuilders.terms("by_target_field_value_and_st").field(esFieldValueAndStPath);
 
       // We use the populated fields to filter the aggregation, and narrow down the current
       // aggregation context to a specific set of documents.
@@ -207,12 +204,12 @@ public class ValueRecommenderService implements IValueRecommenderService {
           // Check if it is necessary to define the aggregation for the nested object, or if it has already been defined
           String nestedObjectPathTargetField = getNestedObjectPath(targetField.getFieldPath());
           if (nestedObjectPathTargetField.equals(nestedObjectPath)) {
-            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueStAgg));
+            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg));
           } else {
             NestedBuilder nestedAggTargetField =
                 AggregationBuilders.nested("by_nested_object_target_field").path(nestedObjectPathTargetField);
             // Build aggregation
-            nestedAggTargetField.subAggregation(targetFieldValueAgg);
+            nestedAggTargetField.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
             // Add this aggregation to the main one
             tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(nestedAggTargetField));
           }
@@ -236,7 +233,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
         System.out.println("Search query in Query DSL: " + search.internalBuilder());
         // Execute search
         response = search.execute().actionGet();
-        //System.out.println("Search response: " + response.toString());
+        System.out.println("Search response: " + response.toString());
 //      System.out.println("Number of results returned: " + response.getHits().getHits().length);
 //      System.out.println("Total number of results: " + response.getHits().getTotalHits());
       } catch (UnknownHostException e) {
@@ -249,16 +246,16 @@ public class ValueRecommenderService implements IValueRecommenderService {
       //Collection<Terms.Bucket> buckets = getBucketsFromAggregations(response.getAggregations());
       List<Terms> termsAggs = getTermAggregations(response.getAggregations());
       Terms tValue = null;
-      Terms tValueSt = null;
+      Terms tValueAndSt = null;
       if (termsAggs.get(0).getName().equals(targetFieldValueAgg.getName())) {
         tValue = termsAggs.get(0);
-        tValueSt = termsAggs.get(1);
+        tValueAndSt = termsAggs.get(1);
       }
-      else {
+      else if (termsAggs.get(0).getName().equals(targetFieldValueAndStAgg.getName())){
+        tValueAndSt = termsAggs.get(0);
         tValue = termsAggs.get(1);
-        tValueSt = termsAggs.get(0);
       }
-      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueSt);
+      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt);
     }
     // If templateId == null
     else {
@@ -294,10 +291,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
   }
 
   // Sample field: study.disease
-  // Expected output: resourceSummarizedContent.study.disease_field.fieldValueSemanticType
-  private String getElasticSearchFieldValueSemanticTypePath(String fieldPath) throws IOException {
+  // Expected output: resourceSummarizedContent.study.disease_field.fieldValueAndSemanticType
+  private String getElasticSearchFieldValueAndSemanticTypePath(String fieldPath) throws IOException {
     // ElasticSearch field path and name
-    return resourceContentFieldName + "." + fieldPath + "_field" + ".fieldValueSemanticType";
+    return resourceContentFieldName + "." + fieldPath + "_field" + ".fieldValueAndSemanticType";
   }
 
   private JsonNode getTemplateFromIndex(String templateId) throws IOException {
@@ -412,131 +409,54 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return termsAgg;
   }
 
-  private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueStAgg) {
+  private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueAndStAgg) {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
-    Collection<Terms.Bucket> bucketsValue = valueAgg.getBuckets();
-    Collection<Terms.Bucket> bucketsValueSt = valueStAgg.getBuckets();
+    Collection<Terms.Bucket> buckets = null;
+    if (valueAndStAgg.getBuckets().size() > 0) {
+      buckets = valueAndStAgg.getBuckets();
+    }
+    else if (valueAgg.getBuckets().size() > 0) {
+      buckets = valueAgg.getBuckets();
+    }
+    // No results
+    else {
+      return recommendedValues;
+    }
 
     // Calculate total docs
     double totalDocs = 0;
-    for (Terms.Bucket b : bucketsValue) {
+    for (Terms.Bucket b : buckets) {
       if (b.getKeyAsString().trim().length() > 0) {
         totalDocs += b.getDocCount();
       }
     }
 
-    Iterator<Terms.Bucket> itValue = bucketsValue.iterator();
-    Iterator<Terms.Bucket> itValueSt = bucketsValueSt.iterator();
-    while (itValue.hasNext()) {
-      Terms.Bucket bValue = itValue.next();
+    // If there are results containing the semantic type, we use them. Otherwise, we use the regular values
+    Iterator<Terms.Bucket> it = buckets.iterator();
+    while (it.hasNext()) {
+      Terms.Bucket b = it.next();
       String value = null;
-      if (bValue.getKeyAsString().trim().length() > 0) {
-        value = bValue.getKeyAsString().trim();
-      }
-
-      Terms.Bucket bValueSt = null;
-      String valueSt = null;
-      if (itValueSt.hasNext()) {
-        bValueSt = itValueSt.next();
-        if (bValueSt.getKeyAsString().trim().length() > 0) {
-          valueSt = bValueSt.getKeyAsString().trim();
-        }
+      if (b.getKeyAsString().trim().length() > 0) {
+        value = b.getKeyAsString().trim();
       }
       // The score will be calculated as the percentage of samples for the particular value, with respect to the
       // total number of samples for all values
-      double score = bValue.getDocCount() / totalDocs;
-      recommendedValues.add(new RecommendedValue(value, valueSt, score));
+      double score = b.getDocCount() / totalDocs;
+      // Regular value
+      String delimiter = "[[ST]]";
+      if (value.contains(delimiter)) {
+        String[] v = value.split("\\[\\[ST\\]\\]");
+        recommendedValues.add(new RecommendedValue(v[0], v[1], score));
+      }
+      else {
+        recommendedValues.add(new RecommendedValue(value, null, score));
+      }
+
+      // Value and semantic type
+
     }
     return recommendedValues;
   }
-
-//  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
-//      UnknownHostException {
-//
-//    List<RecommendedValue> recommendedValues = new ArrayList<>();
-//    if (templateId != null) {
-//      templateId = templateId.toLowerCase();
-//
-//      // Main query
-//      BoolQueryBuilder mainQuery = QueryBuilders.boolQuery()
-//          .must(QueryBuilders.termQuery("templateId", templateId));
-//
-//      // Bool query for populated fields
-//      BoolQueryBuilder populatedFieldsQuery = QueryBuilders.boolQuery();
-//      for (Field f : populatedFields) {
-//        mainQuery = mainQuery.must(QueryBuilders.nestedQuery("resourceFields",
-//            QueryBuilders.boolQuery().must(QueryBuilders.termQuery("resourceFields.fieldPath", f.getFieldPath().toLowerCase()))
-//                .must(QueryBuilders.termQuery("resourceFields.valueLabel", f.getFieldValue().toLowerCase()))));
-//      }
-//
-//      // Now, we define the aggregations that will be applied to the results of the main query
-//
-//      // Nested aggregation to query the resourceFields array
-//      NestedBuilder resourceFieldsAgg = AggregationBuilders.nested("resource_fields").path("resourceFields");
-//
-//      // Filter aggregation by fieldPath
-//      FilterAggregationBuilder fieldPathAgg =
-//          AggregationBuilders.filter("by_field_path")
-//              .filter(QueryBuilders.termQuery("resourceFields.fieldPath", targetField.getFieldPath().toLowerCase()));
-//
-//      // Terms aggregation by value
-//      TermsBuilder valueLabelAgg = AggregationBuilders.terms("by_value_label").field("resourceFields.valueLabel");
-//
-//      // Build aggregation
-//      resourceFieldsAgg.subAggregation(fieldPathAgg.subAggregation(valueLabelAgg));
-//
-//      Client client = null;
-//      SearchResponse response = null;
-//      try {
-//        client = getClient();
-//
-//        // Prepare search
-//        SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
-//            .setQuery(mainQuery).addAggregation(resourceFieldsAgg);
-//        System.out.println("Search query in Query DSL: " + search.internalBuilder());
-//
-//        // Execute search
-//        response = search.execute().actionGet();
-//        System.out.println("Search response: " + response.toString());
-////      System.out.println("Number of results returned: " + response.getHits().getHits().length);
-////      System.out.println("Total number of results: " + response.getHits().getTotalHits());
-//      } catch (UnknownHostException e) {
-//        throw e;
-//      } finally {
-//        // Close client
-//        client.close();
-//      }
-//      // Retrieve the relevant information and generate output
-//      InternalNested n = response.getAggregations().get(resourceFieldsAgg.getName());
-//      Filter f = n.getAggregations().get(fieldPathAgg.getName());
-//      Terms t = f.getAggregations().get(valueLabelAgg.getName());
-//
-//      Collection<Terms.Bucket> buckets = t.getBuckets();
-//
-//      // Calculate total docs
-//      double totalDocs = 0;
-//      for (Terms.Bucket b : buckets) {
-//        if (b.getKeyAsString().trim().length() > 0) {
-//          totalDocs += b.getDocCount();
-//        }
-//      }
-//      // The score will be calculated as the percentage of samples for the particular value, with respect to the
-//      // total number of samples for all values
-//      for (Terms.Bucket b : buckets) {
-//        if (b.getKeyAsString().trim().length() > 0) {
-//          double score = b.getDocCount() / totalDocs;
-//          recommendedValues.add(new RecommendedValue(b.getKeyAsString(), score));
-//        }
-//      }
-//    }
-//    // If templateId == null
-//    else {
-//      // Do nothing
-//    }
-//    System.out.println(recommendedValues);
-//    Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
-//    return recommendation;
-//  }
 
   /**
    * Index GEO data
@@ -554,10 +474,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
 //      client.close();
 //    }
 //  }
-
-  /***
-   * Private methods
-   ***/
 
   private Client getClient() throws UnknownHostException {
     return TransportClient.builder().settings(settings).build().addTransportAddress(new
