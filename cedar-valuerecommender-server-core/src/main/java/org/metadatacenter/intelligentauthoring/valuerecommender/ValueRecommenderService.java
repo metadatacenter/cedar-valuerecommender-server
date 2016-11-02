@@ -117,8 +117,12 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // Terms aggregation by value
       String esFieldValuePath = getElasticSearchFieldValuePath(templateId, targetField.getFieldPath());
       TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath);
+      // Terms aggregation by value's semantic type
+      String esFieldValueStPath = getElasticSearchFieldValueSemanticTypePath(targetField.getFieldPath());
+      TermsBuilder targetFieldValueStAgg = AggregationBuilders.terms("by_target_field_value_st").field
+          (esFieldValueStPath);
       // Build aggregation
-      nestedAgg.subAggregation(targetFieldValueAgg);
+      nestedAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueStAgg);
 
       Client client = null;
       SearchResponse response = null;
@@ -127,10 +131,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
         // Prepare search
         SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
             .setQuery(templateIdQuery).addAggregation(nestedAgg);
-        //System.out.println("Search query in Query DSL: " + search.internalBuilder());
+        System.out.println("Search query in Query DSL: " + search.internalBuilder());
         // Execute search
         response = search.execute().actionGet();
-        //System.out.println("Search response: " + response.toString());
+        System.out.println("Search response: " + response.toString());
       } catch (UnknownHostException e) {
         throw e;
       } finally {
@@ -139,24 +143,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
       }
       // Retrieve the relevant information and generate output
       InternalNested n = response.getAggregations().get(nestedAgg.getName());
-      Terms t = n.getAggregations().get(targetFieldValueAgg.getName());
-      Collection<Terms.Bucket> buckets = t.getBuckets();
-
-      // Calculate total docs
-      double totalDocs = 0;
-      for (Terms.Bucket b : buckets) {
-        if (b.getKeyAsString().trim().length() > 0) {
-          totalDocs += b.getDocCount();
-        }
-      }
-      // The score will be calculated as the percentage of samples for the particular value, with respect to the
-      // total number of samples for all values
-      for (Terms.Bucket b : buckets) {
-        if (b.getKeyAsString().trim().length() > 0) {
-          double score = b.getDocCount() / totalDocs;
-          recommendedValues.add(new RecommendedValue(b.getKeyAsString(), score));
-        }
-      }
+      Terms tValue = n.getAggregations().get(targetFieldValueAgg.getName());
+      Terms tValueSt = n.getAggregations().get(targetFieldValueStAgg.getName());
+      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueSt);
     }
     // If templateId == null
     else {
@@ -175,8 +164,11 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // Now, we define the aggregations that will be applied to the results of the main query.
 
       // Terms aggregation by value
-      String esFieldValuePath1 = getElasticSearchFieldValuePath(templateId, targetField.getFieldPath());
-      TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath1);
+      String esFieldValuePath = getElasticSearchFieldValuePath(templateId, targetField.getFieldPath());
+      TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath);
+      // Terms aggregation by value's semantic type
+      String esFieldValueStPath = getElasticSearchFieldValueSemanticTypePath(targetField.getFieldPath());
+      TermsBuilder targetFieldValueStAgg = AggregationBuilders.terms("by_target_field_value_st").field(esFieldValueStPath);
 
       // We use the populated fields to filter the aggregation, and narrow down the current
       // aggregation context to a specific set of documents.
@@ -215,7 +207,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
           // Check if it is necessary to define the aggregation for the nested object, or if it has already been defined
           String nestedObjectPathTargetField = getNestedObjectPath(targetField.getFieldPath());
           if (nestedObjectPathTargetField.equals(nestedObjectPath)) {
-            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(targetFieldValueAgg));
+            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueStAgg));
           } else {
             NestedBuilder nestedAggTargetField =
                 AggregationBuilders.nested("by_nested_object_target_field").path(nestedObjectPathTargetField);
@@ -254,23 +246,19 @@ public class ValueRecommenderService implements IValueRecommenderService {
         client.close();
       }
       // Retrieve the relevant information and generate output
-      Collection<Terms.Bucket> buckets = getBucketsFromAggregations(response.getAggregations());
-
-      // Calculate total docs
-      double totalDocs = 0;
-      for (Terms.Bucket b : buckets) {
-        if (b.getKeyAsString().trim().length() > 0) {
-          totalDocs += b.getDocCount();
-        }
+      //Collection<Terms.Bucket> buckets = getBucketsFromAggregations(response.getAggregations());
+      List<Terms> termsAggs = getTermAggregations(response.getAggregations());
+      Terms tValue = null;
+      Terms tValueSt = null;
+      if (termsAggs.get(0).getName().equals(targetFieldValueAgg.getName())) {
+        tValue = termsAggs.get(0);
+        tValueSt = termsAggs.get(1);
       }
-      // The score will be calculated as the percentage of samples for the particular value, with respect to the
-      // total number of samples for all values
-      for (Terms.Bucket b : buckets) {
-        if (b.getKeyAsString().trim().length() > 0) {
-          double score = b.getDocCount() / totalDocs;
-          recommendedValues.add(new RecommendedValue(b.getKeyAsString(), score));
-        }
+      else {
+        tValue = termsAggs.get(1);
+        tValueSt = termsAggs.get(0);
       }
+      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueSt);
     }
     // If templateId == null
     else {
@@ -303,6 +291,13 @@ public class ValueRecommenderService implements IValueRecommenderService {
     } else {
       throw new IllegalArgumentException("Field not found: " + fieldPath);
     }
+  }
+
+  // Sample field: study.disease
+  // Expected output: resourceSummarizedContent.study.disease_field.fieldValueSemanticType
+  private String getElasticSearchFieldValueSemanticTypePath(String fieldPath) throws IOException {
+    // ElasticSearch field path and name
+    return resourceContentFieldName + "." + fieldPath + "_field" + ".fieldValueSemanticType";
   }
 
   private JsonNode getTemplateFromIndex(String templateId) throws IOException {
@@ -380,27 +375,80 @@ public class ValueRecommenderService implements IValueRecommenderService {
   }
 
   // This code assumes that each list of aggregations only contains one aggregation
-  private Collection<Terms.Bucket> getBucketsFromAggregations(Aggregations aggs) {
-    List<Aggregation> aggsList = aggs.asList();
-    if (aggsList.size() > 0) {
-      Aggregation agg = aggsList.get(0);
+//  private Collection<Terms.Bucket> getBucketsFromAggregations(Aggregations aggs) {
+//    List<Aggregation> aggsList = aggs.asList();
+//    if (aggsList.size() > 0) {
+//      Aggregation agg = aggsList.get(0);
+//      if (agg instanceof InternalNested) {
+//        return getBucketsFromAggregations(((InternalNested) agg).getAggregations());
+//      } else if (agg instanceof Filter) {
+//        return getBucketsFromAggregations(((Filter) agg).getAggregations());
+//      } else if (agg instanceof Terms) {
+//        return ((Terms) agg).getBuckets();
+//      }
+//      else {
+//        throw new InternalError("Unexpected aggregation type");
+//      }
+//    }
+//    else {
+//      throw new InternalError("No aggregations found");
+//    }
+//  }
+
+  private List<Terms> getTermAggregations(Aggregations aggs) {
+    List<Terms> termsAgg = new ArrayList<>();
+    for (Aggregation agg : aggs) {
       if (agg instanceof InternalNested) {
-        return getBucketsFromAggregations(((InternalNested) agg).getAggregations());
+        return getTermAggregations(((InternalNested) agg).getAggregations());
       } else if (agg instanceof Filter) {
-        return getBucketsFromAggregations(((Filter) agg).getAggregations());
+        return getTermAggregations(((Filter) agg).getAggregations());
       } else if (agg instanceof Terms) {
-        return ((Terms) agg).getBuckets();
+        termsAgg.add((Terms) agg);
       }
       else {
         throw new InternalError("Unexpected aggregation type");
       }
     }
-    else {
-      throw new InternalError("No aggregations found");
-    }
+    return termsAgg;
   }
 
+  private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueStAgg) {
+    List<RecommendedValue> recommendedValues = new ArrayList<>();
+    Collection<Terms.Bucket> bucketsValue = valueAgg.getBuckets();
+    Collection<Terms.Bucket> bucketsValueSt = valueStAgg.getBuckets();
 
+    // Calculate total docs
+    double totalDocs = 0;
+    for (Terms.Bucket b : bucketsValue) {
+      if (b.getKeyAsString().trim().length() > 0) {
+        totalDocs += b.getDocCount();
+      }
+    }
+
+    Iterator<Terms.Bucket> itValue = bucketsValue.iterator();
+    Iterator<Terms.Bucket> itValueSt = bucketsValueSt.iterator();
+    while (itValue.hasNext()) {
+      Terms.Bucket bValue = itValue.next();
+      String value = null;
+      if (bValue.getKeyAsString().trim().length() > 0) {
+        value = bValue.getKeyAsString().trim();
+      }
+
+      Terms.Bucket bValueSt = null;
+      String valueSt = null;
+      if (itValueSt.hasNext()) {
+        bValueSt = itValueSt.next();
+        if (bValueSt.getKeyAsString().trim().length() > 0) {
+          valueSt = bValueSt.getKeyAsString().trim();
+        }
+      }
+      // The score will be calculated as the percentage of samples for the particular value, with respect to the
+      // total number of samples for all values
+      double score = bValue.getDocCount() / totalDocs;
+      recommendedValues.add(new RecommendedValue(value, valueSt, score));
+    }
+    return recommendedValues;
+  }
 
 //  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
 //      UnknownHostException {
