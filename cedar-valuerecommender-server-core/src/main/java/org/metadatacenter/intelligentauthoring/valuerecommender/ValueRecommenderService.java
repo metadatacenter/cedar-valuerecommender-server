@@ -90,10 +90,12 @@ public class ValueRecommenderService implements IValueRecommenderService {
     templateId = templateId.toLowerCase();
 
     if (populatedFields.size() == 0) {
-     recommendedValues = getContextIndependentRecommendation(templateId, targetField);
-    }
-    else {
+      recommendedValues = getContextIndependentRecommendation(templateId, targetField);
+    } else {
       recommendedValues = getContextDependentRecommendation(templateId, populatedFields, targetField);
+      if (recommendedValues.size() == 0) {
+        recommendedValues = getContextIndependentRecommendation(templateId, targetField);
+      }
     }
 
     Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
@@ -142,7 +144,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
       InternalNested n = response.getAggregations().get(nestedAgg.getName());
       Terms tValue = n.getAggregations().get(targetFieldValueAgg.getName());
       Terms tValueAndSt = n.getAggregations().get(targetFieldValueAndStAgg.getName());
-      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt);
+      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt, RecommendedValue
+          .RecommendationType.CONTEXT_INDEPENDENT);
     }
     // If templateId == null
     else {
@@ -165,7 +168,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
       TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath);
       // Terms aggregation by value's semantic type
       String esFieldValueAndStPath = getElasticSearchFieldValueAndSemanticTypePath(targetField.getFieldPath());
-      TermsBuilder targetFieldValueAndStAgg = AggregationBuilders.terms("by_target_field_value_and_st").field(esFieldValueAndStPath);
+      TermsBuilder targetFieldValueAndStAgg = AggregationBuilders.terms("by_target_field_value_and_st").field
+          (esFieldValueAndStPath);
 
       // We use the populated fields to filter the aggregation, and narrow down the current
       // aggregation context to a specific set of documents.
@@ -185,7 +189,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
         Map.Entry<String, List<Field>> entry = (Map.Entry<String, List<Field>>) it.next();
         // We define a nested aggregation to filter at the appropriate level
         nestedObjectPath = entry.getKey();
-        NestedBuilder nestedAgg = AggregationBuilders.nested("by_nested_object_" + countNestedObjAgg++).path(nestedObjectPath);
+        NestedBuilder nestedAgg = AggregationBuilders.nested("by_nested_object_" + countNestedObjAgg++).path
+            (nestedObjectPath);
         // Bool filter for all populated fields
         BoolQueryBuilder filters = QueryBuilders.boolQuery();
         List<Field> fields = entry.getValue();
@@ -198,13 +203,14 @@ public class ValueRecommenderService implements IValueRecommenderService {
         FilterAggregationBuilder populatedFieldsAgg =
             AggregationBuilders.filter("by_populated_fields_" + countPopFieldsAgg++).filter(filters);
         // Most granular level. We have to nest the aggregation for the target field
-        if (i==0) {
+        if (i == 0) {
           tmpAgg = nestedAgg;
           // This is the most granular level. Nest aggregation for the target field
           // Check if it is necessary to define the aggregation for the nested object, or if it has already been defined
           String nestedObjectPathTargetField = getNestedObjectPath(targetField.getFieldPath());
           if (nestedObjectPathTargetField.equals(nestedObjectPath)) {
-            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg));
+            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation
+                (targetFieldValueAndStAgg));
           } else {
             NestedBuilder nestedAggTargetField =
                 AggregationBuilders.nested("by_nested_object_target_field").path(nestedObjectPathTargetField);
@@ -213,8 +219,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
             // Add this aggregation to the main one
             tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(nestedAggTargetField));
           }
-        }
-        else {
+        } else {
           nestedAgg.subAggregation(populatedFieldsAgg.subAggregation(tmpAgg));
           tmpAgg = nestedAgg;
         }
@@ -250,12 +255,11 @@ public class ValueRecommenderService implements IValueRecommenderService {
       if (termsAggs.get(0).getName().equals(targetFieldValueAgg.getName())) {
         tValue = termsAggs.get(0);
         tValueAndSt = termsAggs.get(1);
-      }
-      else if (termsAggs.get(0).getName().equals(targetFieldValueAndStAgg.getName())){
+      } else if (termsAggs.get(0).getName().equals(targetFieldValueAndStAgg.getName())) {
         tValueAndSt = termsAggs.get(0);
         tValue = termsAggs.get(1);
       }
-      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt);
+      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt, RecommendedValue.RecommendationType.CONTEXT_DEPENDENT);
     }
     // If templateId == null
     else {
@@ -318,12 +322,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode source = mapper.readTree(response.getHits().getAt(0).getSourceAsString());
         return source;
-      }
-      else {
+      } else {
         throw new IllegalArgumentException("Template Id not found: " + templateId);
       }
-    }
-     finally {
+    } finally {
       // Close client
       client.close();
     }
@@ -357,8 +359,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
         List<Field> fields = groups.get(nestedObjectPath);
         fields.add(f);
         groups.put(nestedObjectPath, fields);
-      }
-      else {
+      } else {
         List<Field> fields = new ArrayList<>();
         fields.add(f);
         groups.put(nestedObjectPath, fields);
@@ -401,21 +402,19 @@ public class ValueRecommenderService implements IValueRecommenderService {
         return getTermAggregations(((Filter) agg).getAggregations());
       } else if (agg instanceof Terms) {
         termsAgg.add((Terms) agg);
-      }
-      else {
+      } else {
         throw new InternalError("Unexpected aggregation type");
       }
     }
     return termsAgg;
   }
 
-  private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueAndStAgg) {
+  private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueAndStAgg, RecommendedValue.RecommendationType recommendationType) {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     Collection<Terms.Bucket> buckets = null;
     if (valueAndStAgg.getBuckets().size() > 0) {
       buckets = valueAndStAgg.getBuckets();
-    }
-    else if (valueAgg.getBuckets().size() > 0) {
+    } else if (valueAgg.getBuckets().size() > 0) {
       buckets = valueAgg.getBuckets();
     }
     // No results
@@ -446,10 +445,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
       String delimiter = "[[ST]]";
       if (value.contains(delimiter)) {
         String[] v = value.split("\\[\\[ST\\]\\]");
-        recommendedValues.add(new RecommendedValue(v[0], v[1], score));
-      }
-      else {
-        recommendedValues.add(new RecommendedValue(value, null, score));
+        recommendedValues.add(new RecommendedValue(v[0], v[1], score, recommendationType));
+      } else {
+        recommendedValues.add(new RecommendedValue(value, null, score, recommendationType));
       }
 
       // Value and semantic type
@@ -474,7 +472,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
 //      client.close();
 //    }
 //  }
-
   private Client getClient() throws UnknownHostException {
     return TransportClient.builder().settings(settings).build().addTransportAddress(new
         InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
