@@ -128,10 +128,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
         // Prepare search
         SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
             .setQuery(templateIdQuery).addAggregation(nestedAgg);
-        System.out.println("Search query in Query DSL: " + search.internalBuilder());
+        //System.out.println("Search query in Query DSL: " + search.internalBuilder());
         // Execute search
         response = search.execute().actionGet();
-        System.out.println("Search response: " + response.toString());
+        //System.out.println("Search response: " + response.toString());
       } catch (UnknownHostException e) {
         throw e;
       } finally {
@@ -230,10 +230,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
         SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType).setQuery(mainQuery);
         // Add aggregation
         search.addAggregation(mainAgg);
-        System.out.println("Search query in Query DSL: " + search.internalBuilder());
+        //System.out.println("Search query in Query DSL: " + search.internalBuilder());
         // Execute search
         response = search.execute().actionGet();
-        System.out.println("Search response: " + response.toString());
+        //System.out.println("Search response: " + response.toString());
 //      System.out.println("Number of results returned: " + response.getHits().getHits().length);
 //      System.out.println("Total number of results: " + response.getHits().getTotalHits());
       } catch (UnknownHostException e) {
