@@ -7,23 +7,23 @@ import java.util.List;
  */
 public class Recommendation
 {
-  private String fieldName;
+  private String fieldPath;
   private List<RecommendedValue> suggestedValues;
 
-  public Recommendation(String fieldName, List<RecommendedValue> suggestedValues)
+  public Recommendation(String fieldPath, List<RecommendedValue> suggestedValues)
   {
-    this.fieldName = fieldName;
+    this.fieldPath = fieldPath;
     this.suggestedValues = suggestedValues;
   }
 
-  public String getFieldName()
+  public String getFieldPath()
   {
-    return fieldName;
+    return fieldPath;
   }
 
-  public void setFieldName(String fieldName)
+  public void setFieldName(String fieldPath)
   {
-    this.fieldName = fieldName;
+    this.fieldPath = fieldPath;
   }
 
   public List<RecommendedValue> getRecommendedValues()
