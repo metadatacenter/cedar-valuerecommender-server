@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -30,36 +31,6 @@
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-server-utils-core</artifactId>
-      <version>${cedar.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-server-utils-play</artifactId>
-      <version>${cedar.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-auth-operations-noauth</artifactId>
-      <version>${cedar.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-auth-operations-keycloak</artifactId>
-      <version>${cedar.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-user-operations</artifactId>
-      <version>${cedar.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-project-config</artifactId>
       <version>${cedar.version}</version>
     </dependency>
@@ -83,13 +54,6 @@
       <artifactId>httpclient</artifactId>
       <version>${apache.httpcomponents.httpclient.version}</version>
       <scope>test</scope>
-    </dependency>
-
-    <!-- Jackson -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson.core.version}</version>
     </dependency>
 
     <dependency>
@@ -123,6 +87,36 @@
       <groupId>com.github.fge</groupId>
       <artifactId>json-schema-validator</artifactId>
       <version>${fge.json.schema.validator.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.fge</groupId>
+      <artifactId>json-schema-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.wordnik</groupId>
+      <artifactId>swagger-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-xml_${play2.scala.version}</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.typesafe.play</groupId>
+      <artifactId>twirl-api_${play2.scala.version}</artifactId>
     </dependency>
 
   </dependencies>
