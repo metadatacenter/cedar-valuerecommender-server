@@ -39,6 +39,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
   private int esTransportPort;
   private int size;
   private Settings settings;
+  private Client client = null;
 
   private final String resourceContentFieldName = "resourceSummarizedContent";
   private final String fieldValueType = "fieldValueType";
@@ -59,7 +60,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
   public boolean hasInstances(String templateId) throws UnknownHostException {
     templateId = templateId.toLowerCase();
-    Client client = null;
     SearchResponse response = null;
     try {
       client = getClient();
@@ -70,9 +70,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
       response = search.execute().actionGet();
     } catch (UnknownHostException e) {
       throw e;
-    } finally {
-      // Close client
-      client.close();
     }
 
     int hits = response.getHits().getHits().length;
@@ -90,19 +87,18 @@ public class ValueRecommenderService implements IValueRecommenderService {
     templateId = templateId.toLowerCase();
 
     if (populatedFields.size() == 0) {
-      recommendedValues = getContextIndependentRecommendation(templateId, targetField);
+      recommendedValues = getContextIndependentRecommendation(templateId, populatedFields, targetField);
     } else {
       recommendedValues = getContextDependentRecommendation(templateId, populatedFields, targetField);
       if (recommendedValues.size() == 0) {
-        recommendedValues = getContextIndependentRecommendation(templateId, targetField);
+        recommendedValues = getContextIndependentRecommendation(templateId, populatedFields, targetField);
       }
     }
-
     Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
     return recommendation;
   }
 
-  private List<RecommendedValue> getContextIndependentRecommendation(String templateId, Field targetField) throws
+  private List<RecommendedValue> getContextIndependentRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
       IOException {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     if (templateId != null) {
@@ -123,7 +119,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // Build aggregation
       nestedAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
 
-      Client client = null;
       SearchResponse response = null;
       try {
         client = getClient();
@@ -136,16 +131,14 @@ public class ValueRecommenderService implements IValueRecommenderService {
         //System.out.println("Search response: " + response.toString());
       } catch (UnknownHostException e) {
         throw e;
-      } finally {
-        // Close client
-        client.close();
       }
+
       // Retrieve the relevant information and generate output
       InternalNested n = response.getAggregations().get(nestedAgg.getName());
       Terms tValue = n.getAggregations().get(targetFieldValueAgg.getName());
       Terms tValueAndSt = n.getAggregations().get(targetFieldValueAndStAgg.getName());
       recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt, RecommendedValue
-          .RecommendationType.CONTEXT_INDEPENDENT);
+          .RecommendationType.CONTEXT_INDEPENDENT, populatedFields.size());
     }
     // If templateId == null
     else {
@@ -176,7 +169,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
       Map<String, List<Field>> fieldsGroupedByNestedObjectPath = groupByNestedObjectPath(populatedFields);
 
       // Iterate through the map and define the corresponding filters
-
       NestedBuilder mainAgg = null;
       NestedBuilder tmpAgg = null;
       String nestedObjectPath = null;
@@ -227,7 +219,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
       }
       mainAgg = tmpAgg;
 
-      Client client = null;
       SearchResponse response = null;
       try {
         client = getClient();
@@ -243,10 +234,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
 //      System.out.println("Total number of results: " + response.getHits().getTotalHits());
       } catch (UnknownHostException e) {
         throw e;
-      } finally {
-        // Close client
-        client.close();
       }
+
       // Retrieve the relevant information and generate output
       //Collection<Terms.Bucket> buckets = getBucketsFromAggregations(response.getAggregations());
       List<Terms> termsAggs = getTermAggregations(response.getAggregations());
@@ -259,7 +248,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
         tValueAndSt = termsAggs.get(0);
         tValue = termsAggs.get(1);
       }
-      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt, RecommendedValue.RecommendationType.CONTEXT_DEPENDENT);
+      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt,
+          RecommendedValue.RecommendationType.CONTEXT_DEPENDENT, populatedFields.size());
     }
     // If templateId == null
     else {
@@ -301,33 +291,26 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return resourceContentFieldName + "." + fieldPath + "_field" + ".fieldValueAndSemanticType";
   }
 
+  // TODO: cache the template being used to avoid multiple calls
   private JsonNode getTemplateFromIndex(String templateId) throws IOException {
     // Main query
     TermQueryBuilder templateQuery = QueryBuilders.termQuery("info.@id", templateId);
-
-    Client client = null;
     SearchResponse response = null;
-    try {
-      client = getClient();
+    client = getClient();
+    // Prepare search
+    SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
+        .setQuery(templateQuery);
+    //System.out.println("Search query in Query DSL: " + search.internalBuilder());
 
-      // Prepare search
-      SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
-          .setQuery(templateQuery);
-      //System.out.println("Search query in Query DSL: " + search.internalBuilder());
-
-      // Execute search
-      response = search.execute().actionGet();
-      //System.out.println("Search response: " + response.toString());
-      if (response.getHits().totalHits() > 0) {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode source = mapper.readTree(response.getHits().getAt(0).getSourceAsString());
-        return source;
-      } else {
-        throw new IllegalArgumentException("Template Id not found: " + templateId);
-      }
-    } finally {
-      // Close client
-      client.close();
+    // Execute search
+    response = search.execute().actionGet();
+    //System.out.println("Search response: " + response.toString());
+    if (response.getHits().totalHits() > 0) {
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode source = mapper.readTree(response.getHits().getAt(0).getSourceAsString());
+      return source;
+    } else {
+      throw new IllegalArgumentException("Template Id not found: " + templateId);
     }
   }
 
@@ -372,27 +355,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return groups;
   }
 
-  // This code assumes that each list of aggregations only contains one aggregation
-//  private Collection<Terms.Bucket> getBucketsFromAggregations(Aggregations aggs) {
-//    List<Aggregation> aggsList = aggs.asList();
-//    if (aggsList.size() > 0) {
-//      Aggregation agg = aggsList.get(0);
-//      if (agg instanceof InternalNested) {
-//        return getBucketsFromAggregations(((InternalNested) agg).getAggregations());
-//      } else if (agg instanceof Filter) {
-//        return getBucketsFromAggregations(((Filter) agg).getAggregations());
-//      } else if (agg instanceof Terms) {
-//        return ((Terms) agg).getBuckets();
-//      }
-//      else {
-//        throw new InternalError("Unexpected aggregation type");
-//      }
-//    }
-//    else {
-//      throw new InternalError("No aggregations found");
-//    }
-//  }
-
   private List<Terms> getTermAggregations(Aggregations aggs) {
     List<Terms> termsAgg = new ArrayList<>();
     for (Aggregation agg : aggs) {
@@ -409,7 +371,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return termsAgg;
   }
 
-  private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueAndStAgg, RecommendedValue.RecommendationType recommendationType) {
+  private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueAndStAgg,
+                                                                          RecommendedValue.RecommendationType recommendationType,
+                                                                          int numberPopulatedFields) {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     Collection<Terms.Bucket> buckets = null;
     if (valueAndStAgg.getBuckets().size() > 0) {
@@ -441,6 +405,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // The score will be calculated as the percentage of samples for the particular value, with respect to the
       // total number of samples for all values
       double score = b.getDocCount() / totalDocs;
+      // Then, the score is weighted depending on the recommendation type and on the number of populated fields
+      if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT) && (numberPopulatedFields > 0)) {
+        score = score / (numberPopulatedFields + 1);
+      }
       // Regular value
       String delimiter = "[[ST]]";
       if (value.contains(delimiter)) {
@@ -449,9 +417,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
       } else {
         recommendedValues.add(new RecommendedValue(value, null, score, recommendationType));
       }
-
-      // Value and semantic type
-
     }
     return recommendedValues;
   }
@@ -472,9 +437,17 @@ public class ValueRecommenderService implements IValueRecommenderService {
 //      client.close();
 //    }
 //  }
+
   private Client getClient() throws UnknownHostException {
-    return TransportClient.builder().settings(settings).build().addTransportAddress(new
-        InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
+    if (client == null) {
+      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
+    }
+    return client;
+  }
+
+  public void closeClient() {
+    client.close();
   }
 
 }

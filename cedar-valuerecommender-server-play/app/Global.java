@@ -48,6 +48,8 @@ public class Global extends GlobalSettings {
   @Override
   public void onStop(Application app) {
     Logger.info("Application shutdown...");
+    // Close ElasticSearch client
+    DataServices.getInstance().getValueRecommenderService().closeClient();
   }
 
   /* For CORS */
