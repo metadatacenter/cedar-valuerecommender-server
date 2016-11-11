@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-valuerecommender-server</artifactId>
-    <version>0.8.2</version>
+    <version>0.8.5</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
@@ -20,6 +20,16 @@
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-valuerecommender-server-core</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-server-globals</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-project-config</artifactId>
     </dependency>
 
     <dependency>
@@ -41,13 +51,6 @@
       <artifactId>httpclient</artifactId>
       <version>${apache.httpcomponents.httpclient.version}</version>
       <scope>test</scope>
-    </dependency>
-
-    <!-- Jackson -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-      <version>${jackson.core.version}</version>
     </dependency>
 
     <dependency>
@@ -81,6 +84,36 @@
       <groupId>com.github.fge</groupId>
       <artifactId>json-schema-validator</artifactId>
       <version>${fge.json.schema.validator.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.fge</groupId>
+      <artifactId>json-schema-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.wordnik</groupId>
+      <artifactId>swagger-annotations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang.modules</groupId>
+      <artifactId>scala-xml_${play2.scala.version}</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.typesafe.play</groupId>
+      <artifactId>twirl-api_${play2.scala.version}</artifactId>
     </dependency>
 
   </dependencies>

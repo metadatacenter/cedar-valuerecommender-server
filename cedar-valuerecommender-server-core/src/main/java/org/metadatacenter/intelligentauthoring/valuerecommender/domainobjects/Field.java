@@ -6,27 +6,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * A Template field
  */
 public class Field {
-  @JsonProperty("name")
-  private String fieldName;
+  @JsonProperty("path")
+  private String fieldPath;
   @JsonProperty("value")
   private String fieldValue;
 
   // Required for deserialization
-  public Field() {
+  public Field() {}
 
-  }
-
-  public Field(String fieldName, String fieldValue) {
-    this.fieldName = fieldName;
+  public Field(String fieldPath, String fieldValue) {
+    this.fieldPath = fieldPath;
     this.fieldValue = fieldValue;
   }
 
-  public String getFieldName() {
-    return fieldName;
+  public String getFieldPath() {
+    return fieldPath;
   }
 
-  public void setFieldName(String fieldName) {
-    this.fieldName = fieldName;
+  public void setFieldPath(String fieldPath) {
+    this.fieldPath = fieldPath;
   }
 
   public String getFieldValue() {
@@ -40,7 +38,7 @@ public class Field {
   @Override
   public String toString() {
     return "Field{" +
-        "fieldName='" + fieldName + '\'' +
+        "fieldPath='" + fieldPath + '\'' +
         ", fieldValue='" + fieldValue + '\'' +
         '}';
   }
