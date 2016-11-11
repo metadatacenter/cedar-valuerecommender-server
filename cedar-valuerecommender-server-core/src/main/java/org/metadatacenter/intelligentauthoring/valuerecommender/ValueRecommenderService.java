@@ -406,9 +406,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // total number of samples for all values
       double score = b.getDocCount() / totalDocs;
       // Then, the score is weighted depending on the recommendation type and on the number of populated fields
-      if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT) && (numberPopulatedFields > 0)) {
-        score = score / (numberPopulatedFields + 1);
-      }
+//      if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT) && (numberPopulatedFields > 0)) {
+//        score = score / (numberPopulatedFields + 1);
+//      }
       // Regular value
       String delimiter = "[[ST]]";
       if (value.contains(delimiter)) {
