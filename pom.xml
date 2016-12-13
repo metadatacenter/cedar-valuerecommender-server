@@ -4,7 +4,7 @@
 
   <parent>
     <groupId>org.metadatacenter</groupId>
-    <artifactId>cedar-parent</artifactId>
+    <artifactId>cedar-parent-dw</artifactId>
     <version>0.8.7-SNAPSHOT</version>
   </parent>
 
@@ -24,12 +24,10 @@
 
   <modules>
     <module>cedar-valuerecommender-server-core</module>
-    <module>cedar-valuerecommender-server-play</module>
+    <module>cedar-valuerecommender-server-applicatiion</module>
   </modules>
 
   <properties>
-    <!-- Do Not Remove This! We need it in Pom.scala -->
-    <scala.version>2.11.5</scala.version>
   </properties>
 
   <dependencies>
