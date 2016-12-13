@@ -1,4 +1,4 @@
-package utils;
+package org.metadatacenter.cedar.valuerecommender.utils;
 
 /**
  * Constants of general utility.

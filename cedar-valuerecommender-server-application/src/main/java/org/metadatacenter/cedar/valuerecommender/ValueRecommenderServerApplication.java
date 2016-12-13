@@ -6,8 +6,12 @@ import io.dropwizard.setup.Environment;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.valuerecommender.core.CedarAssertionExceptionMapper;
-import org.metadatacenter.cedar.valuerecommender.health.FolderServerHealthCheck;
-import org.metadatacenter.cedar.valuerecommender.resources.*;
+import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
+import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
+import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
+import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.config.ElasticsearchConfig;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.AuthorizationKeycloakAndApiKeyResolver;
 import org.metadatacenter.server.security.IAuthorizationResolver;
@@ -20,6 +24,10 @@ import java.util.EnumSet;
 import static org.eclipse.jetty.servlets.CrossOriginFilter.*;
 
 public class ValueRecommenderServerApplication extends Application<ValueRecommenderServerConfiguration> {
+
+  protected static CedarConfig cedarConfig;
+  protected static ValueRecommenderService valueRecommenderService;
+
   public static void main(String[] args) throws Exception {
     new ValueRecommenderServerApplication().run(args);
   }
@@ -37,6 +45,19 @@ public class ValueRecommenderServerApplication extends Application<ValueRecommen
     IAuthorizationResolver authResolver = new AuthorizationKeycloakAndApiKeyResolver();
     Authorization.setAuthorizationResolver(authResolver);
     Authorization.setUserService(CedarDataServices.getUserService());
+
+    cedarConfig = CedarConfig.getInstance();
+
+    ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
+    valueRecommenderService = new ValueRecommenderService(
+        esc.getCluster(),
+        esc.getHost(),
+        esc.getIndex(),
+        esc.getType(),
+        esc.getTransportPort(),
+        esc.getSize());
+
+    ValueRecommenderResource.injectValueRecommenderService(valueRecommenderService);
   }
 
   @Override
@@ -45,7 +66,7 @@ public class ValueRecommenderServerApplication extends Application<ValueRecommen
     environment.jersey().register(index);
 
     environment.jersey().register(new ValueRecommenderResource());
-    
+
     final ValueRecommenderServerHealthCheck healthCheck = new ValueRecommenderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
 

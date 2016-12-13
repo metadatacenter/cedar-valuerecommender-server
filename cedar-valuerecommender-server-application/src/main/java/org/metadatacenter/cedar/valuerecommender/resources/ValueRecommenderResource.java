@@ -1,67 +1,88 @@
-package controllers;
+package org.metadatacenter.cedar.valuerecommender.resources;
 
+import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
-import com.wordnik.swagger.annotations.*;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.http.HttpStatus;
+import io.swagger.annotations.*;
+import org.metadatacenter.cedar.valuerecommender.utils.Validator;
+import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
-import play.mvc.Controller;
-import play.mvc.Result;
-import utils.DataServices;
-import utils.ErrorMsgBuilder;
-import utils.Validator;
+import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.rest.exception.CedarAssertionException;
+import org.metadatacenter.util.http.CedarResponse;
+import org.metadatacenter.util.json.JsonMapper;
 
-import javax.ws.rs.QueryParam;
-import java.io.IOException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-import static utils.Constants.*;
+import static org.metadatacenter.cedar.valuerecommender.utils.Constants.RECOMMEND_VALUES_SCHEMA_FILE;
+import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Api(value = "/valuerecommender", description = "Value Recommender Server")
-public class ValueRecommenderController extends Controller {
+@Path("/")
+@Produces(MediaType.APPLICATION_JSON)
+public class ValueRecommenderResource {
 
-  static {
-    // The following line may be used to index some instances
-    //recommenderService.indexGEO();
+  protected
+  @Context
+  UriInfo uriInfo;
+
+  protected
+  @Context
+  HttpServletRequest request;
+
+  protected
+  @Context
+  HttpServletResponse response;
+
+  private static ValueRecommenderService valueRecommenderService;
+
+  public static void injectValueRecommenderService(ValueRecommenderService valueRecommenderService) {
+    ValueRecommenderResource.valueRecommenderService = valueRecommenderService;
   }
 
   @ApiOperation(
-      value = "Checks if there are template instances indexed for a particular template",
-      httpMethod = "GET")
+      value = "Checks if there are template instances indexed for a particular template")
   @ApiResponses(value = {
       @ApiResponse(code = 200, message = "Success!"),
       @ApiResponse(code = 400, message = "Bad Request"),
       @ApiResponse(code = 401, message = "Unauthorized"),
       @ApiResponse(code = 500, message = "Internal Server Error")})
-  public static Result hasInstances(@ApiParam(value = "Template identifier", required = true) @QueryParam
-      ("template_id") String templateId) {
-    if (templateId.isEmpty()) {
-      return badRequest(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, BAD_REQUEST_MSG, "The template_id cannot be " +
-          "empty"));
-    }
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode output = null;
-    try {
+  @GET
+  @Timed
+  @Path("/has-instances")
+  public Response hasInstances(/*@ApiParam(value = "Template identifier", required = true)*/ @QueryParam
+      ("template_id") String templateId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
 
-      boolean result = DataServices.getInstance().getValueRecommenderService().hasInstances(templateId);
-      output = mapper.valueToTree(result);
-    } catch (IOException e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, e
-          .getMessage()));
-    } catch (InternalError e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, e
-          .getMessage()));
-    } catch (Exception e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG, e
-          .getMessage()));
+    if (templateId.isEmpty()) {
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.MISSING_PARAMETER)
+          .parameter("templateId", templateId)
+          .errorMessage("The template_id cannot be empty")
+          .build();
+
     }
-    return ok(output);
+    JsonNode output;
+    try {
+      boolean result = valueRecommenderService.hasInstances(templateId);
+      output = JsonMapper.MAPPER.valueToTree(result);
+    } catch (Exception e) {
+      throw new CedarAssertionException(e);
+    }
+    return Response.ok().entity(output).build();
   }
 
   @ApiOperation(
@@ -84,8 +105,14 @@ public class ValueRecommenderController extends Controller {
               "\t\t\"name\": \"sampleTitle['@value']\"\n" +
               "\t}\n" +
               "}", paramType = "body")})
-  public static Result recommendValues() {
-    JsonNode input = request().body().asJson();
+  @Path("/recommend")
+  @POST
+  public Response recommendValues() throws CedarAssertionException {
+
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
+
+    JsonNode input = c.request().getRequestBody().asJson();
     ObjectMapper mapper = new ObjectMapper();
     Recommendation recommendation;
     JsonNode output = null;
@@ -94,7 +121,10 @@ public class ValueRecommenderController extends Controller {
       ProcessingReport validationReport = Validator.validateInput(input, RECOMMEND_VALUES_SCHEMA_FILE);
       if (!validationReport.isSuccess()) {
         String validationMsg = Validator.extractProcessingReportMessages(validationReport);
-        return badRequest(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, VALIDATION_ERROR_MSG, validationMsg));
+        return CedarResponse.badRequest()
+            .errorKey(CedarErrorKey.INVALID_INPUT)
+            .errorMessage(validationMsg)
+            .build();
       }
       String templateId = null;
       if (input.get("templateId") != null) {
@@ -106,27 +136,12 @@ public class ValueRecommenderController extends Controller {
             mapper.getTypeFactory().constructCollectionType(List.class, Field.class));
       }
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
-      recommendation =
-          DataServices.getInstance().getValueRecommenderService().getRecommendation(templateId, populatedFields,
-              targetField);
+      recommendation = valueRecommenderService.getRecommendation(templateId, populatedFields, targetField);
       output = mapper.valueToTree(recommendation);
-    } catch (IllegalArgumentException e) {
-      return badRequest(ErrorMsgBuilder.build(HttpStatus.SC_BAD_REQUEST, BAD_REQUEST_MSG, ExceptionUtils
-          .getStackTrace(e)));
-    } catch (IOException e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
-          ExceptionUtils.getStackTrace(e)));
-    } catch (ProcessingException e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
-          ExceptionUtils.getStackTrace(e)));
-    } catch (InternalError e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
-          ExceptionUtils.getStackTrace(e)));
     } catch (Exception e) {
-      return internalServerError(ErrorMsgBuilder.build(HttpStatus.SC_INTERNAL_SERVER_ERROR, INTERNAL_ERROR_MSG,
-          ExceptionUtils.getStackTrace(e)));
+      throw new CedarAssertionException(e);
     }
-    return ok(output);
+    return Response.ok().entity(output).build();
   }
 
 }

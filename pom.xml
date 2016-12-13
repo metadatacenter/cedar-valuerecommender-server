@@ -24,7 +24,7 @@
 
   <modules>
     <module>cedar-valuerecommender-server-core</module>
-    <module>cedar-valuerecommender-server-applicatiion</module>
+    <module>cedar-valuerecommender-server-application</module>
   </modules>
 
   <properties>
@@ -37,5 +37,15 @@
       <version>${logback.version}</version>
     </dependency>
   </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.metadatacenter</groupId>
+        <artifactId>cedar-valuerecommender-server-core</artifactId>
+        <version>${cedar.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
 </project>
