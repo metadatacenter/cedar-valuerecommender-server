@@ -62,7 +62,7 @@ public class ValueRecommenderResource {
   @GET
   @Timed
   @Path("/has-instances")
-  public Response hasInstances(/*@ApiParam(value = "Template identifier", required = true)*/ @QueryParam
+  public Response hasInstances(@ApiParam(value = "Template identifier", required = true) @QueryParam
       ("template_id") String templateId) throws CedarAssertionException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);

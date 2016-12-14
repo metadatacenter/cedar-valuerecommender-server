@@ -33,16 +33,16 @@ public class Validator {
     // Get last fragment of working directory
     String folder = workingDirectory.substring(workingDirectory.lastIndexOf("/") + 1, workingDirectory.length());
     // Working directory for Maven execution (mvn play2:run)
-    if (folder.compareTo(Constants.PLAY_MODULE_FOLDER_NAME) == 0) {
+    if (folder.compareTo(Constants.APP_MODULE_FOLDER_NAME) == 0) {
       path = Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
     }
     // Working directory for execution from IntelliJ
-    else if (folder.compareTo(Constants.PLAY_APP_FOLDER_NAME)==0) {
-      path = Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
+    else if (folder.compareTo(Constants.APP_FOLDER_NAME)==0) {
+      path = Constants.APP_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
     }
     // Working directory for test execution from IntelliJ (working directory: ...cedar-valuerecommender-server/.idea/modules)
     else {
-      path = "../../" + Constants.PLAY_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + schemaFileName;
+      path = "../../" + Constants.APP_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + schemaFileName;
     }
     return new File(path);
   }
