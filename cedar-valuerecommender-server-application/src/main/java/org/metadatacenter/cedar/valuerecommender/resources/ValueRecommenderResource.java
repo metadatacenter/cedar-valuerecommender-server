@@ -62,7 +62,7 @@ public class ValueRecommenderResource {
   @GET
   @Timed
   @Path("/has-instances")
-  public Response hasInstances(/*@ApiParam(value = "Template identifier", required = true)*/ @QueryParam
+  public Response hasInstances(@ApiParam(value = "Template identifier", required = true) @QueryParam
       ("template_id") String templateId) throws CedarAssertionException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
@@ -87,7 +87,6 @@ public class ValueRecommenderResource {
 
   @ApiOperation(
       value = "Get value recommendations for metadata template fields",
-      //notes = "The search scope can be specified using comma separated strings",
       httpMethod = "POST")
   @ApiResponses(value = {
       @ApiResponse(code = 200, message = "Success!"),
@@ -138,7 +137,14 @@ public class ValueRecommenderResource {
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
       recommendation = valueRecommenderService.getRecommendation(templateId, populatedFields, targetField);
       output = mapper.valueToTree(recommendation);
-    } catch (Exception e) {
+    }
+    catch (IllegalArgumentException e) {
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.INVALID_INPUT)
+          .errorMessage(e.getMessage())
+          .build();
+    }
+    catch (Exception e) {
       throw new CedarAssertionException(e);
     }
     return Response.ok().entity(output).build();
