@@ -7,6 +7,7 @@ import com.github.fge.jsonschema.core.report.ProcessingReport;
 import io.swagger.annotations.*;
 import org.metadatacenter.cedar.valuerecommender.utils.Validator;
 import org.metadatacenter.error.CedarErrorKey;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
@@ -106,7 +107,7 @@ public class ValueRecommenderResource {
               "}", paramType = "body")})
   @Path("/recommend")
   @POST
-  public Response recommendValues() throws CedarAssertionException {
+  public Response recommendValues() throws CedarException {
 
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
