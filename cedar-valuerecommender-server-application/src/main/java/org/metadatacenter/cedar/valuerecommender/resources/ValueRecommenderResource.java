@@ -8,12 +8,12 @@ import io.swagger.annotations.*;
 import org.metadatacenter.cedar.valuerecommender.utils.Validator;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
-import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
 
@@ -64,7 +64,7 @@ public class ValueRecommenderResource {
   @Timed
   @Path("/has-instances")
   public Response hasInstances(@ApiParam(value = "Template identifier", required = true) @QueryParam
-      ("template_id") String templateId) throws CedarAssertionException {
+      ("template_id") String templateId) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -81,7 +81,7 @@ public class ValueRecommenderResource {
       boolean result = valueRecommenderService.hasInstances(templateId);
       output = JsonMapper.MAPPER.valueToTree(result);
     } catch (Exception e) {
-      throw new CedarAssertionException(e);
+      throw new CedarProcessingException(e);
     }
     return Response.ok().entity(output).build();
   }
@@ -138,15 +138,13 @@ public class ValueRecommenderResource {
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
       recommendation = valueRecommenderService.getRecommendation(templateId, populatedFields, targetField);
       output = mapper.valueToTree(recommendation);
-    }
-    catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException e) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.INVALID_INPUT)
           .errorMessage(e.getMessage())
           .build();
-    }
-    catch (Exception e) {
-      throw new CedarAssertionException(e);
+    } catch (Exception e) {
+      throw new CedarProcessingException(e);
     }
     return Response.ok().entity(output).build();
   }
