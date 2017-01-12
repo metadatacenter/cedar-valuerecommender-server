@@ -24,12 +24,10 @@
 
   <modules>
     <module>cedar-valuerecommender-server-core</module>
-    <module>cedar-valuerecommender-server-play</module>
+    <module>cedar-valuerecommender-server-application</module>
   </modules>
 
   <properties>
-    <!-- Do Not Remove This! We need it in Pom.scala -->
-    <scala.version>2.11.5</scala.version>
   </properties>
 
   <dependencies>
@@ -39,5 +37,15 @@
       <version>${logback.version}</version>
     </dependency>
   </dependencies>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.metadatacenter</groupId>
+        <artifactId>cedar-valuerecommender-server-core</artifactId>
+        <version>${cedar.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
 </project>
