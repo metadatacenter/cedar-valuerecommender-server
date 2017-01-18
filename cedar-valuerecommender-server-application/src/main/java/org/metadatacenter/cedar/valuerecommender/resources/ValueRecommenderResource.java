@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.metadatacenter.cedar.valuerecommender.utils.Constants.RECOMMEND_VALUES_SCHEMA_FILE;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_TEMPLATE_ID;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Api(value = "/valuerecommender", description = "Value Recommender Server")
@@ -64,14 +65,14 @@ public class ValueRecommenderResource {
   @Timed
   @Path("/has-instances")
   public Response hasInstances(@ApiParam(value = "Template identifier", required = true) @QueryParam
-      ("template_id") String templateId) throws CedarException {
+      (QP_TEMPLATE_ID) String templateId) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
     if (templateId.isEmpty()) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.MISSING_PARAMETER)
-          .parameter("templateId", templateId)
+          .parameter(QP_TEMPLATE_ID, templateId)
           .errorMessage("The template_id cannot be empty")
           .build();
 
