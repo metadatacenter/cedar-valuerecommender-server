@@ -7,7 +7,6 @@ package org.metadatacenter.cedar.valuerecommender.utils;
 public class Constants {
 
   public static final String APP_MODULE_FOLDER_NAME = "cedar-valuerecommender-server-application";
-  public static final String APP_FOLDER_NAME = "cedar-valuerecommender-server";
   public static final String INPUT_SCHEMA_PATH = "src/main/resources/validation";
   public static final String RECOMMEND_VALUES_SCHEMA_FILE = "recommendValues-schema.json";
 

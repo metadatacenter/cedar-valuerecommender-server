@@ -15,7 +15,8 @@ public class Validator {
 
   public static ProcessingReport validateInput(JsonNode input, String schemaFileName) throws IOException, ProcessingException {
     ObjectMapper mapper = new ObjectMapper();
-    JsonNode schema = mapper.readTree(getInputSchemaFile(schemaFileName));
+    String schemaFilePath = Constants.APP_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
+    JsonNode schema = mapper.readTree(new File(schemaFilePath));
     return validate(schema, input);
   }
 
@@ -25,26 +26,6 @@ public class Validator {
   public static ProcessingReport validate(JsonNode schema, JsonNode instance) throws ProcessingException {
     JsonValidator validator = JsonSchemaFactory.byDefault().getValidator();
     return validator.validate(schema, instance);
-  }
-
-  private static File getInputSchemaFile(String schemaFileName) {
-    String path;
-    String workingDirectory = System.getProperty("user.dir");
-    // Get last fragment of working directory
-    String folder = workingDirectory.substring(workingDirectory.lastIndexOf("/") + 1, workingDirectory.length());
-    // Working directory for Maven execution (mvn play2:run)
-    if (folder.compareTo(Constants.APP_MODULE_FOLDER_NAME) == 0) {
-      path = Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
-    }
-    // Working directory for execution from IntelliJ
-    else if (folder.compareTo(Constants.APP_FOLDER_NAME)==0) {
-      path = Constants.APP_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + "/" + schemaFileName;
-    }
-    // Working directory for test execution from IntelliJ (working directory: ...cedar-valuerecommender-server/.idea/modules)
-    else {
-      path = "../../" + Constants.APP_MODULE_FOLDER_NAME + "/" + Constants.INPUT_SCHEMA_PATH + schemaFileName;
-    }
-    return new File(path);
   }
 
   public static String extractProcessingReportMessages(ProcessingReport report) {
