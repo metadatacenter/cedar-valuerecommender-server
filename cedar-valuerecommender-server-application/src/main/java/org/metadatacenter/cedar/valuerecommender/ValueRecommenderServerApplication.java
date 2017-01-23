@@ -3,6 +3,7 @@ package org.metadatacenter.cedar.valuerecommender;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.util.dw.CedarDropwizardApplicationUtil;
 import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
@@ -27,10 +28,10 @@ public class ValueRecommenderServerApplication extends Application<ValueRecommen
 
   @Override
   public void initialize(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
+    cedarConfig = CedarConfig.getInstance();
+    CedarDataServices.getInstance(cedarConfig);
 
     CedarDropwizardApplicationUtil.setupKeycloak();
-
-    cedarConfig = CedarConfig.getInstance();
 
     ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
     valueRecommenderService = new ValueRecommenderService(
