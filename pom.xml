@@ -38,14 +38,4 @@
     </dependency>
   </dependencies>
 
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.metadatacenter</groupId>
-        <artifactId>cedar-valuerecommender-server-core</artifactId>
-        <version>${cedar.version}</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-
 </project>
