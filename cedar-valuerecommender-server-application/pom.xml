@@ -35,6 +35,7 @@
     <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-valuerecommender-server-core</artifactId>
+      <version>0.9.1</version> <!-- TEMP! -->
     </dependency>
 
     <dependency>
