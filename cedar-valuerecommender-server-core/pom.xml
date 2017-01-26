@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-valuerecommender-server</artifactId>
-    <version>0.8.6</version>
+    <version>0.9.1</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
@@ -105,25 +105,6 @@
           <source>${java.version}</source>
           <target>${java.version}</target>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>${scala.maven.plugin.version}</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-          <checkMultipleScalaVersions>false</checkMultipleScalaVersions>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
 
     </plugins>

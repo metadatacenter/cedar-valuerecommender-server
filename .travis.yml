@@ -1,3 +1,6 @@
+sudo: required
+dist: trusty
+
 language: java
 jdk:
 - oraclejdk8
@@ -5,13 +8,16 @@ branches:
   only:
   - develop
   - master
+cache:
+  directories:
+  - $HOME/.m2
 notifications:
   email:
     recipients:
     - cedar-core-developers@lists.stanford.edu
     on_success: never
     on_failure: always
-install: '[ ${TRAVIS_PULL_REQUEST} = ''false'' ] && mvn clean deploy --settings .m2/travis-settings.xml'
+install: '[ ${TRAVIS_PULL_REQUEST} = ''false'' ] && mvn -DskipTests=true clean deploy --settings .m2/travis-settings.xml'
 env:
   global:
   - secure: N/MKwZLencIgf4gXX0obvrBESLKt/ohQXOg59onkQbajvxA1ZBEnd34JUDINCbxpRlSRKhxZsviLS1VIpVZnfsLiY/evTUB9fQKWRB3uXicyQjSHXGDeqZZYKdwmVxS5FfKHn4h1+mXX0UXYZlQdzc6Ep4VjPqkWGBRIL7XgA5ZnQLwSmmE0ZacawSiMVN+LA7AopOqZmfyWf4dVJ6q/0O+6C8bHFxb0GF2saozKy+YtOhD7FDJL+Rp14Eu3mIPhk6ja5UPHsxcZESjSZaJV92PhyhXX47wD0HH8b+Tzhnos/dKjDOCztFfhw2+Cp6/Z3pTTKgPkppJdXsOJO6gRT1yYE8AAC+0zDi4uVEWiDqd0CZDG3ofgCyMiZMjejWls6yn6RBkUkgPTfZt8lSJv1Qb59fYcwNeza37t/QioRF3ZrSzXEagRo5hpiRT67JO6OPsJcb0v1gPtRLDSIWVSJ5huNcbrm/24fCcsyyrZ+4Aa5M+dVORb2mCK94TaMjaVMpg9UOlgg3PVvh7NbwK2bJpkPdTEe4VXnsMdNGF+kdOKjNkRrDgdDbT/KIl94ghr6xU0jDIGfJRbfaGL14EJ3l9oyf9TYIjBgV6xST+9ZRkkTNm89XEwaRGjnv1C9IfaYys6VCTeXefWG8BTLwewBXSrRmjBT8e2rLym7/dLzO4=
