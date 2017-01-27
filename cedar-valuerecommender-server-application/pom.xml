@@ -14,6 +14,10 @@
 
   <name>CEDAR ValueRecommender Server Dropwizard Application</name>
 
+  <properties>
+    <assembly.targetDir>${project.basedir}/target</assembly.targetDir>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -102,6 +106,30 @@
                   <mainClass>org.metadatacenter.cedar.valuerecommender.ValueRecommenderServerApplication</mainClass>
                 </transformer>
               </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>2.7</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${assembly.targetDir}/classes</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>src/main/resources</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
             </configuration>
           </execution>
         </executions>
