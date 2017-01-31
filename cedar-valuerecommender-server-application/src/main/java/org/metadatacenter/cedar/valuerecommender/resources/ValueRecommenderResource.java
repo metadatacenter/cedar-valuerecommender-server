@@ -27,7 +27,6 @@ import javax.ws.rs.core.UriInfo;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.metadatacenter.cedar.valuerecommender.utils.Constants.RECOMMEND_VALUES_SCHEMA_FILE;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_TEMPLATE_ID;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
@@ -119,7 +118,7 @@ public class ValueRecommenderResource {
     JsonNode output = null;
     try {
       // Input validation against JSON schema
-      ProcessingReport validationReport = Validator.validateInput(input, RECOMMEND_VALUES_SCHEMA_FILE);
+      ProcessingReport validationReport = Validator.validateInput(input);
       if (!validationReport.isSuccess()) {
         String validationMsg = Validator.extractProcessingReportMessages(validationReport);
         return CedarResponse.badRequest()
