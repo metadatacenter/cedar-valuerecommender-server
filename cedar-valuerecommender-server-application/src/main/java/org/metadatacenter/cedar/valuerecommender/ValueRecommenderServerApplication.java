@@ -38,7 +38,7 @@ public class ValueRecommenderServerApplication extends Application<ValueRecommen
         esc.getCluster(),
         esc.getHost(),
         esc.getIndex(),
-        esc.getType(),
+        esc.getTypeResource(),
         esc.getTransportPort(),
         esc.getSize());
 
