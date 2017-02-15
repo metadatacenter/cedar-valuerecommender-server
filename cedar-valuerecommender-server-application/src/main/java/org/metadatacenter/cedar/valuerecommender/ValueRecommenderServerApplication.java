@@ -1,20 +1,18 @@
 package org.metadatacenter.cedar.valuerecommender;
 
-import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.metadatacenter.bridge.CedarDataServices;
-import org.metadatacenter.cedar.util.dw.CedarDropwizardApplicationUtil;
+import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
-import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
+import org.metadatacenter.model.search.IndexedDocumentType;
 
-public class ValueRecommenderServerApplication extends Application<ValueRecommenderServerConfiguration> {
+public class ValueRecommenderServerApplication extends
+    CedarMicroserviceApplication<ValueRecommenderServerConfiguration> {
 
-  protected static CedarConfig cedarConfig;
   protected static ValueRecommenderService valueRecommenderService;
 
   public static void main(String[] args) throws Exception {
@@ -23,22 +21,17 @@ public class ValueRecommenderServerApplication extends Application<ValueRecommen
 
   @Override
   public String getName() {
-    return "valuerecommender-server";
+    return "cedar-valuerecommender-server";
   }
 
   @Override
-  public void initialize(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
-    cedarConfig = CedarConfig.getInstance();
-    CedarDataServices.getInstance(cedarConfig);
-
-    CedarDropwizardApplicationUtil.setupKeycloak();
-
+  public void initializeApp(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
     ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
     valueRecommenderService = new ValueRecommenderService(
-        esc.getCluster(),
+        esc.getClusterName(),
         esc.getHost(),
-        esc.getIndex(),
-        esc.getTypeResource(),
+        esc.getIndexName(),
+        esc.getType(IndexedDocumentType.CONTENT),
         esc.getTransportPort(),
         esc.getSize());
 
@@ -46,7 +39,7 @@ public class ValueRecommenderServerApplication extends Application<ValueRecommen
   }
 
   @Override
-  public void run(ValueRecommenderServerConfiguration configuration, Environment environment) {
+  public void runApp(ValueRecommenderServerConfiguration configuration, Environment environment) {
     final IndexResource index = new IndexResource();
     environment.jersey().register(index);
 
@@ -54,7 +47,5 @@ public class ValueRecommenderServerApplication extends Application<ValueRecommen
 
     final ValueRecommenderServerHealthCheck healthCheck = new ValueRecommenderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
-
-    CedarDropwizardApplicationUtil.setupEnvironment(environment);
   }
 }
