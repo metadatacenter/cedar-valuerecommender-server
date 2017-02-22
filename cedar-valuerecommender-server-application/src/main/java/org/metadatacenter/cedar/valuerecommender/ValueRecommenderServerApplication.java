@@ -43,7 +43,7 @@ public class ValueRecommenderServerApplication extends
     final IndexResource index = new IndexResource();
     environment.jersey().register(index);
 
-    environment.jersey().register(new ValueRecommenderResource());
+    environment.jersey().register(new ValueRecommenderResource(cedarConfig));
 
     final ValueRecommenderServerHealthCheck healthCheck = new ValueRecommenderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
