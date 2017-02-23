@@ -1,6 +1,6 @@
 package org.metadatacenter.cedar.valuerecommender;
 
-import io.dropwizard.Configuration;
+import org.metadatacenter.cedar.util.dw.CedarMicroserviceConfiguration;
 
-public class ValueRecommenderServerConfiguration extends Configuration {
+public class ValueRecommenderServerConfiguration extends CedarMicroserviceConfiguration {
 }
