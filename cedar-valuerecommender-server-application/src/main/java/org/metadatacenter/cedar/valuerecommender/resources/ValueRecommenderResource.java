@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
 import io.swagger.annotations.*;
 import org.metadatacenter.cedar.valuerecommender.utils.Validator;
+import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
@@ -17,13 +18,9 @@ import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.json.JsonMapper;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,21 +30,13 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 @Api(value = "/valuerecommender", description = "Value Recommender Server")
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
-public class ValueRecommenderResource {
-
-  protected
-  @Context
-  UriInfo uriInfo;
-
-  protected
-  @Context
-  HttpServletRequest request;
-
-  protected
-  @Context
-  HttpServletResponse response;
+public class ValueRecommenderResource extends AbstractValuerecommenderServerResource {
 
   private static ValueRecommenderService valueRecommenderService;
+
+  public ValueRecommenderResource(CedarConfig cedarConfig) {
+    super(cedarConfig);
+  }
 
   public static void injectValueRecommenderService(ValueRecommenderService valueRecommenderService) {
     ValueRecommenderResource.valueRecommenderService = valueRecommenderService;
