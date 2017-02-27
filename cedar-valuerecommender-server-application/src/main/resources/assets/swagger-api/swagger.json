@@ -5,7 +5,6 @@
     "description": "CEDAR Value Recommender Server API",
     "version": "1.0.0"
   },
-  "host": "valuerecommender.metadatacenter.orgx",
   "schemes": [
     "https"
   ],
