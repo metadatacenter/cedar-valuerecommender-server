@@ -40,7 +40,7 @@ public class ValueRecommenderServerApplication extends
 
   @Override
   public void runApp(ValueRecommenderServerConfiguration configuration, Environment environment) {
-    final IndexResource index = new IndexResource(cedarConfig);
+    final IndexResource index = new IndexResource();
     environment.jersey().register(index);
 
     environment.jersey().register(new ValueRecommenderResource(cedarConfig));

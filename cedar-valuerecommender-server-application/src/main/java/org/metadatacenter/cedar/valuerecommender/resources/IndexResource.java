@@ -1,11 +1,32 @@
 package org.metadatacenter.cedar.valuerecommender.resources;
 
-import org.metadatacenter.cedar.util.dw.CedarMicroserviceIndexResource;
-import org.metadatacenter.config.CedarConfig;
+import com.codahale.metrics.annotation.Timed;
 
-public class IndexResource extends CedarMicroserviceIndexResource {
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
-  public IndexResource(CedarConfig cedarConfig) {
-    super(cedarConfig, "CEDAR ValueRecommender Server");
+@Path("/")
+@Produces(MediaType.APPLICATION_JSON)
+public class IndexResource {
+
+  private final static Map<String, Object> info;
+
+  static {
+    info = new IdentityHashMap<>();
+    info.put("name", "CEDAR ValueRecommender Server");
+    info.put("documentation", "https://valuerecommender." + System.getenv("CEDAR_HOST") + "/api");
+  }
+
+  public IndexResource() {
+  }
+
+  @GET
+  @Timed
+  public Map<String, Object> showInfo() {
+    return info;
   }
 }

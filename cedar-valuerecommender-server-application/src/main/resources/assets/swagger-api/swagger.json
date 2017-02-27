@@ -6,7 +6,6 @@
     "version": "1.0.0"
   },
   "host": "valuerecommender.metadatacenter.orgx",
-  "basePath": "/bioportal",
   "schemes": [
     "https"
   ],

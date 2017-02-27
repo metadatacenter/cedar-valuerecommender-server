@@ -9,7 +9,7 @@ info:
 host: valuerecommender.metadatacenter.orgx
 # host: valuerecommender.staging.metadatacenter.net
 # host: valuerecommender.metadatacenter.net
-basePath: /bioportal
+#basePath: /bioportal
 schemes:
   - https
 consumes:

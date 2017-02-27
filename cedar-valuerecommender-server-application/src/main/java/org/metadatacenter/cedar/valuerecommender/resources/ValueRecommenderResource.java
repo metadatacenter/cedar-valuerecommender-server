@@ -16,6 +16,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Re
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.util.http.CedarResponse;
+import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 
 import javax.ws.rs.*;
@@ -42,13 +43,6 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     ValueRecommenderResource.valueRecommenderService = valueRecommenderService;
   }
 
-  @ApiOperation(
-      value = "Checks if there are template instances indexed for a particular template")
-  @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "Success!"),
-      @ApiResponse(code = 400, message = "Bad Request"),
-      @ApiResponse(code = 401, message = "Unauthorized"),
-      @ApiResponse(code = 500, message = "Internal Server Error")})
   @GET
   @Timed
   @Path("/has-instances")
@@ -67,6 +61,10 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     }
     JsonNode output;
     try {
+      templateId = CedarUrlUtil.urlDecode(templateId);
+      System.out.println("**********************************");
+      System.out.println("Template Id: " + templateId);
+      System.out.println("**********************************");
       boolean result = valueRecommenderService.hasInstances(templateId);
       output = JsonMapper.MAPPER.valueToTree(result);
     } catch (Exception e) {
@@ -75,25 +73,6 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     return Response.ok().entity(output).build();
   }
 
-  @ApiOperation(
-      value = "Get value recommendations for metadata template fields",
-      httpMethod = "POST")
-  @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "Success!"),
-      @ApiResponse(code = 400, message = "Bad Request"),
-      @ApiResponse(code = 401, message = "Unauthorized"),
-      @ApiResponse(code = 500, message = "Internal Server Error")})
-  @ApiImplicitParams(value = {
-      @ApiImplicitParam(value = "Populated fields and target field", required = true,
-          defaultValue = "{\n" +
-              "\t\"populatedFields\": [{\n" +
-              "\t\t\"name\": \"gse['@value']\",\n" +
-              "\t\t\"value\": \"GSE1\"\n" +
-              "\t}],\n" +
-              "\t\"targetField\": {\n" +
-              "\t\t\"name\": \"sampleTitle['@value']\"\n" +
-              "\t}\n" +
-              "}", paramType = "body")})
   @Path("/recommend")
   @POST
   public Response recommendValues() throws CedarException {
