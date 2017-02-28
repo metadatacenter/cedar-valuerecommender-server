@@ -8,4 +8,5 @@ public class IndexResource extends CedarMicroserviceIndexResource {
   public IndexResource(CedarConfig cedarConfig) {
     super(cedarConfig, "CEDAR ValueRecommender Server");
   }
+
 }

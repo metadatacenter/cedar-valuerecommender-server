@@ -1,0 +1,105 @@
+swagger: "2.0"
+################################################################################
+#                              API Information                                 #
+################################################################################
+info:
+  title: CEDAR Value Recommender Server API
+  description: CEDAR Value Recommender Server API
+  version: "1.0.0"
+# host: valuerecommender.metadatacenter.orgx
+# host: valuerecommender.staging.metadatacenter.net
+# host: valuerecommender.metadatacenter.net
+#basePath: /bioportal
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+################################################################################
+#                              Security                                        #
+################################################################################
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: Authorization
+    description: Your CEDAR API key, using the format 'apiKey &lt;yourApiKey&gt;'
+    in: header
+################################################################################
+#                              Responses                                       #
+################################################################################
+responses:
+  ok: #200
+    description: Successful operation
+  bad_request: #400
+    description: Bad request
+  unauthorized: #401
+    description: Unauthorized
+  internal_error: #500
+    description: Internal server error
+################################################################################
+#                              Paths                                           #
+################################################################################
+paths:
+  /has-instances:
+    get:
+      summary: Has instances
+      description: Checks if there are any template instances indexed for a particular template.
+      parameters:
+        - name: template_id
+          in: query
+          description: Template identifier. Example&#58; https://repo.metadatacenter.net/templates/8bc64ab5-df6b-48c8-8c61-6c016245918e
+          required: true
+          type: string
+      responses:
+        200:
+          $ref: '#/responses/ok'
+        400:
+          $ref: '#/responses/bad_request'
+        401:
+          $ref: '#/responses/unauthorized'
+        500:
+          $ref: '#/responses/internal_error'
+      security:
+        - api_key: []
+  /recommend:
+    post:
+      summary: Get recommendation
+      description:
+        Get value recommendations for metadata template fields.
+      parameters:
+        - name: Input
+          in: body
+          description: user to add to the system
+          schema:
+            type: object
+            properties:
+              templateId:
+                type: string
+                description: Example&#58; https://repo.metadatacenter.net/templates/8bc64av5-df6b-48c8-8c61-6c016245918e
+              populatedFields:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    path:
+                      type: string
+                      description: Example&#58; study.organism
+                    value:
+                      type: string
+                      description: Example&#58; mouse
+              targetField:
+                type: object
+                properties:
+                  path:
+                    type: string
+                    description: Example&#58; study.disease
+      responses:
+        200:
+          $ref: '#/responses/ok'
+        400:
+          $ref: '#/responses/bad_request'
+        401:
+          $ref: '#/responses/unauthorized'
+        500:
+          $ref: '#/responses/internal_error'
