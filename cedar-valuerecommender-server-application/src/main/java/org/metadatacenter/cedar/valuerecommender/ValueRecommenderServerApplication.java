@@ -8,6 +8,7 @@ import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
+import org.metadatacenter.model.ServerName;
 import org.metadatacenter.model.search.IndexedDocumentType;
 
 public class ValueRecommenderServerApplication extends
@@ -20,8 +21,8 @@ public class ValueRecommenderServerApplication extends
   }
 
   @Override
-  public String getName() {
-    return "cedar-valuerecommender-server";
+  protected ServerName getServerName() {
+    return ServerName.VALUERECOMMENDER;
   }
 
   @Override
