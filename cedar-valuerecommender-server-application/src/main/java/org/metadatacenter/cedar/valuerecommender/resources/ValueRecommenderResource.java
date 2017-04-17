@@ -4,7 +4,6 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
-import io.swagger.annotations.*;
 import org.metadatacenter.cedar.valuerecommender.utils.Validator;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
@@ -28,7 +27,6 @@ import java.util.List;
 import static org.metadatacenter.constant.CedarQueryParameters.QP_TEMPLATE_ID;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
-@Api(value = "/valuerecommender", description = "Value Recommender Server")
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
 public class ValueRecommenderResource extends AbstractValuerecommenderServerResource {
@@ -46,8 +44,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @GET
   @Timed
   @Path("/has-instances")
-  public Response hasInstances(@ApiParam(value = "Template identifier", required = true) @QueryParam
-      (QP_TEMPLATE_ID) String templateId) throws CedarException {
+  public Response hasInstances(@QueryParam(QP_TEMPLATE_ID) String templateId) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
