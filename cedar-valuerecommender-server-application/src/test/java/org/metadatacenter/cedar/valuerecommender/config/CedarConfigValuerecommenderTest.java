@@ -32,8 +32,9 @@ public class CedarConfigValuerecommenderTest {
 
   @Test
   public void testGetInstance() throws Exception {
-    CedarConfig instance = CedarConfig.getInstance(CedarEnvironmentVariableProvider.getFor(SystemComponent
-        .SERVER_VALUERECOMMENDER));
+    SystemComponent systemComponent = SystemComponent.SERVER_VALUERECOMMENDER;
+    Map<String, String> environment = CedarEnvironmentVariableProvider.getFor(systemComponent);
+    CedarConfig instance = CedarConfig.getInstance(environment);
     Assert.assertNotNull(instance);
   }
 
