@@ -1,6 +1,5 @@
 package org.metadatacenter.cedar.valuerecommender;
 
-import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
@@ -8,6 +7,7 @@ import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
+import org.metadatacenter.model.ServerName;
 import org.metadatacenter.model.search.IndexedDocumentType;
 
 public class ValueRecommenderServerApplication extends
@@ -20,12 +20,12 @@ public class ValueRecommenderServerApplication extends
   }
 
   @Override
-  public String getName() {
-    return "cedar-valuerecommender-server";
+  protected ServerName getServerName() {
+    return ServerName.VALUERECOMMENDER;
   }
 
   @Override
-  public void initializeApp(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
+  public void initializeApp() {
     ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
     valueRecommenderService = new ValueRecommenderService(
         esc.getClusterName(),
