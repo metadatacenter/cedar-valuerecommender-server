@@ -20,8 +20,6 @@ public class CedarConfigValuerecommenderTest {
 
     env.put(CedarEnvironmentVariable.CEDAR_HOST.getName(), "metadatacenter.orgx");
 
-    env.put(CedarEnvironmentVariable.CEDAR_KEYCLOAK_CLIENT_ID.getName(), "cedar-angular-app");
-
     env.put(CedarEnvironmentVariable.CEDAR_MONGO_APP_USER_NAME.getName(), "cedarUser");
     env.put(CedarEnvironmentVariable.CEDAR_MONGO_APP_USER_PASSWORD.getName(), "password");
     env.put(CedarEnvironmentVariable.CEDAR_MONGO_HOST.getName(), "localhost");
@@ -30,9 +28,9 @@ public class CedarConfigValuerecommenderTest {
     env.put(CedarEnvironmentVariable.CEDAR_ELASTICSEARCH_HOST.getName(), "127.0.0.1");
     env.put(CedarEnvironmentVariable.CEDAR_ELASTICSEARCH_TRANSPORT_PORT.getName(), "9200");
 
-    env.put(CedarEnvironmentVariable.CEDAR_PORT_VALUERECOMMENDER.getName(), "9006");
-
-    env.put(CedarEnvironmentVariable.CEDAR_LD_USER_BASE.getName(), "https://metadatacenter.org/users/");
+    env.put(CedarEnvironmentVariable.CEDAR_VALUERECOMMENDER_HTTP_PORT.getName(), "9006");
+    env.put(CedarEnvironmentVariable.CEDAR_VALUERECOMMENDER_ADMIN_PORT.getName(), "9106");
+    env.put(CedarEnvironmentVariable.CEDAR_VALUERECOMMENDER_STOP_PORT.getName(), "9206");
 
     TestUtil.setEnv(env);
   }
