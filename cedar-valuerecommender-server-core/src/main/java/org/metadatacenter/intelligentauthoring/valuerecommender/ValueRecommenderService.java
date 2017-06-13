@@ -487,6 +487,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
 //    Client client = null;
 //    try {
 //      client = getClient();
+//      !!! Do not use   System.getenv("CEDAR_HOME"), use CedarConfig instead
 //      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat3Samples";
 //      Util.indexAllFilesInFolder(client, "cedar", "template_instances", path);
 //    } catch (IOException e) {
