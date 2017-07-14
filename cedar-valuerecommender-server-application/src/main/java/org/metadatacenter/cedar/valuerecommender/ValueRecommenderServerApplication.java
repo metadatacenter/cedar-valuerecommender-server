@@ -1,5 +1,6 @@
 package org.metadatacenter.cedar.valuerecommender;
 
+import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
@@ -22,6 +23,10 @@ public class ValueRecommenderServerApplication extends
   @Override
   protected ServerName getServerName() {
     return ServerName.VALUERECOMMENDER;
+  }
+
+  @Override
+  protected void initializeWithBootstrap(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
   }
 
   @Override
