@@ -26,7 +26,7 @@ public class ValueRecommenderServerApplication extends
   }
 
   @Override
-  protected void initializeWithBootsrap(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
+  protected void initializeWithBootstrap(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
   }
 
   @Override
