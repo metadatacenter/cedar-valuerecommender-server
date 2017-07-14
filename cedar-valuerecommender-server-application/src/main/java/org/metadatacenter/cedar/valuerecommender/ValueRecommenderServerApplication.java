@@ -6,6 +6,7 @@ import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
+import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.model.ServerName;
@@ -26,7 +27,8 @@ public class ValueRecommenderServerApplication extends
   }
 
   @Override
-  protected void initializeWithBootstrap(Bootstrap<ValueRecommenderServerConfiguration> bootstrap) {
+  protected void initializeWithBootstrap(Bootstrap<ValueRecommenderServerConfiguration> bootstrap, CedarConfig
+      cedarConfig) {
   }
 
   @Override
