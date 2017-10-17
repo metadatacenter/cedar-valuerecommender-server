@@ -77,6 +77,12 @@
       <artifactId>guava</artifactId>
     </dependency>
 
+    <!-- Weka -->
+    <dependency>
+      <groupId>nz.ac.waikato.cms.weka</groupId>
+      <artifactId>weka-stable</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>

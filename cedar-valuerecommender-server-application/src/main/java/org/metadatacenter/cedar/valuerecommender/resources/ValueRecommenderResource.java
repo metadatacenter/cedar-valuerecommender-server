@@ -114,4 +114,49 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     return Response.ok().entity(output).build();
   }
 
+  // Value recommendation using Association Rule Mining (ARM)
+  @Path("/recommend-arm")
+  @POST
+  public Response recommendValuesArm() throws CedarException {
+
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
+
+    JsonNode input = c.request().getRequestBody().asJson();
+    ObjectMapper mapper = new ObjectMapper();
+    Recommendation recommendation;
+    JsonNode output = null;
+    try {
+      // Input validation against JSON schema
+      ProcessingReport validationReport = Validator.validateInput(input);
+      if (!validationReport.isSuccess()) {
+        String validationMsg = Validator.extractProcessingReportMessages(validationReport);
+        return CedarResponse.badRequest()
+            .errorKey(CedarErrorKey.INVALID_INPUT)
+            .errorMessage(validationMsg)
+            .build();
+      }
+      String templateId = null;
+      if (input.get("templateId") != null) {
+        templateId = input.get("templateId").asText();
+      }
+      List<Field> populatedFields = new ArrayList<>();
+      if (input.get("populatedFields") != null) {
+        populatedFields = mapper.readValue(input.get("populatedFields").traverse(),
+            mapper.getTypeFactory().constructCollectionType(List.class, Field.class));
+      }
+      Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
+      recommendation = valueRecommenderService.getRecommendationArm(templateId, populatedFields, targetField);
+      output = mapper.valueToTree(recommendation);
+    } catch (IllegalArgumentException e) {
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.INVALID_INPUT)
+          .errorMessage(e.getMessage())
+          .build();
+    } catch (Exception e) {
+      throw new CedarProcessingException(e);
+    }
+    return Response.ok().entity(output).build();
+  }
+
 }

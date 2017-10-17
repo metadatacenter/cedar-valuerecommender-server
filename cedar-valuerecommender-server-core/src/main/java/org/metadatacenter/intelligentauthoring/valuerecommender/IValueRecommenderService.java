@@ -12,6 +12,8 @@ public interface IValueRecommenderService {
   boolean hasInstances(String templateId) throws UnknownHostException;
   Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
       IOException;
+  Recommendation getRecommendationArm(String templateId, List<Field> populatedFields, Field targetField) throws
+      IOException;
   void closeClient();
 
 }
