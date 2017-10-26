@@ -1,4 +1,4 @@
-package org.metadatacenter.intelligentauthoring.valuerecommender.util;
+package org.metadatacenter.intelligentauthoring.valuerecommender.util.elasticsearch;
 
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class Util {
+public class ElasticsearchIndexingUtils {
   /**
    * Index all files in a folder in ElasticSearch.
    *

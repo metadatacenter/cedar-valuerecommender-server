@@ -4,12 +4,14 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.List;
 
-public interface IValueRecommenderService {
+/**
+ * Value Recommender service interface using Association Rule Mining (ARM)
+ */
+public interface IValueRecommenderArm {
 
-  boolean hasInstances(String templateId) throws UnknownHostException;
+  void generateRules();
   Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws IOException;
 
 }

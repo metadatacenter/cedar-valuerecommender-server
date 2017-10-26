@@ -9,6 +9,7 @@ import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResou
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
 import org.metadatacenter.model.ServerName;
 import org.metadatacenter.model.search.IndexedDocumentType;
 
@@ -16,6 +17,7 @@ public class ValueRecommenderServerApplication extends
     CedarMicroserviceApplication<ValueRecommenderServerConfiguration> {
 
   protected static ValueRecommenderService valueRecommenderService;
+  protected static ValueRecommenderServiceArm valueRecommenderServiceArm;
 
   public static void main(String[] args) throws Exception {
     new ValueRecommenderServerApplication().run(args);
@@ -41,8 +43,10 @@ public class ValueRecommenderServerApplication extends
         esc.getType(IndexedDocumentType.CONTENT),
         esc.getTransportPort(),
         esc.getSize());
+    valueRecommenderServiceArm = new ValueRecommenderServiceArm(cedarConfig);
 
     ValueRecommenderResource.injectValueRecommenderService(valueRecommenderService);
+    ValueRecommenderResource.injectValueRecommenderServiceArm(valueRecommenderServiceArm);
   }
 
   @Override

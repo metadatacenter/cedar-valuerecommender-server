@@ -18,7 +18,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.InternalNested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.metadatacenter.intelligentauthoring.valuerecommender.arm.ArmRecommender;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
@@ -93,11 +92,12 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
   public Recommendation getRecommendationArm(String templateId, List<Field> populatedFields, Field targetField) throws
       IOException {
-    List<RecommendedValue> recommendedValues = null;
-    ArmRecommender recommender = new ArmRecommender();
-    recommendedValues = recommender.getRecommendation(templateId, populatedFields, targetField);
-    Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
-    return recommendation;
+//    List<RecommendedValue> recommendedValues = null;
+//    ArmRecommender recommender = new ArmRecommender();
+//    recommendedValues = recommender.getRecommendation(templateId, populatedFields, targetField);
+//    Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
+//    return recommendation;
+    return null;
   }
 
   private List<RecommendedValue> getRecommendedValues(String templateId, List<Field> populatedFields, Field targetField) throws IOException {

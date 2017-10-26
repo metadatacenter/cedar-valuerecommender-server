@@ -10,6 +10,7 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.rest.context.CedarRequestContext;
@@ -32,6 +33,7 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 public class ValueRecommenderResource extends AbstractValuerecommenderServerResource {
 
   private static ValueRecommenderService valueRecommenderService;
+  private static ValueRecommenderServiceArm valueRecommenderServiceArm;
 
   public ValueRecommenderResource(CedarConfig cedarConfig) {
     super(cedarConfig);
@@ -39,6 +41,10 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
 
   public static void injectValueRecommenderService(ValueRecommenderService valueRecommenderService) {
     ValueRecommenderResource.valueRecommenderService = valueRecommenderService;
+  }
+
+  public static void injectValueRecommenderServiceArm(ValueRecommenderServiceArm valueRecommenderServiceArm) {
+    ValueRecommenderResource.valueRecommenderServiceArm = valueRecommenderServiceArm;
   }
 
   @GET
@@ -114,6 +120,8 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     return Response.ok().entity(output).build();
   }
 
+
+
   // Value recommendation using Association Rule Mining (ARM)
   @Path("/recommend-arm")
   @POST
@@ -146,7 +154,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
             mapper.getTypeFactory().constructCollectionType(List.class, Field.class));
       }
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
-      recommendation = valueRecommenderService.getRecommendationArm(templateId, populatedFields, targetField);
+      recommendation = valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField);
       output = mapper.valueToTree(recommendation);
     } catch (IllegalArgumentException e) {
       return CedarResponse.badRequest()
@@ -157,6 +165,24 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
       throw new CedarProcessingException(e);
     }
     return Response.ok().entity(output).build();
+  }
+
+  /**
+   * Generates the mining rules that the value recommender will use to generate the recommendations. Note that this endpoint
+   * is temporary. TODO: Think about the best strategy to invoke the rules generation process (e.g., use a cron job?,
+   * generate the rules and index them in Elasticsearch when a new instance is created/updated/deleted?
+   */
+  @Path("/generate-rules")
+  @POST
+  public Response generateRules() throws CedarException {
+    try {
+      // Check that the user is admin
+      valueRecommenderServiceArm.generateRules();
+    }
+    catch (Exception e) {
+      throw new CedarProcessingException(e);
+    }
+    return Response.noContent().build();
   }
 
 }

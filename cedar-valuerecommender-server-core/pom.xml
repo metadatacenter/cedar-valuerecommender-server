@@ -83,6 +83,17 @@
       <artifactId>weka-stable</artifactId>
     </dependency>
 
+    <!-- CEDAR -->
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-search-operations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-template-operations</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
