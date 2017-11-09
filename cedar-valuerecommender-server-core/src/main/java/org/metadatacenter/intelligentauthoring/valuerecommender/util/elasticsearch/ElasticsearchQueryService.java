@@ -1,5 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.util.elasticsearch;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -10,6 +11,8 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.metadatacenter.config.ElasticsearchConfig;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
+import org.metadatacenter.util.json.JsonMapper;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -45,9 +48,8 @@ public class ElasticsearchQueryService {
 
     QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_TEMPLATEID_FIELD, templateId);
 
-    SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexName()).setQuery(templateIdQuery)
-        .setScroll(scrollTimeout)
-        .setQuery(templateIdQuery).setSize(scrollLimit).get();
+    SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexName())
+        .setQuery(templateIdQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
 
     while (scrollResp.getHits().hits().length != 0) { // Zero hits mark the end of the scroll and the while loop
       for (SearchHit hit : scrollResp.getHits().getHits()) {
@@ -56,6 +58,21 @@ public class ElasticsearchQueryService {
       scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(scrollTimeout).execute().actionGet();
     }
     return templateInstancesIds;
+  }
+
+  public JsonNode getTemplateSummary(String templateId) {
+
+    QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_DOCUMENT_CEDAR_ID, templateId);
+
+    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexName()).setTypes("content").setQuery(templateIdQuery).get();
+
+    if (response.getHits().hits().length == 0) {
+      throw new InternalError("Summarized content not found for template (templateId=" + templateId + ")");
+    }
+    else {
+      String summarizedContent = response.getHits().hits()[0].sourceAsMap().get(Constants.SUMMARIZED_CONTENT_FIELD).toString();
+      return JsonMapper.MAPPER.valueToTree(summarizedContent);
+    }
   }
 
 }

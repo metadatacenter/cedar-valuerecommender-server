@@ -11,16 +11,35 @@ import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.mongodb.TemplateInstanceServiceMongoDB;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 public class AssociationRulesManager {
 
+  private static ElasticsearchQueryService esQueryService;
+
+  static {
+    try {
+      esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
+    } catch (UnknownHostException e) {
+      // TODO: log the exception
+      e.printStackTrace();
+    }
+  }
+
   public static void generateRulesForTemplate(String templateId) throws IOException {
 
-    ElasticsearchQueryService queryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig()
-        .getElasticsearchConfig());
+    List<String> lines = Arrays.asList("The first line", "The second line");
+    Path file = Paths.get("the-file-name.txt");
+    Files.write(file, lines, Charset.forName("UTF-8"));
 
-    CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig().getTemplateServerConfig().getMongoConnection());
+    CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig().getTemplateServerConfig
+        ().getMongoConnection());
     MongoClient mongoClientForDocuments = CedarDataServices.getMongoClientFactoryForDocuments().getClient();
     MongoConfig templateServerConfig = ConfigManager.getCedarConfig().getTemplateServerConfig();
     TemplateInstanceService<String, JsonNode> templateInstanceService = new TemplateInstanceServiceMongoDB(
@@ -28,12 +47,15 @@ public class AssociationRulesManager {
         templateServerConfig.getDatabaseName(),
         templateServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
 
-    List<String> templateInstancesIds = queryService.getTemplateInstancesIdsByTemplateId(templateId);
-
+    List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
     for (String tiId : templateInstancesIds) {
       JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
-      int a = 2;
+      JsonNode templateSummary = esQueryService.getTemplateSummary(tiId);
+      // TODO: do something with the ARFF
+      WekaUtils.templateInstanceToArff(templateInstance, templateSummary);
     }
+
+    //JsonNode summarizedContent = queryService.getTemplateSummarizedContent(templateId);
 
   }
 }
