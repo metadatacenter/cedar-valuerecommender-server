@@ -2,9 +2,11 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.lucene.search.function.FiltersFunctionScoreQuery;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.*;
@@ -102,11 +104,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
       TermQueryBuilder templateIdTermQuery = QueryBuilders.termQuery("templateId", templateId);
       mainQuery = mainQuery.must(templateIdTermQuery);
 
-      // Aggregation for populated fields. It is used when any of the populated fields it is at the same nesting level
+      // Aggregation for populated fields. It is used when any of the populated fields is at the same nesting level
       // than the target field. In that case, this aggregation prevents from obtaining 'mixed' results
-      FilterAggregationBuilder populatedFieldsAgg = AggregationBuilders.filter("by_populated_fields");
       boolean populatedFieldsAggIsEmpty = true;
-
+      FilterAggregationBuilder populatedFieldsAgg = null;
       if (populatedFields != null && populatedFields.size() > 0) {
         // Context-Dependent recommendation
         recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
@@ -129,7 +130,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
               TermQueryBuilder fieldFilter = QueryBuilders.termQuery(esFieldValuePath, f.getFieldValue());
               nestedFields = nestedFields.must(fieldFilter);
             }
-            NestedQueryBuilder nestedFieldQuery = QueryBuilders.nestedQuery(nestedObjectPath, nestedFields);
+            NestedQueryBuilder nestedFieldQuery = QueryBuilders.nestedQuery(nestedObjectPath, nestedFields, ScoreMode.Avg);
             mainQuery = mainQuery.must(nestedFieldQuery);
           } else { // Populated fields at the same nesting level than the target field must be used in the aggregation to avoid 'mixed' results
             for (Field f : fields) {
@@ -138,7 +139,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
               // Bool filter for all populated fields
               targetFieldFilters = targetFieldFilters.must(fieldFilter);
             }
-            populatedFieldsAgg.filter(targetFieldFilters);
+            populatedFieldsAgg = AggregationBuilders.filter("by_populated_fields", targetFieldFilters);
             populatedFieldsAggIsEmpty = false;
           }
         }
@@ -207,118 +208,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
     return recommendedValues;
   }
-
-//  private List<RecommendedValue> getContextDependentRecommendation_old(String templateId, List<Field> populatedFields,
-//                                                                   Field targetField) throws IOException {
-//    List<RecommendedValue> recommendedValues = new ArrayList<>();
-//    if (templateId != null) {
-//      // Main query
-//      TermQueryBuilder mainQuery = QueryBuilders.termQuery("templateId", templateId);
-//
-//      // Now, we define the aggregations that will be applied to the results of the main query.
-//
-//      // Terms aggregation by value
-//      String esFieldValuePath = getElasticSearchFieldValuePath(templateId, targetField.getFieldPath());
-//      TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath);
-//      // Terms aggregation by value's semantic type
-//      String esFieldValueAndStPath = getElasticSearchFieldValueAndSemanticTypePath(targetField.getFieldPath());
-//      TermsBuilder targetFieldValueAndStAgg = AggregationBuilders.terms("by_target_field_value_and_st").field
-//          (esFieldValueAndStPath);
-//
-//      // We use the populated fields to filter the aggregation, and narrow down the current
-//      // aggregation context to a specific set of documents.
-//      Map<String, List<Field>> fieldsGroupedByNestedObjectPath = groupByNestedObjectPath(populatedFields);
-//
-//      // Iterate through the map and define the corresponding filters
-//      NestedBuilder mainAgg = null;
-//      NestedBuilder tmpAgg = null;
-//      String nestedObjectPath = null;
-//      int countNestedObjAgg = 1;
-//      int countPopFieldsAgg = 1;
-//      Iterator it = fieldsGroupedByNestedObjectPath.entrySet().iterator();
-//      // We define the aggregations for the populated fields, from the most granular to the most general level
-//      int i = 0;
-//      while (it.hasNext()) {
-//        Map.Entry<String, List<Field>> entry = (Map.Entry<String, List<Field>>) it.next();
-//        // We define a nested aggregation to filter at the appropriate level
-//        nestedObjectPath = entry.getKey();
-//        NestedBuilder nestedAgg = AggregationBuilders.nested("by_nested_object_" + countNestedObjAgg++).path
-//            (nestedObjectPath);
-//        // Bool filter for all populated fields
-//        BoolQueryBuilder filters = QueryBuilders.boolQuery();
-//        List<Field> fields = entry.getValue();
-//        for (Field f : fields) {
-//          String esFieldValuePath2 = getElasticSearchFieldValuePath(templateId, f.getFieldPath());
-//          TermQueryBuilder fieldFilter = QueryBuilders.termQuery(esFieldValuePath2, f.getFieldValue());
-//          filters = filters.must(fieldFilter);
-//        }
-//        // Aggregation for the populated fields
-//        FilterAggregationBuilder populatedFieldsAgg =
-//            AggregationBuilders.filter("by_populated_fields_" + countPopFieldsAgg++).filter(filters);
-//        // Most granular level. We have to nest the aggregation for the target field
-//        if (i == 0) {
-//          tmpAgg = nestedAgg;
-//          // This is the most granular level. Nest aggregation for the target field
-//          // Check if it is necessary to define the aggregation for the nested object, or if it has already been defined
-//          String nestedObjectPathTargetField = getNestedObjectPath(targetField.getFieldPath());
-//          if (nestedObjectPathTargetField.equals(nestedObjectPath)) {
-//            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation
-//                (targetFieldValueAndStAgg));
-//          } else {
-//            NestedBuilder nestedAggTargetField =
-//                AggregationBuilders.nested("by_nested_object_target_field").path(nestedObjectPathTargetField);
-//            // Build aggregation
-//            nestedAggTargetField.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
-//            // Add this aggregation to the main one
-//            tmpAgg.subAggregation(populatedFieldsAgg.subAggregation(nestedAggTargetField));
-//          }
-//        } else {
-//          nestedAgg.subAggregation(populatedFieldsAgg.subAggregation(tmpAgg));
-//          tmpAgg = nestedAgg;
-//        }
-//        i++;
-//      }
-//      mainAgg = tmpAgg;
-//
-//      SearchResponse response = null;
-//      try {
-//        client = getClient();
-//        // Prepare search
-//        SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType).setQuery(mainQuery);
-//        // Add aggregation
-//        search.addAggregation(mainAgg);
-//        System.out.println("Search query in Query DSL: " + search.internalBuilder());
-//        // Execute search
-//        response = search.execute().actionGet();
-//        //System.out.println("Search response: " + response.toString());
-////      System.out.println("Number of results returned: " + response.getHits().getHits().length);
-////      System.out.println("Total number of results: " + response.getHits().getTotalHits());
-//      } catch (UnknownHostException e) {
-//        throw e;
-//      }
-//
-//      // Retrieve the relevant information and generate output
-//      //Collection<Terms.Bucket> buckets = getBucketsFromAggregations(response.getAggregations());
-//      List<Terms> termsAggs = getTermAggregations(response.getAggregations());
-//      Terms tValue = null;
-//      Terms tValueAndSt = null;
-//      if (termsAggs.get(0).getName().equals(targetFieldValueAgg.getName())) {
-//        tValue = termsAggs.get(0);
-//        tValueAndSt = termsAggs.get(1);
-//      } else if (termsAggs.get(0).getName().equals(targetFieldValueAndStAgg.getName())) {
-//        tValueAndSt = termsAggs.get(0);
-//        tValue = termsAggs.get(1);
-//      }
-//      recommendedValues = getRecommendedValuesFromTermAggregations(tValue, tValueAndSt,
-//          RecommendedValue.RecommendationType.CONTEXT_DEPENDENT, populatedFields.size());
-//    }
-//    // If templateId == null
-//    else {
-//      // Do nothing
-//    }
-//    return recommendedValues;
-//  }
-
+  
   // Sample field: characteristic.name
   // Expected output: resourceSummarizedContent.characteristic.name_field.fieldValue_string
   private String getElasticSearchFieldValuePath(String templateId, String fieldPath) throws IOException {
@@ -481,23 +371,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return recommendedValues;
   }
 
-  /**
-   * Index GEO data
-   */
-//  public void indexGEO() {
-//    Client client = null;
-//    try {
-//      client = getClient();
-//      !!! Do not use   System.getenv("CEDAR_HOME"), use CedarConfig instead
-//      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat3Samples";
-//      Util.indexAllFilesInFolder(client, "cedar", "template_instances", path);
-//    } catch (IOException e) {
-//      e.printStackTrace();
-//    } finally {
-//      // Close client
-//      client.close();
-//    }
-//  }
   private Client getClient() throws UnknownHostException {
     if (client == null) {
       client = new PreBuiltTransportClient(settings).addTransportAddress(new
