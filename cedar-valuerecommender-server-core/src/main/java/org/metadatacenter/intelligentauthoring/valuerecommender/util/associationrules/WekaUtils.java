@@ -43,72 +43,72 @@ public class WekaUtils {
    */
   public static void templateInstanceToArff(JsonNode templateInstance, JsonNode templateSummary, JsonNode results) throws IOException {
 
-      Iterator<Map.Entry<String, JsonNode>> fieldsIterator = templateInstance.fields();
-      while (fieldsIterator.hasNext()) {
-        Map.Entry<String, JsonNode> field = fieldsIterator.next();
-        if (field.getValue().isContainerNode()) {
-          if (!field.getKey().equals("@context")) {
-            // Single value
-            if (field.getValue().isObject()) {
-              // If it is a Template Field (single instance)
-              if (isTemplateField(field.getKey(), templateSummary)) {
-                JsonNode fieldSchema = null;
-                if (templateSummary != null && templateSummary.has(field.getKey() + FIELD_SUFFIX)) {
-                  fieldSchema = templateSummary.get(field.getKey() + FIELD_SUFFIX);
-                }
-                if (fieldSchema != null) {
-
-
-
-
-
-                  Optional<CedarIndexFieldValue> fv = valueToIndexValue(field.getValue(), fieldSchema);
-                  if (fv.isPresent()) {
-                    String outputFieldKey = field.getKey() + FIELD_SUFFIX;
-                    ((ObjectNode) results).set(outputFieldKey, JsonMapper.MAPPER.valueToTree(fv.get()));
-                  }
-                }
-                // It is a Template Element
-              } else if (isTemplateElement(field.getKey(), schemaSummary)) {
-                ((ObjectNode) results).set(field.getKey(), JsonNodeFactory.instance.objectNode());
-                extractValuesSummary(nodeType, schemaSummary.get(field.getKey()), field.getValue(), results.get
-                    (field.getKey()));
-              }
-            }
-            // Array
-            else if (field.getValue().isArray()) {
-              ((ObjectNode) results).set(field.getKey(), JsonNodeFactory.instance.arrayNode());
-              for (int i = 0; i < field.getValue().size(); i++) {
-                JsonNode arrayItem = field.getValue().get(i);
-                // It is a Template Field (multi-instance)
-                if (isTemplateField(field.getKey(), schemaSummary)) {
-
-                  String fieldValueName = getFieldValueName(arrayItem);
-
-                  JsonNode fieldSchema = schemaSutemplateSummarymmary.get(field.getKey() + FIELD_SUFFIX);
-                  // If the field was not found in the template, it is ignored. It may happen when template updated
-                  if (fieldSchema != null) {
-                    Optional<CedarIndexFieldValue> fv = valueToIndexValue(arrayItem, fieldSchema);
-                    if (fv.isPresent()) {
-                      ((ArrayNode) results.get(field.getKey())).add(JsonMapper.MAPPER.valueToTree(fv.get()));
-                    }
-                  }
-
-
-                }
-                // It is a Template Element (multi-instance)
-                else if (isTemplateElement(field.getKey(), schemaSummary)) {
-                  ((ArrayNode) results.get(field.getKey())).add(JsonNodeFactory.instance.objectNode());
-                  extractValuesSummary(nodeType, schemaSummary.get(field.getKey()), arrayItem, results.get(field
-                      .getKey()).get(i));
-                }
-              }
-            }
-          }
-        }
-      }
-
-    return results;
+//      Iterator<Map.Entry<String, JsonNode>> fieldsIterator = templateInstance.fields();
+//      while (fieldsIterator.hasNext()) {
+//        Map.Entry<String, JsonNode> field = fieldsIterator.next();
+//        if (field.getValue().isContainerNode()) {
+//          if (!field.getKey().equals("@context")) {
+//            // Single value
+//            if (field.getValue().isObject()) {
+//              // If it is a Template Field (single instance)
+//              if (isTemplateField(field.getKey(), templateSummary)) {
+//                JsonNode fieldSchema = null;
+//                if (templateSummary != null && templateSummary.has(field.getKey() + FIELD_SUFFIX)) {
+//                  fieldSchema = templateSummary.get(field.getKey() + FIELD_SUFFIX);
+//                }
+//                if (fieldSchema != null) {
+//
+//
+//
+//
+//
+//                  Optional<CedarIndexFieldValue> fv = valueToIndexValue(field.getValue(), fieldSchema);
+//                  if (fv.isPresent()) {
+//                    String outputFieldKey = field.getKey() + FIELD_SUFFIX;
+//                    ((ObjectNode) results).set(outputFieldKey, JsonMapper.MAPPER.valueToTree(fv.get()));
+//                  }
+//                }
+//                // It is a Template Element
+//              } else if (isTemplateElement(field.getKey(), schemaSummary)) {
+//                ((ObjectNode) results).set(field.getKey(), JsonNodeFactory.instance.objectNode());
+//                extractValuesSummary(nodeType, schemaSummary.get(field.getKey()), field.getValue(), results.get
+//                    (field.getKey()));
+//              }
+//            }
+//            // Array
+//            else if (field.getValue().isArray()) {
+//              ((ObjectNode) results).set(field.getKey(), JsonNodeFactory.instance.arrayNode());
+//              for (int i = 0; i < field.getValue().size(); i++) {
+//                JsonNode arrayItem = field.getValue().get(i);
+//                // It is a Template Field (multi-instance)
+//                if (isTemplateField(field.getKey(), schemaSummary)) {
+//
+//                  String fieldValueName = getFieldValueName(arrayItem);
+//
+//                  JsonNode fieldSchema = schemaSutemplateSummarymmary.get(field.getKey() + FIELD_SUFFIX);
+//                  // If the field was not found in the template, it is ignored. It may happen when template updated
+//                  if (fieldSchema != null) {
+//                    Optional<CedarIndexFieldValue> fv = valueToIndexValue(arrayItem, fieldSchema);
+//                    if (fv.isPresent()) {
+//                      ((ArrayNode) results.get(field.getKey())).add(JsonMapper.MAPPER.valueToTree(fv.get()));
+//                    }
+//                  }
+//
+//
+//                }
+//                // It is a Template Element (multi-instance)
+//                else if (isTemplateElement(field.getKey(), schemaSummary)) {
+//                  ((ArrayNode) results.get(field.getKey())).add(JsonNodeFactory.instance.objectNode());
+//                  extractValuesSummary(nodeType, schemaSummary.get(field.getKey()), arrayItem, results.get(field
+//                      .getKey()).get(i));
+//                }
+//              }
+//            }
+//          }
+//        }
+//      }
+//
+//    return results;
   }
 
   // Checks if JSON the field is a template field using information from the template
@@ -144,46 +144,47 @@ public class WekaUtils {
 
   private Optional<CedarIndexFieldValue> valueToIndexValue(JsonNode valueNode, JsonNode fieldSchema) throws
       JsonProcessingException {
-    CedarIndexFieldSchema fs = JsonMapper.MAPPER.treeToValue(fieldSchema, CedarIndexFieldSchema.class);
-    CedarIndexFieldValue indexValue = null;
-
-    String fieldValueName = getFieldValueName(valueNode);
-    if (valueNode.has(fieldValueName)) {
-      indexValue = new CedarIndexFieldValue();
-      // If the field was not found in the template, it is ignored. It may happen if the template is updated
-      if (!valueNode.isNull()) {
-        indexValue.setFieldName(fs.getFieldName());
-        // Free text value
-        if (!isControlledValue(valueNode)) {
-          // Set appropriate value field according to the value type
-          if (fs.getFieldValueType().equals(IndexUtils.ESType.STRING.toString())) {
-            // Avoid indexing the empty string
-            if (valueNode.get(fieldValueName).asText().trim().length() > 0) {
-              indexValue.setFieldValue_string(valueNode.get(fieldValueName).asText());
-            }
-          }
-          // TODO: add all remaining field types
-          else {
-            // Avoid indexing the empty string
-            if (valueNode.asText().trim().length() > 0) {
-              indexValue.setFieldValue_string(valueNode.get(fieldValueName).asText());
-            }
-          }
-        }
-        // Controlled value
-        else {
-          // Controlled term preferred name
-          JsonNode valueLabelNode = valueNode.get(URI_LABEL_FIELD);
-          indexValue.setFieldValue_string(valueLabelNode.asText());
-          // Term URI
-          indexValue.setFieldValueSemanticType(valueNode.get(fieldValueName).asText());
-          indexValue.setFieldValueAndSemanticType(indexValue.generateFieldValueAndSemanticType());
-        }
-      } else {
-        // Do nothing. Null values will not be indexed
-      }
-    }
-    return Optional.ofNullable(indexValue);
+//    CedarIndexFieldSchema fs = JsonMapper.MAPPER.treeToValue(fieldSchema, CedarIndexFieldSchema.class);
+//    CedarIndexFieldValue indexValue = null;
+//
+//    String fieldValueName = getFieldValueName(valueNode);
+//    if (valueNode.has(fieldValueName)) {
+//      indexValue = new CedarIndexFieldValue();
+//      // If the field was not found in the template, it is ignored. It may happen if the template is updated
+//      if (!valueNode.isNull()) {
+//        indexValue.setFieldName(fs.getFieldName());
+//        // Free text value
+//        if (!isControlledValue(valueNode)) {
+//          // Set appropriate value field according to the value type
+//          if (fs.getFieldValueType().equals(IndexUtils.ESType.STRING.toString())) {
+//            // Avoid indexing the empty string
+//            if (valueNode.get(fieldValueName).asText().trim().length() > 0) {
+//              indexValue.setFieldValue_string(valueNode.get(fieldValueName).asText());
+//            }
+//          }
+//          // TODO: add all remaining field types
+//          else {
+//            // Avoid indexing the empty string
+//            if (valueNode.asText().trim().length() > 0) {
+//              indexValue.setFieldValue_string(valueNode.get(fieldValueName).asText());
+//            }
+//          }
+//        }
+//        // Controlled value
+//        else {
+//          // Controlled term preferred name
+//          JsonNode valueLabelNode = valueNode.get(URI_LABEL_FIELD);
+//          indexValue.setFieldValue_string(valueLabelNode.asText());
+//          // Term URI
+//          indexValue.setFieldValueSemanticType(valueNode.get(fieldValueName).asText());
+//          indexValue.setFieldValueAndSemanticType(indexValue.generateFieldValueAndSemanticType());
+//        }
+//      } else {
+//        // Do nothing. Null values will not be indexed
+//      }
+//    }
+//    return Optional.ofNullable(indexValue);
+    return null;
   }
 
 

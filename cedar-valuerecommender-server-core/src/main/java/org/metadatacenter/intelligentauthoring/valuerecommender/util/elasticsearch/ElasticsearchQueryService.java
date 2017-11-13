@@ -10,6 +10,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.util.json.JsonMapper;
@@ -33,10 +34,10 @@ public class ElasticsearchQueryService {
     this.elasticsearchConfig = esc;
     this.scrollTimeout = TimeValue.timeValueMinutes(2);
 
-    Settings settings = Settings.settingsBuilder()
+    Settings settings = Settings.builder()
         .put("cluster.name", esc.getClusterName()).build();
 
-    client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+    client = new PreBuiltTransportClient(settings).addTransportAddress(new
         InetSocketTransportAddress(InetAddress.getByName(esc.getHost()), esc.getTransportPort()));
   }
 

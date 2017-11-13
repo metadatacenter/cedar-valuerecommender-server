@@ -2,10 +2,11 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.lucene.search.function.FiltersFunctionScoreQuery;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.*;
@@ -15,9 +16,10 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.InternalNested;
-import org.elasticsearch.search.aggregations.bucket.nested.NestedBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
@@ -51,8 +53,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     this.esTransportPort = esTransportPort;
     this.size = size;
 
-    settings = Settings.settingsBuilder()
-        .put("cluster.name", esCluster).build();
+    settings = Settings.builder().put("cluster.name", esCluster).build();
   }
 
   public boolean hasInstances(String templateId) throws UnknownHostException {
@@ -100,7 +101,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return null;
   }
 
-  private List<RecommendedValue> getRecommendedValues(String templateId, List<Field> populatedFields, Field targetField) throws IOException {
+  private List<RecommendedValue> getRecommendedValues(String templateId, List<Field> populatedFields, Field
+      targetField) throws IOException {
+
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     RecommendedValue.RecommendationType recommendationType;
     if (templateId != null) {
@@ -112,11 +115,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
       TermQueryBuilder templateIdTermQuery = QueryBuilders.termQuery("templateId", templateId);
       mainQuery = mainQuery.must(templateIdTermQuery);
 
-      // Aggregation for populated fields. It is used when any of the populated fields it is at the same nesting level
+      // Aggregation for populated fields. It is used when any of the populated fields is at the same nesting level
       // than the target field. In that case, this aggregation prevents from obtaining 'mixed' results
-      FilterAggregationBuilder populatedFieldsAgg = AggregationBuilders.filter("by_populated_fields");
       boolean populatedFieldsAggIsEmpty = true;
-
+      FilterAggregationBuilder populatedFieldsAgg = null;
       if (populatedFields != null && populatedFields.size() > 0) {
         // Context-Dependent recommendation
         recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
@@ -139,16 +141,18 @@ public class ValueRecommenderService implements IValueRecommenderService {
               TermQueryBuilder fieldFilter = QueryBuilders.termQuery(esFieldValuePath, f.getFieldValue());
               nestedFields = nestedFields.must(fieldFilter);
             }
-            NestedQueryBuilder nestedFieldQuery = QueryBuilders.nestedQuery(nestedObjectPath, nestedFields);
+            NestedQueryBuilder nestedFieldQuery = QueryBuilders.nestedQuery(nestedObjectPath, nestedFields, ScoreMode
+                .Avg);
             mainQuery = mainQuery.must(nestedFieldQuery);
-          } else { // Populated fields at the same nesting level than the target field must be used in the aggregation to avoid 'mixed' results
+          } else { // Populated fields at the same nesting level than the target field must be used in the
+            // aggregation to avoid 'mixed' results
             for (Field f : fields) {
               String esFieldValuePath = getElasticSearchFieldValuePath(templateId, f.getFieldPath());
               TermQueryBuilder fieldFilter = QueryBuilders.termQuery(esFieldValuePath, f.getFieldValue());
               // Bool filter for all populated fields
               targetFieldFilters = targetFieldFilters.must(fieldFilter);
             }
-            populatedFieldsAgg.filter(targetFieldFilters);
+            populatedFieldsAgg = AggregationBuilders.filter("by_populated_fields", targetFieldFilters);
             populatedFieldsAggIsEmpty = false;
           }
         }
@@ -158,22 +162,22 @@ public class ValueRecommenderService implements IValueRecommenderService {
         recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
       }
 
-      NestedBuilder nestedAggTargetField =
-          AggregationBuilders.nested("by_nested_object").path(nestedObjectPathTargetField);
+      NestedAggregationBuilder nestedAggTargetField = AggregationBuilders.nested("by_nested_object",
+          nestedObjectPathTargetField);
 
       String esFieldValuePath = getElasticSearchFieldValuePath(templateId, targetField.getFieldPath());
-      TermsBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field(esFieldValuePath);
+      TermsAggregationBuilder targetFieldValueAgg = AggregationBuilders.terms("by_target_field_value").field
+          (esFieldValuePath);
 
       // Terms aggregation by value's semantic type
       String esFieldValueAndStPath = getElasticSearchFieldValueAndSemanticTypePath(targetField.getFieldPath());
 
-      TermsBuilder targetFieldValueAndStAgg = AggregationBuilders.terms("by_target_field_value_and_st").field
+      TermsAggregationBuilder targetFieldValueAndStAgg = AggregationBuilders.terms("by_target_field_value_and_st").field
           (esFieldValueAndStPath);
 
       if (populatedFieldsAggIsEmpty) {
         nestedAggTargetField.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
-      }
-      else {
+      } else {
         populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
         nestedAggTargetField.subAggregation(populatedFieldsAgg);
       }
@@ -185,7 +189,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
         SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType).setQuery(mainQuery);
         // Add aggregation
         search.addAggregation(nestedAggTargetField);
-        System.out.println("Search query in Query DSL:\n" + search.internalBuilder());
+        System.out.println("Search query in Query DSL:\n" + search);
         // Execute search
         response = search.execute().actionGet();
 //      System.out.println("Search response: " + response.toString());
@@ -331,9 +335,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
   }
 
   private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueAndStAgg,
-                                                                          RecommendedValue.RecommendationType recommendationType) {
+                                                                          RecommendedValue.RecommendationType
+                                                                              recommendationType) {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
-    Collection<Terms.Bucket> buckets = null;
+    List<? extends Terms.Bucket> buckets = null;
     if (valueAndStAgg.getBuckets().size() > 0) {
       buckets = valueAndStAgg.getBuckets();
     } else if (valueAgg.getBuckets().size() > 0) {
@@ -353,7 +358,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
 
     // If there are results containing the semantic type, we use them. Otherwise, we use the regular values
-    Iterator<Terms.Bucket> it = buckets.iterator();
+    Iterator<? extends Terms.Bucket> it = buckets.iterator();
     while (it.hasNext()) {
       Terms.Bucket b = it.next();
       String value = null;
@@ -364,7 +369,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // total number of samples for all values
       double score = b.getDocCount() / totalDocs;
       // Then, the score is weighted depending on the recommendation type and on the number of populated fields
-//      if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT) && (numberPopulatedFields > 0)) {
+//      if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT) &&
+// (numberPopulatedFields > 0)) {
 //        score = score / (numberPopulatedFields + 1);
 //      }
       // Regular value
@@ -379,27 +385,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return recommendedValues;
   }
 
-  /**
-   * Index GEO data
-   */
-//  public void indexGEO() {
-//    Client client = null;
-//    try {
-//      client = getClient();
-//      !!! Do not use   System.getenv("CEDAR_HOME"), use CedarConfig instead
-//      String path = System.getenv("CEDAR_HOME") + "cedar-valuerecommender-server/data/sample-data/GEOFlat3Samples";
-//      Util.indexAllFilesInFolder(client, "cedar", "template_instances", path);
-//    } catch (IOException e) {
-//      e.printStackTrace();
-//    } finally {
-//      // Close client
-//      client.close();
-//    }
-//  }
-
   private Client getClient() throws UnknownHostException {
     if (client == null) {
-      client = TransportClient.builder().settings(settings).build().addTransportAddress(new
+      client = new PreBuiltTransportClient(settings).addTransportAddress(new
           InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
     }
     return client;

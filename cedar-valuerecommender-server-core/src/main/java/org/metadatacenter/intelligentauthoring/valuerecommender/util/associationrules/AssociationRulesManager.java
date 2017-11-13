@@ -34,26 +34,26 @@ public class AssociationRulesManager {
 
   public static void generateRulesForTemplate(String templateId) throws IOException {
 
-    List<String> lines = Arrays.asList("The first line", "The second line");
-    Path file = Paths.get("the-file-name.txt");
-    Files.write(file, lines, Charset.forName("UTF-8"));
-
-    CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig().getTemplateServerConfig
-        ().getMongoConnection());
-    MongoClient mongoClientForDocuments = CedarDataServices.getMongoClientFactoryForDocuments().getClient();
-    MongoConfig templateServerConfig = ConfigManager.getCedarConfig().getTemplateServerConfig();
-    TemplateInstanceService<String, JsonNode> templateInstanceService = new TemplateInstanceServiceMongoDB(
-        mongoClientForDocuments,
-        templateServerConfig.getDatabaseName(),
-        templateServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
-
-    List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
-    for (String tiId : templateInstancesIds) {
-      JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
-      JsonNode templateSummary = esQueryService.getTemplateSummary(tiId);
-      // TODO: do something with the ARFF
-      WekaUtils.templateInstanceToArff(templateInstance, templateSummary);
-    }
+//    List<String> lines = Arrays.asList("The first line", "The second line");
+//    Path file = Paths.get("the-file-name.txt");
+//    Files.write(file, lines, Charset.forName("UTF-8"));
+//
+//    CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig().getTemplateServerConfig
+//        ().getMongoConnection());
+//    MongoClient mongoClientForDocuments = CedarDataServices.getMongoClientFactoryForDocuments().getClient();
+//    MongoConfig templateServerConfig = ConfigManager.getCedarConfig().getTemplateServerConfig();
+//    TemplateInstanceService<String, JsonNode> templateInstanceService = new TemplateInstanceServiceMongoDB(
+//        mongoClientForDocuments,
+//        templateServerConfig.getDatabaseName(),
+//        templateServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
+//
+//    List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
+//    for (String tiId : templateInstancesIds) {
+//      JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
+//      JsonNode templateSummary = esQueryService.getTemplateSummary(tiId);
+//      // TODO: do something with the ARFF
+//      WekaUtils.templateInstanceToArff(templateInstance, templateSummary);
+//    }
 
     //JsonNode summarizedContent = queryService.getTemplateSummarizedContent(templateId);
 
