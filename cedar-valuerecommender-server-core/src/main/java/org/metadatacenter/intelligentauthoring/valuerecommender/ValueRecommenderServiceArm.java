@@ -22,13 +22,15 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   @Override
   public void generateRules() {
 
-    String templateId = "https://repo.metadatacenter.orgx/templates/9144ee94-1607-4adc-b201-3fed97abf804";
+    String templateId = "https://repo.metadatacenter.orgx/templates/ac959264-4c5b-4371-9fa1-9e22ccda5a3c";
+
+    AssociationRulesService service = new AssociationRulesService();
     try {
-      AssociationRulesService service = new AssociationRulesService();
       service.generateRulesForTemplate(templateId);
     } catch (IOException e) {
       e.printStackTrace();
     }
+
 
   }
 

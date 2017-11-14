@@ -22,10 +22,19 @@ import java.util.List;
 public class AssociationRulesService implements IAssociationRulesService {
 
   private static ElasticsearchQueryService esQueryService;
+  private static TemplateInstanceService<String, JsonNode> templateInstanceService;
 
   static {
     try {
+      // Initialize ElasticsearchQueryService
       esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
+      // Initialize TemplateInstanceServiceMongoDB
+      CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig().getTemplateServerConfig().getMongoConnection());
+      MongoClient mongoClientForDocuments = CedarDataServices.getMongoClientFactoryForDocuments().getClient();
+      MongoConfig templateServerConfig = ConfigManager.getCedarConfig().getTemplateServerConfig();
+      templateInstanceService = new TemplateInstanceServiceMongoDB(mongoClientForDocuments,
+          templateServerConfig.getDatabaseName(),
+          templateServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
     } catch (UnknownHostException e) {
       // TODO: log the exception
       e.printStackTrace();
@@ -34,32 +43,44 @@ public class AssociationRulesService implements IAssociationRulesService {
 
   public void generateRulesForTemplate(String templateId) throws IOException {
 
-    List<String> lines = Arrays.asList("The first line", "The second line");
-    Path file = Paths.get("the-file-name.txt");
-    Files.write(file, lines, Charset.forName("UTF-8"));
-
     // 1. Generate ARFF file for template
+    templateToArff(templateId);
+
     // 2. Read the ARFF file and generate rules
 
-    CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig().getTemplateServerConfig
-        ().getMongoConnection());
-    MongoClient mongoClientForDocuments = CedarDataServices.getMongoClientFactoryForDocuments().getClient();
-    MongoConfig templateServerConfig = ConfigManager.getCedarConfig().getTemplateServerConfig();
-    TemplateInstanceService<String, JsonNode> templateInstanceService = new TemplateInstanceServiceMongoDB(
-        mongoClientForDocuments,
-        templateServerConfig.getDatabaseName(),
-        templateServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
+  }
 
+  private void templateToArff(String templateId) throws IOException {
+
+
+
+//    String arffHeader = "% ARFF file for a CEDAR template (id=" + templateId + ")";
+//    String shortTemplateId = templateId.substring(templateId.lastIndexOf("/") + 1);
+//    String fileName = shortTemplateId + ".arff";
+//    Path file = Paths.get(fileName);
+//    Files.write(file, arffHeader.getBytes());
+
+    // Retrieve all template instances for the template
     List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
+    JsonNode templateSummary = esQueryService.getTemplateSummary(templateId);
+
+    
+
+
+
+
+    // Iterate over all instances to generate the ARFF file
     for (String tiId : templateInstancesIds) {
       JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
-      JsonNode templateSummary = esQueryService.getTemplateSummary(tiId);
       // TODO: do something with the ARFF
       AssociationRulesUtils.templateInstanceToArff(templateInstance, templateSummary);
     }
-  }
 
-  private void templateToArff() {
+    // How does Weka generate the rules? We may not need the ARFF file
+
+
+
+
     // 1. Extract list of field paths from the template
     // 2. Use the list of field paths to generate the instances in ARFF
   }

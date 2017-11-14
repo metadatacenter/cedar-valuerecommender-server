@@ -21,10 +21,8 @@ public class AssociationRulesUtils {
    * @param templateInstance
    */
   public static void templateInstanceToArff(JsonNode templateInstance, JsonNode templateSummary) throws IOException {
-
     // TODO: there is no need to generate the field keys n times
-    final Map<String, String> fieldPathsAndValues = templateInstanceToMap(templateInstance, templateSummary, null,
-        null);
+    final Map<String, String> fieldPathsAndValues = templateInstanceToMap(templateInstance, templateSummary, null, null);
   }
 
   // Returns a map with all field paths and the corresponding values (i.e., fieldPath -> fieldValue)
@@ -80,7 +78,7 @@ public class AssociationRulesUtils {
               // It is a Template Element (multi-instance)
               else if (isTemplateElement(field.getKey(), schemaSummary)) {
                 String newPath = getValidFieldKey(path, field.getKey(), i);
-                templateInstanceToMap(arrayItem, schemaSummary.get(field.getKey()).get(0), newPath, results);
+                templateInstanceToMap(arrayItem, schemaSummary.get(field.getKey()), newPath, results);
               }
             }
           }
