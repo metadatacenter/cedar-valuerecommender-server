@@ -1,9 +1,8 @@
-package org.metadatacenter.intelligentauthoring.valuerecommender.util.elasticsearch;
+package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
@@ -71,8 +70,9 @@ public class ElasticsearchQueryService {
       throw new InternalError("Summarized content not found for template (templateId=" + templateId + ")");
     }
     else {
-      String summarizedContent = response.getHits().hits()[0].sourceAsMap().get(Constants.SUMMARIZED_CONTENT_FIELD).toString();
-      return JsonMapper.MAPPER.valueToTree(summarizedContent);
+      Object summarizedContent = response.getHits().hits()[0].sourceAsMap().get(Constants.SUMMARIZED_CONTENT_FIELD);
+      JsonNode templateSummary = JsonMapper.MAPPER.convertValue(summarizedContent, JsonNode.class);
+      return templateSummary;
     }
   }
 

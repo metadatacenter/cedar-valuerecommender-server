@@ -2,9 +2,9 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 
 
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.associationrules.AssociationRulesManager;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,7 +24,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
     String templateId = "https://repo.metadatacenter.orgx/templates/9144ee94-1607-4adc-b201-3fed97abf804";
     try {
-      AssociationRulesManager.generateRulesForTemplate(templateId);
+      AssociationRulesService service = new AssociationRulesService();
+      service.generateRulesForTemplate(templateId);
     } catch (IOException e) {
       e.printStackTrace();
     }

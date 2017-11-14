@@ -1,4 +1,4 @@
-package org.metadatacenter.intelligentauthoring.valuerecommender.util.elasticsearch;
+package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
