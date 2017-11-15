@@ -8,6 +8,10 @@ public class Constants {
 
   public static final String SUMMARIZED_CONTENT_FIELD = "resourceSummarizedContent";
   public static final String FIELD_SUFFIX = "_field";
+  public static final String VALUE_FIELD_NAME = "@value";
+  public static final String ID_FIELD_NAME = "@id";
+  public static final String TYPE_FIELD_NAME = "@type";
+  public static final String ITEMS_FIELD_NAME = "items";
 
   // PRIVATE //
 

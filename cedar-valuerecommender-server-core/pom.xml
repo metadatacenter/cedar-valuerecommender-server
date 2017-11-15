@@ -78,6 +78,12 @@
       <artifactId>weka-stable</artifactId>
     </dependency>
 
+    <!-- Json Path -->
+    <dependency>
+      <groupId>com.jayway.jsonpath</groupId>
+      <artifactId>json-path</artifactId>
+    </dependency>
+
     <!-- CEDAR -->
     <dependency>
       <groupId>org.metadatacenter</groupId>

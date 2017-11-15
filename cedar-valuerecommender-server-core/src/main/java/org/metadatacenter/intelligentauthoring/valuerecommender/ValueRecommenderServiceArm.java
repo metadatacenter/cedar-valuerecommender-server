@@ -1,6 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
 
+import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
@@ -22,12 +23,15 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   @Override
   public void generateRules() {
 
+    //String templateId = "https://repo.metadatacenter.orgx/templates/9144ee94-1607-4adc-b201-3fed97abf804";
     String templateId = "https://repo.metadatacenter.orgx/templates/ac959264-4c5b-4371-9fa1-9e22ccda5a3c";
 
     AssociationRulesService service = new AssociationRulesService();
     try {
       service.generateRulesForTemplate(templateId);
     } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ProcessingException e) {
       e.printStackTrace();
     }
 
