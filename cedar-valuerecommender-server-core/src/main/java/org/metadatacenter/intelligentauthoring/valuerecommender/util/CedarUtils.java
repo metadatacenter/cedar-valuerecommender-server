@@ -12,7 +12,7 @@ public class CedarUtils {
   /**
    * Returns the paths (using JsonPath syntax) to all fields in a template
    */
-  public static List<String> getTemplateFieldPaths(JsonNode template, String currentPath, List results) {
+  public static List<FieldPath> getTemplateFieldPaths(JsonNode template, String currentPath, List results) {
     if (currentPath == null) {
       currentPath = "";
     }
@@ -43,7 +43,7 @@ public class CedarUtils {
         // Element
         else if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals
             (CedarNodeType.ELEMENT.getAtType())) {
-          getTemplateFieldPaths(fieldNode, generateFieldPath(currentPath, fieldKey), results);
+          getTemplateFieldPaths(fieldNode, generateFieldPath(currentPath, fieldKey).getPath(), results);
         }
         // All other nodes
         else {
@@ -57,12 +57,14 @@ public class CedarUtils {
   /**
    * Generates the path for a given field using JsonPath syntax
    */
-  private static String generateFieldPath(String path, String fieldKey) {
+  private static FieldPath generateFieldPath(String path, String fieldKey) {
     String prefix = "";
     if (path != null && path.trim().length() > 0) {
       prefix = path;
     }
-    return prefix + "['" + fieldKey + "']";
+    String fieldPath = prefix + "'" + fieldKey + "'";
+    String fieldPathSquareBrackets = prefix + "['" + fieldKey + "']";
+    return new FieldPath(fieldPath, fieldPathSquareBrackets);
   }
 
   /**

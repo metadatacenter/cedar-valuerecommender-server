@@ -5,27 +5,34 @@ import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.mongodb.MongoClient;
+import jdk.dynalink.StandardOperation;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.FieldPath;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.server.service.mongodb.TemplateInstanceServiceMongoDB;
 import org.metadatacenter.server.service.mongodb.TemplateServiceMongoDB;
+import weka.associations.Apriori;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
+import weka.core.converters.ConverterUtils.DataSource;
+import weka.filters.Filter;
+import weka.filters.unsupervised.attribute.StringToNominal;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 public class AssociationRulesService implements IAssociationRulesService {
@@ -55,80 +62,82 @@ public class AssociationRulesService implements IAssociationRulesService {
     }
   }
 
-  public void generateRulesForTemplate(String templateId) throws IOException, ProcessingException {
+  public void generateRulesForTemplate(String templateId) throws Exception {
 
     // 1. Generate ARFF file for template
-    Instances data = readTemplateData(templateId);
+    String instancesFileName = generateInstancesFile(templateId);
 
     // 2. Read the ARFF file and generate rules
+    DataSource source = new DataSource(instancesFileName);
+    Instances data = source.getDataSet();
+
+    // Apply the StringToNominal filter
+
+    StringToNominal stringToNominalFilter = new StringToNominal();
+    // Set filter options
+    stringToNominalFilter.setAttributeRange("first-last");
+    stringToNominalFilter.setInputFormat(data);
+    // Apply the filter
+    Instances filteredData = Filter.useFilter(data, stringToNominalFilter);
+
+
+    // Apply the Apriori algorithm
+    Apriori aprioriObj = new Apriori();
+    aprioriObj.setNumRules(500);
+    try {
+      aprioriObj.buildAssociations(filteredData);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    String associationRules = aprioriObj.toString();
+    System.out.println("A Priori Rules: " + associationRules);
+
+
 
   }
 
-  private Instances readTemplateData(String templateId) throws IOException, ProcessingException {
-
-    List<Attribute> attributes = getWekaAttributes(templateId);
-    Instances instances = getWekaInstances(templateId, attributes);
-
-    // How does Weka generate the rules? We may not need the ARFF file
-
-
-    // 1. Extract list of field paths from the template
-    // 2. Use the list of field paths to generate the instances in ARFF
-
-    return null;
-  }
+  //*****************
 
   /**
-   * Returns a list of Weka attributes for a particular template
-   *
+   * Generates an ARFF file with the instances for a particular template.
    * @param templateId
-   * @return
+   * @return The name of the ARFF file that was created
    * @throws IOException
    * @throws ProcessingException
    */
-  private List<Attribute> getWekaAttributes(String templateId) throws IOException, ProcessingException {
+  private String generateInstancesFile(String templateId) throws IOException, ProcessingException {
+    // TODO: store the file in an appropriate location
+    String fileName = templateId.substring(templateId.lastIndexOf("/") + 1) + ".arff";
+    FileWriter fw = new FileWriter(fileName);
+    BufferedWriter bw = new BufferedWriter(fw);
+    PrintWriter out = new PrintWriter(bw);
+
+    out.println("% ARFF file for CEDAR template id = " + templateId);
+    out.println("\n@relation example\n");
+
+    // 1. Get instance attributes
     JsonNode template = templateService.findTemplate(templateId);
-    List<String> fieldPaths = CedarUtils.getTemplateFieldPaths(template, null, null);
-    List<Attribute> attributes = new ArrayList<>();
-    for (String path : fieldPaths) {
-      attributes.add(new Attribute(path, true));
+    List<FieldPath> attributes = AssociationRulesUtils.getAttributes(template);
+
+    for (FieldPath att : attributes) {
+      out.println("@attribute " + att.getPath() + " string");
     }
-    return attributes;
-  }
 
-  private Instances getWekaInstances(String templateId, List<Attribute> attributes) throws IOException {
-    Instances data = new Instances("Instances", (ArrayList<Attribute>) attributes, 0);
-    // Retrieve all template instances for the template
+    // 2. Get instances in ARFF format
+    out.println("\n@data");
     List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
-
-    //JsonNode templateSummary = esQueryService.getTemplateSummary(templateId);
-
-    // Iterate over all instances to generate the ARFF file
     for (String tiId : templateInstancesIds) {
       JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
-      Instance ins = getWekaInstance(templateInstance, attributes);
+      String instanceArff = AssociationRulesUtils.instanceToArff(templateInstance, attributes);
+      out.println(instanceArff);
     }
-    return data;
+    out.close();
+
+    return fileName;
   }
 
-  private Instance getWekaInstance(JsonNode templateInstance, List<Attribute> attributes) {
-    String json = templateInstance.toString();
-    Object document = Configuration.defaultConfiguration().jsonProvider().parse(json);
-    // Create empty instance
-    Instance instance = new DenseInstance(attributes.size());
-    // Set instance's values
-    for (Attribute att : attributes) {
-      String attPath = "$" + att.name();
-      String attValue = CedarUtils.getValueOfField((Map) JsonPath.read(document, attPath)).get();
-      instance.setValue(att, attValue);
-    }
+  private void generateRules(String templateId) {
 
-    System.out.println("The instance: " + instance);
-
-    return null;
   }
-
-
-
 
 }

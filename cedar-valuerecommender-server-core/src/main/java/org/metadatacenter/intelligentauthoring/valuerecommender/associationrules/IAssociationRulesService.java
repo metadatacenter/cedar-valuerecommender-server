@@ -6,5 +6,5 @@ import java.io.IOException;
 
 public interface IAssociationRulesService
 {
-  void generateRulesForTemplate(String templateId) throws IOException, ProcessingException;
+  void generateRulesForTemplate(String templateId) throws Exception;
 }

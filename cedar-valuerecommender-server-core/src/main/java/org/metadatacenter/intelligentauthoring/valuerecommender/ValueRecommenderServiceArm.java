@@ -33,6 +33,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       e.printStackTrace();
     } catch (ProcessingException e) {
       e.printStackTrace();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
 
 
