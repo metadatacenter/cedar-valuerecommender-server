@@ -13,6 +13,9 @@ public class Constants {
   public static final String TYPE_FIELD_NAME = "@type";
   public static final String ITEMS_FIELD_NAME = "items";
 
+  // Apriori configuration
+  public static final int APRIORI_NUM_RULES = 500;
+
   // PRIVATE //
 
   /**
