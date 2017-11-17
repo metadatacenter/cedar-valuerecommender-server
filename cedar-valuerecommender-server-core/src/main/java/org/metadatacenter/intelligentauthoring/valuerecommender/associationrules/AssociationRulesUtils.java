@@ -21,6 +21,7 @@ import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
 
+import javax.management.InstanceNotFoundException;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -66,7 +67,8 @@ public class AssociationRulesUtils {
    * @throws IOException
    * @throws ProcessingException
    */
-  public static String generateInstancesFile(String templateId) throws IOException, ProcessingException {
+  public static String generateInstancesFile(String templateId) throws IOException, ProcessingException,
+      InstanceNotFoundException {
     // TODO: store the file in an appropriate location
     String fileName = templateId.substring(templateId.lastIndexOf("/") + 1) + ".arff";
     FileWriter fw = new FileWriter(fileName);
@@ -78,6 +80,9 @@ public class AssociationRulesUtils {
 
     // 1. Get instance attributes
     JsonNode template = templateService.findTemplate(templateId);
+    if (template == null) {
+      throw new InstanceNotFoundException("Template not found (id=" + templateId + ")");
+    }
     List<FieldPath> attributes = AssociationRulesUtils.getAttributes(template);
 
     for (FieldPath att : attributes) {
@@ -119,7 +124,8 @@ public class AssociationRulesUtils {
     Object document = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance.toString());
     for (FieldPath att : attributes) {
       String attPath = "$" + att.getPathSquareBrackets();
-      String attValue = "'" + CedarUtils.getValueOfField((Map) JsonPath.read(document, attPath)).get() + "'";
+      final Map attMap = JsonPath.read(document, attPath);
+      String attValue = "'" + CedarUtils.getValueOfField(attMap).get() + "'";
       if (result.trim().length() == 0) {
         result = attValue;
       } else {

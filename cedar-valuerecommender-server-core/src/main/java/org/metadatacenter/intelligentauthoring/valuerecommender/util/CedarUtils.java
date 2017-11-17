@@ -3,6 +3,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.model.CedarNodeType;
 
+import javax.validation.constraints.NotNull;
 import java.util.*;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
@@ -60,7 +61,7 @@ public class CedarUtils {
   private static FieldPath generateFieldPath(String path, String fieldKey) {
     String prefix = "";
     if (path != null && path.trim().length() > 0) {
-      prefix = path;
+      prefix = path + ".";
     }
     String fieldPath = prefix + "'" + fieldKey + "'";
     String fieldPathSquareBrackets = prefix + "['" + fieldKey + "']";
