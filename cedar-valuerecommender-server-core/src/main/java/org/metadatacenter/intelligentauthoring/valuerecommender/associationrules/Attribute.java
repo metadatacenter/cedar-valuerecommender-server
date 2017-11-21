@@ -1,4 +1,4 @@
-package org.metadatacenter.intelligentauthoring.valuerecommender.util;
+package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
 
 import java.util.List;
 

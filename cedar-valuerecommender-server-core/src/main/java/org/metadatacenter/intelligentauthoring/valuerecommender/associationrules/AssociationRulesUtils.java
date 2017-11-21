@@ -9,7 +9,6 @@ import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.Attribute;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.server.service.TemplateInstanceService;
@@ -28,8 +27,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ITEMS_FIELD_NAME;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.TYPE_FIELD_NAME;
 
 /**
  * Utilities to generate and manage association rules using Weka
@@ -59,6 +62,67 @@ public class AssociationRulesUtils {
       // TODO: log the exception
       e.printStackTrace();
     }
+  }
+
+  /**
+   * Returns a list that contains the paths of the template fields
+   *
+   * @param template
+   * @return
+   * @throws IOException
+   * @throws ProcessingException
+   */
+  public static List<Attribute> getAttributes(JsonNode template) throws IOException, ProcessingException {
+    return getTemplateAttributes(template, null, null);
+  }
+
+  /**
+   * Extracts all template attributes
+   */
+  public static List<Attribute> getTemplateAttributes(JsonNode template, List<Node> currentPath, List results) {
+    if (currentPath == null) {
+      currentPath = new ArrayList<>();
+    }
+    if (results == null) {
+      results = new ArrayList();
+    }
+    Iterator<Map.Entry<String, JsonNode>> fieldsIterator = template.fields();
+    while (fieldsIterator.hasNext()) {
+      Map.Entry<String, JsonNode> field = fieldsIterator.next();
+      final String fieldKey = field.getKey();
+      if (field.getValue().isContainerNode()) {
+        JsonNode fieldNode;
+        Node.NodeType nodeType = null;
+        // Single-instance node
+        if (!field.getValue().has(ITEMS_FIELD_NAME)) {
+          fieldNode = field.getValue();
+          nodeType = Node.NodeType.OBJECT;
+        }
+        // Multi-instance node
+        else {
+          fieldNode = field.getValue().get(ITEMS_FIELD_NAME);
+          nodeType = Node.NodeType.ARRAY;
+        }
+        // Field
+        if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType.FIELD.getAtType())) {
+          // Add field path to the results. I create a new list to not modify currentPath
+          List<Node> fieldPath = new ArrayList<>(currentPath);
+          fieldPath.add(new Node(fieldKey, nodeType));
+          results.add(new Attribute(fieldPath));
+        }
+        // Element
+        else if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals
+            (CedarNodeType.ELEMENT.getAtType())) {
+          currentPath.add(new Node(fieldKey, nodeType));
+          getTemplateAttributes(fieldNode, new Attribute(currentPath).getPath(), results);
+        }
+        // All other nodes
+        else {
+          getTemplateAttributes(fieldNode, currentPath, results);
+        }
+      }
+    }
+    return results;
   }
 
   /**
@@ -101,18 +165,6 @@ public class AssociationRulesUtils {
     out.close();
 
     return fileName;
-  }
-
-  /**
-   * Returns a list that contains the paths of the template fields
-   *
-   * @param template
-   * @return
-   * @throws IOException
-   * @throws ProcessingException
-   */
-  public static List<Attribute> getAttributes(JsonNode template) throws IOException, ProcessingException {
-    return CedarUtils.getTemplateAttributes(template, null, null);
   }
 
   /**
