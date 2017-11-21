@@ -27,6 +27,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -86,7 +87,7 @@ public class AssociationRulesUtils {
     List<FieldPath> attributes = AssociationRulesUtils.getAttributes(template);
 
     for (FieldPath att : attributes) {
-      out.println("@attribute " + att.getPath() + " string");
+      out.println("@attribute " + att.toWekaAttributeFormat() + " string");
     }
 
     // 2. Get instances in ARFF format
@@ -119,17 +120,29 @@ public class AssociationRulesUtils {
    *
    * @return
    */
+  // TODO: here...
   public static String instanceToArff(JsonNode templateInstance, List<FieldPath> attributes) {
     String result = "";
     Object document = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance.toString());
     for (FieldPath att : attributes) {
-      String attPath = "$" + att.getPathSquareBrackets();
-      final Map attMap = JsonPath.read(document, attPath);
-      String attValue = "'" + CedarUtils.getValueOfField(attMap).get() + "'";
-      if (result.trim().length() == 0) {
-        result = attValue;
-      } else {
-        result = result + "," + attValue;
+      String attPath = att.toJsonPathFormat();
+      List<Map> attMaps = new ArrayList<>();
+      // Returns an array
+      if (att.generatesArrayResult()) {
+        attMaps = JsonPath.read(document, attPath);
+      }
+      // Returns a single object
+      else {
+        Map attMap = JsonPath.read(document, attPath);
+        attMaps.add(attMap);
+      }
+      for (Map attMap : attMaps) {
+        String attValue = "'" + CedarUtils.getValueOfField(attMap).get() + "'";
+        if (result.trim().length() == 0) {
+          result = attValue;
+        } else {
+          result = result + "," + attValue;
+        }
       }
     }
     return result;

@@ -3,7 +3,6 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.model.CedarNodeType;
 
-import javax.validation.constraints.NotNull;
 import java.util.*;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
@@ -13,9 +12,9 @@ public class CedarUtils {
   /**
    * Returns the paths (using JsonPath syntax) to all fields in a template
    */
-  public static List<FieldPath> getTemplateFieldPaths(JsonNode template, String currentPath, List results) {
+  public static List<FieldPath> getTemplateFieldPaths(JsonNode template, List<InstanceNode> currentPath, List results) {
     if (currentPath == null) {
-      currentPath = "";
+      currentPath = new ArrayList<>();
     }
     if (results == null) {
       results = new ArrayList();
@@ -26,25 +25,29 @@ public class CedarUtils {
       final String fieldKey = field.getKey();
       if (field.getValue().isContainerNode()) {
         JsonNode fieldNode;
-        // Single-instance fields
+        InstanceNode.NodeType nodeType = null;
+        // Single-instance node
         if (!field.getValue().has(ITEMS_FIELD_NAME)) {
           fieldNode = field.getValue();
+          nodeType = InstanceNode.NodeType.OBJECT;
         }
-        // Multi-instance fields
+        // Multi-instance node
         else {
           fieldNode = field.getValue().get(ITEMS_FIELD_NAME);
+          nodeType = InstanceNode.NodeType.ARRAY;
         }
-
         // Field
-        if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType
-            .FIELD.getAtType())) {
-          // Add field path to the results
-          results.add(generateFieldPath(currentPath, fieldKey));
+        if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType.FIELD.getAtType())) {
+          // Add field path to the results. I create a new list to not modify currentPath
+          List<InstanceNode> fieldPath = new ArrayList<>(currentPath);
+          fieldPath.add(new InstanceNode(fieldKey, nodeType));
+          results.add(new FieldPath(fieldPath));
         }
         // Element
         else if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals
             (CedarNodeType.ELEMENT.getAtType())) {
-          getTemplateFieldPaths(fieldNode, generateFieldPath(currentPath, fieldKey).getPath(), results);
+          currentPath.add(new InstanceNode(fieldKey, nodeType));
+          getTemplateFieldPaths(fieldNode, new FieldPath(currentPath).getPathList(), results);
         }
         // All other nodes
         else {
@@ -53,19 +56,6 @@ public class CedarUtils {
       }
     }
     return results;
-  }
-
-  /**
-   * Generates the path for a given field using JsonPath syntax
-   */
-  private static FieldPath generateFieldPath(String path, String fieldKey) {
-    String prefix = "";
-    if (path != null && path.trim().length() > 0) {
-      prefix = path + ".";
-    }
-    String fieldPath = prefix + "'" + fieldKey + "'";
-    String fieldPathSquareBrackets = prefix + "['" + fieldKey + "']";
-    return new FieldPath(fieldPath, fieldPathSquareBrackets);
   }
 
   /**
