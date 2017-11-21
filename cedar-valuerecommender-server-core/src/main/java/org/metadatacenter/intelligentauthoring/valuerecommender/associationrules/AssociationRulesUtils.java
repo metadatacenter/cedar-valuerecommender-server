@@ -9,8 +9,8 @@ import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.Attribute;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.FieldPath;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
@@ -84,9 +84,9 @@ public class AssociationRulesUtils {
     if (template == null) {
       throw new InstanceNotFoundException("Template not found (id=" + templateId + ")");
     }
-    List<FieldPath> attributes = AssociationRulesUtils.getAttributes(template);
+    List<Attribute> attributes = AssociationRulesUtils.getAttributes(template);
 
-    for (FieldPath att : attributes) {
+    for (Attribute att : attributes) {
       out.println("@attribute " + att.toWekaAttributeFormat() + " string");
     }
 
@@ -111,8 +111,8 @@ public class AssociationRulesUtils {
    * @throws IOException
    * @throws ProcessingException
    */
-  public static List<FieldPath> getAttributes(JsonNode template) throws IOException, ProcessingException {
-    return CedarUtils.getTemplateFieldPaths(template, null, null);
+  public static List<Attribute> getAttributes(JsonNode template) throws IOException, ProcessingException {
+    return CedarUtils.getTemplateAttributes(template, null, null);
   }
 
   /**
@@ -121,10 +121,10 @@ public class AssociationRulesUtils {
    * @return
    */
   // TODO: here...
-  public static String instanceToArff(JsonNode templateInstance, List<FieldPath> attributes) {
+  public static String instanceToArff(JsonNode templateInstance, List<Attribute> attributes) {
     String result = "";
     Object document = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance.toString());
-    for (FieldPath att : attributes) {
+    for (Attribute att : attributes) {
       String attPath = att.toJsonPathFormat();
       List<Map> attMaps = new ArrayList<>();
       // Returns an array
@@ -147,6 +147,33 @@ public class AssociationRulesUtils {
     }
     return result;
   }
+
+//  public static List<String> instanceToArff(JsonNode templateInstance, List<FieldPath> attributes) {
+//    String result = "";
+//    Object document = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance.toString());
+//    for (FieldPath att : attributes) {
+//      String attPath = att.toJsonPathFormat();
+//      List<Map> attMaps = new ArrayList<>();
+//      // Returns an array
+//      if (att.generatesArrayResult()) {
+//        attMaps = JsonPath.read(document, attPath);
+//      }
+//      // Returns a single object
+//      else {
+//        Map attMap = JsonPath.read(document, attPath);
+//        attMaps.add(attMap);
+//      }
+//      for (Map attMap : attMaps) {
+//        String attValue = "'" + CedarUtils.getValueOfField(attMap).get() + "'";
+//        if (result.trim().length() == 0) {
+//          result = attValue;
+//        } else {
+//          result = result + "," + attValue;
+//        }
+//      }
+//    }
+//    return result;
+//  }
 
   /**
    * Applies the Weka's StringToNominal filter to all the data
