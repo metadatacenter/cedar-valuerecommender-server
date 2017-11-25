@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import com.mongodb.MongoClient;
+import com.sun.jdi.ArrayReference;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
@@ -21,17 +23,16 @@ import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
 
 import javax.management.InstanceNotFoundException;
+import javax.swing.text.TabExpander;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ITEMS_FIELD_NAME;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MAX_ARRAY_ITEMS;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.TYPE_FIELD_NAME;
 
 /**
@@ -65,21 +66,9 @@ public class AssociationRulesUtils {
   }
 
   /**
-   * Returns a list that contains the paths of the template fields
-   *
-   * @param template
-   * @return
-   * @throws IOException
-   * @throws ProcessingException
+   * Returns basic information of all template nodes (elements and fields)
    */
-  public static List<Attribute> getAttributes(JsonNode template) throws IOException, ProcessingException {
-    return getTemplateAttributes(template, null, null);
-  }
-
-  /**
-   * Extracts all template attributes
-   */
-  public static List<Attribute> getTemplateAttributes(JsonNode template, List<Node> currentPath, List results) {
+  public static List<TemplateNode> getTemplateNodes(JsonNode template, List<String> currentPath, List results) {
     if (currentPath == null) {
       currentPath = new ArrayList<>();
     }
@@ -92,33 +81,36 @@ public class AssociationRulesUtils {
       final String fieldKey = field.getKey();
       if (field.getValue().isContainerNode()) {
         JsonNode fieldNode;
-        Node.NodeType nodeType = null;
+        boolean isArray;
         // Single-instance node
         if (!field.getValue().has(ITEMS_FIELD_NAME)) {
           fieldNode = field.getValue();
-          nodeType = Node.NodeType.OBJECT;
+          isArray = false;
         }
         // Multi-instance node
         else {
           fieldNode = field.getValue().get(ITEMS_FIELD_NAME);
-          nodeType = Node.NodeType.ARRAY;
+          isArray = true;
         }
         // Field
-        if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType.FIELD.getAtType())) {
+        if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType
+            .FIELD.getAtType())) {
           // Add field path to the results. I create a new list to not modify currentPath
-          List<Node> fieldPath = new ArrayList<>(currentPath);
-          fieldPath.add(new Node(fieldKey, nodeType));
-          results.add(new Attribute(fieldPath));
+          List<String> fieldPath = new ArrayList<>(currentPath);
+          fieldPath.add(fieldKey);
+          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.FIELD, isArray));
         }
         // Element
         else if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals
             (CedarNodeType.ELEMENT.getAtType())) {
-          currentPath.add(new Node(fieldKey, nodeType));
-          getTemplateAttributes(fieldNode, new Attribute(currentPath).getPath(), results);
+          List<String> fieldPath = new ArrayList<>(currentPath);
+          fieldPath.add(fieldKey);
+          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.ELEMENT, isArray));
+          getTemplateNodes(fieldNode, fieldPath, results);
         }
         // All other nodes
         else {
-          getTemplateAttributes(fieldNode, currentPath, results);
+          getTemplateNodes(fieldNode, currentPath, results);
         }
       }
     }
@@ -127,6 +119,7 @@ public class AssociationRulesUtils {
 
   /**
    * Generates an ARFF file with the instances for a particular template.
+   *
    * @param templateId
    * @return The name of the ARFF file that was created
    * @throws IOException
@@ -148,23 +141,162 @@ public class AssociationRulesUtils {
     if (template == null) {
       throw new InstanceNotFoundException("Template not found (id=" + templateId + ")");
     }
-    List<Attribute> attributes = AssociationRulesUtils.getAttributes(template);
+    List<TemplateNode> nodes = AssociationRulesUtils.getTemplateNodes(template, null, null);
 
-    for (Attribute att : attributes) {
-      out.println("@attribute " + att.toWekaAttributeFormat() + " string");
+    // Field nodes
+    List<TemplateNode> fieldNodes = new ArrayList<>();
+    for (TemplateNode node : nodes) {
+      if (node.getType().equals(CedarNodeType.FIELD)) {
+        fieldNodes.add(node);
+      }
     }
 
-    // 2. Get instances in ARFF format
+    // Array nodes
+    List<TemplateNode> arrayNodes = new ArrayList<>();
+    for (TemplateNode node : nodes) {
+      if (node.isArray()) {
+        arrayNodes.add(node);
+      }
+    }
+
+    // Generate ARFF attributes
+    for (TemplateNode node : fieldNodes) {
+      if (node.getType().equals(CedarNodeType.FIELD)) {
+        out.println("@attribute " + toWekaAttributeFormat(node.getPath()) + " string");
+      }
+    }
+
+    // 2. Get template instances in ARFF format
     out.println("\n@data");
     List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
+
     for (String tiId : templateInstancesIds) {
       JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
-      String instanceArff = AssociationRulesUtils.instanceToArff(templateInstance, attributes);
-      out.println(instanceArff);
+      // Transform the template instances to a list of ARFF instances
+      List<ArffInstance> arffInstances = AssociationRulesUtils.instanceToArffInstances(templateInstance, fieldNodes,
+          arrayNodes);
+      System.out.println("** Arff Instances **");
+      for (ArffInstance instance : arffInstances) {
+        out.println(instance.toArffFormat());
+      }
+      System.out.println("*************");
     }
     out.close();
 
     return fileName;
+  }
+
+  public static List<ArffInstance> instanceToArffInstances(JsonNode templateInstance, List<TemplateNode> fields,
+                                                           List<TemplateNode> arrayNodes) {
+
+    Map<String, Integer> arraysIndexes = new LinkedHashMap<>();
+
+    Integer initialIndex = 0;
+    for (TemplateNode arrayNode : arrayNodes) {
+      arraysIndexes.put(arrayNode.generatePath(), initialIndex);
+    }
+
+    generateArffInstances(templateInstance, fields, new ArrayList(arraysIndexes.keySet()), new ArrayList
+        (arraysIndexes.values()), 0);
+
+    return null;
+  }
+
+  private static ArffInstance generateArffInstances(JsonNode templateInstance, List<TemplateNode> fields,
+                                                        List<String> arraysKeys, List<Integer> arraysIndexes, int
+                                                            currentKeyIndex) {
+    //indexes.set(i, (indexes.get(i) + 1));
+    int i = 0;
+    int max = 3;
+
+    while (i < max) {
+      arraysIndexes.set(currentKeyIndex, i);
+      // check if it is the last level
+      if (currentKeyIndex == arraysKeys.size() - 1) {
+        System.out.println(arraysIndexes.toString());
+        generateArffInstance(templateInstance, fields, arraysKeys, arraysIndexes);
+      } else {
+        generateArffInstances(templateInstance, fields, arraysKeys, arraysIndexes, currentKeyIndex + 1);
+      }
+      i++;
+
+    }
+    return null;
+  }
+
+  private static ArffInstance generateArffInstance(JsonNode templateInstance, List<TemplateNode> fields, List<String> arraysKeys, List<Integer> arraysIndexes) {
+
+    List<String> attValues = new ArrayList<>();
+    Object document = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance.toString());
+
+    // Build the JsonPath expression
+    for (TemplateNode field : fields) {
+      String jsonPath = "$";
+      // Analyze the field path to check if it contains an array where we need to put an index
+      String path = "";
+      for (String key : field.getPath()) {
+        if (path.length() == 0) {
+          path = path.concat(key);
+        } else {
+          path = path.concat(".").concat(key);
+        }
+        jsonPath = jsonPath + ("['" + key + "']");
+        // If it is an array, concat index
+        if (arraysKeys.contains(path)) {
+          int index = arraysKeys.indexOf(path);
+          jsonPath = jsonPath + ("[" + arraysIndexes.get(index) + "]");
+        }
+      }
+      // Query the instance to extract the value
+      try {
+        System.out.println(jsonPath);
+        Map attValueMap = JsonPath.read(document, jsonPath);
+        String attValue = "'" + CedarUtils.getValueOfField(attValueMap).get() + "'";
+        attValues.add(attValue);
+      } catch (PathNotFoundException e) {
+        // TODO
+      }
+    }
+    return new ArffInstance(attValues);
+  }
+
+//  private static ArffInstance generateArffInstance(JsonNode templateInstance, Map<String, Integer>
+// arrayNodeIndexes, Map.Entry<String, Integer> currentNode, int currentNodeIndex, int currentIndex) {
+//    ArrayList<Map.Entry<String, Integer>> arrayNodesList = new ArrayList(arrayNodeIndexes.entrySet());//TODO: wrong
+//    System.out.println("==============");
+//    System.out.println("current node index: " + currentNodeIndex);
+//    System.out.println(currentNode.getKey());
+//
+//    int max = 2;
+//    boolean finished = false;
+//    while (!finished) {
+//      if (currentNodeIndex + 1 < arrayNodesList.size()) { // check that next entry exists
+//        // TODO
+//        currentNodeIndex = currentNodeIndex + 1;
+//        currentNode = arrayNodesList.get(currentNodeIndex);
+//        generateArffInstance(templateInstance, arrayNodeIndexes, currentNode, currentNodeIndex, currentIndex);
+//      } else {
+//        System.out.println("This is the last one. Array indexes generated:");
+//        System.out.println(arrayNodeIndexes.values().toString());
+//        finished = true;
+//      }
+//    }
+//    return null;
+//  }
+
+
+  /**
+   * @return The field path using Weka's attribute format (e.g., 'Address.Zip Code')
+   */
+  public static String toWekaAttributeFormat(List<String> path) {
+    String result = "";
+    for (String key : path) {
+      if (result.trim().length() > 0) {
+        result = result.concat(".");
+      }
+      result = result.concat(key);
+    }
+    return "'" + result + "'";
   }
 
   /**
@@ -172,38 +304,10 @@ public class AssociationRulesUtils {
    *
    * @return
    */
-  // TODO: here...
-  public static String instanceToArff(JsonNode templateInstance, List<Attribute> attributes) {
-    String result = "";
-    Object document = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance.toString());
-    for (Attribute att : attributes) {
-      String attPath = att.toJsonPathFormat();
-      List<Map> attMaps = new ArrayList<>();
-      // Returns an array
-      if (att.generatesArrayResult()) {
-        attMaps = JsonPath.read(document, attPath);
-      }
-      // Returns a single object
-      else {
-        Map attMap = JsonPath.read(document, attPath);
-        attMaps.add(attMap);
-      }
-      for (Map attMap : attMaps) {
-        String attValue = "'" + CedarUtils.getValueOfField(attMap).get() + "'";
-        if (result.trim().length() == 0) {
-          result = attValue;
-        } else {
-          result = result + "," + attValue;
-        }
-      }
-    }
-    return result;
-  }
-
-//  public static List<String> instanceToArff(JsonNode templateInstance, List<FieldPath> attributes) {
+//  public static String instanceToArff(JsonNode templateInstance, List<Attribute> attributes) {
 //    String result = "";
 //    Object document = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance.toString());
-//    for (FieldPath att : attributes) {
+//    for (Attribute att : attributes) {
 //      String attPath = att.toJsonPathFormat();
 //      List<Map> attMaps = new ArrayList<>();
 //      // Returns an array
@@ -227,8 +331,116 @@ public class AssociationRulesUtils {
 //    return result;
 //  }
 
+
+  /**
+   * Note than a template instance can generate multiple Arff instances because of all the combinations generated by
+   * the arrays
+   */
+//  public static List<ArffInstance> instanceToArffInstances(JsonNode templateInstance, List<Attribute> attributes,
+//                                                           List<String> currentPath, List<ArffInstance> results,
+//                                                           ArffInstance currentResult, Integer attributesCount,
+// boolean isArray, List<String> excludedPath) {
+//
+//
+//    if (attributesCount == null) {
+//      attributesCount = 0;
+//    }
+//
+//    if (currentPath == null) {
+//      currentPath = new ArrayList<>();
+//    }
+//
+//    if (results == null) {
+//      results = new ArrayList<>();
+//    }
+//
+//    if (currentResult == null) {
+//      currentResult = new ArffInstance();
+//    }
+//
+//    Iterator<Map.Entry<String, JsonNode>> fieldsIterator = templateInstance.fields();
+//    while (fieldsIterator.hasNext()) {
+//      Map.Entry<String, JsonNode> field = fieldsIterator.next();
+//      if (field.getValue().isContainerNode()) {
+//        if (!field.getKey().equals("@context")) {
+//          // Single value (template field or template element)
+//          if (field.getValue().isObject()) {
+//            // If it is a Template Field (single instance)
+//
+//            // TODO: note that it is commented out
+//            if (isTemplateField(attributes, currentPath, field.getKey())) {
+//
+//              System.out.println("CURRENT PATH: " + Arrays.toString(currentPath.toArray()) + " " + field.getKey());
+//              currentResult.addValue(CedarUtils.getValueOfField(field.getValue()).get());
+//              System.out.println("Current result: " + currentResult.toArffFormat());
+//              attributesCount++;
+//
+//              if (isArray) {
+//                instanceToArffInstances(templateInstance, attributes, null, results, currentResult,
+// attributesCount, true, currentPath);
+//              }
+//
+//              // last attribute
+////              if (attributesCount == attributes.size()) {
+////                System.out.println("New result because attributesCount = " + attributesCount);
+////                results.add(currentResult);
+////                currentResult = "";
+////                attributesCount = 0;
+////              }
+//              // It is a Template Element
+//            } else {
+//              List<String> newPath = new ArrayList<>(currentPath);
+//              newPath.add(field.getKey());
+//              instanceToArffInstances(field.getValue(), attributes, newPath, results, currentResult,
+// attributesCount, false, null);
+//            }
+//          }
+//          // Array
+//          else if (field.getValue().isArray()) {
+//            for (int i = 0; i < field.getValue().size(); i++) {
+//
+//              System.out.println(field.getKey() + "[" + i + "]");
+//              JsonNode arrayItem = field.getValue().get(i);
+//              List<String> newPath = new ArrayList<>(currentPath);
+//              newPath.add(field.getKey());
+//              instanceToArffInstances(arrayItem, attributes, newPath, results, currentResult, attributesCount,
+// true, null);
+//            }
+//
+//
+//
+//          }
+//        }
+//      }
+//    }
+//    return results;
+//  }
+  public static boolean isTemplateField(List<TemplateNode> fieldNodes, List<String> path, String fieldKey) {
+    List<String> fieldPath = new ArrayList<>();
+    fieldPath.addAll(path);
+    fieldPath.add(fieldKey);
+    for (TemplateNode fieldNode : fieldNodes) {
+      if (fieldNode.getPath().equals(fieldPath)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+//  public static boolean isLastAttribute(List<Attribute> attributes, List<String> path, String fieldKey) {
+//    List<String> fieldPath = new ArrayList<>();
+//    fieldPath.addAll(path);
+//    fieldPath.add(fieldKey);
+//    Attribute last = attributes.get(attributes.size()-1);
+//    if (last.toWekaAttributeFormat().equals(new Attribute(fieldPath).toWekaAttributeFormat())) {
+//      return true;
+//    }
+//    return false;
+//  }
+
   /**
    * Applies the Weka's StringToNominal filter to all the data
+   *
    * @param data
    * @return
    */
@@ -246,6 +458,7 @@ public class AssociationRulesUtils {
 
   /**
    * Runs the Apriori algorithm
+   *
    * @param data
    * @param numRules
    * @return
@@ -257,7 +470,7 @@ public class AssociationRulesUtils {
     return aprioriObj;
   }
 
-//  /**
+  //  /**
 //   * Translates a template instance to Weka's ARFF format (https://www.cs.waikato.ac.nz/ml/weka/arff.html). It returns
 //   * the line for the given template instance.
 //   *
@@ -265,7 +478,8 @@ public class AssociationRulesUtils {
 //   */
 //  public static void templateInstanceToArff(JsonNode templateInstance, JsonNode templateSummary) throws IOException {
 //    // TODO: there is no need to generate the field keys n times
-//    final Map<String, String> fieldPathsAndValues = templateInstanceToMap(templateInstance, templateSummary, null, null);
+//    final Map<String, String> fieldPathsAndValues = templateInstanceToMap(templateInstance, templateSummary, null,
+// null);
 //  }
 //
 //  // Returns a map with all field paths and the corresponding values (i.e., fieldPath -> fieldValue)
@@ -363,16 +577,16 @@ public class AssociationRulesUtils {
 //    return prefix + "'" + fieldKey + "'" + suffix;
 //  }
 //
-//  private static String getFieldValue(JsonNode field) {
-//    String fieldValueName = getFieldValueName(field);
-//    return field.get(fieldValueName).textValue();
-//  }
-//
-//  private static String getFieldValueName(JsonNode item) {
-//    if (item.has("@value")) {
-//      return "@value";
-//    }
-//    return "@id";
-//  }
+  private static String getFieldValue(JsonNode field) {
+    String fieldValueName = getFieldValueName(field);
+    return field.get(fieldValueName).textValue();
+  }
+
+  private static String getFieldValueName(JsonNode item) {
+    if (item.has("@value")) {
+      return "@value";
+    }
+    return "@id";
+  }
 
 }

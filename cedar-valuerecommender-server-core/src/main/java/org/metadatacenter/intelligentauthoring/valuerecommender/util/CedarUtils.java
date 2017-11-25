@@ -27,4 +27,14 @@ public class CedarUtils {
     }
   }
 
+  public static Optional<String> getValueOfField(JsonNode field) {
+    if (field.has(VALUE_FIELD_NAME)) {
+      return Optional.of(field.get(VALUE_FIELD_NAME).textValue());
+    } else if (field.has(ID_FIELD_NAME)) {
+      return Optional.of(field.get(ID_FIELD_NAME).textValue());
+    } else {
+      return Optional.empty();
+    }
+  }
+
 }
