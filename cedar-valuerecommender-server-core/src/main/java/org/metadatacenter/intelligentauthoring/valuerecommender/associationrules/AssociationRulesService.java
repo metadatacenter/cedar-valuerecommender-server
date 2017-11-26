@@ -9,6 +9,7 @@ import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Cons
 public class AssociationRulesService implements IAssociationRulesService {
 
   public void generateRulesForTemplate(String templateId) throws Exception {
+
     // 1. Generate ARFF file for template
     String instancesFileName = AssociationRulesUtils.generateInstancesFile(templateId);
 
@@ -22,6 +23,7 @@ public class AssociationRulesService implements IAssociationRulesService {
     // 4. Run the Apriori algorithm
     Apriori results = AssociationRulesUtils.runApriori(filteredData, APRIORI_NUM_RULES);
     System.out.println("A Priori Rules: " + results.toString());
+
   }
 
 }

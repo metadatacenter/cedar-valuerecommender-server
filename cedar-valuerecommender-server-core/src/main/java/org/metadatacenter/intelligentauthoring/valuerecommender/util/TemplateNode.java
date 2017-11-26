@@ -1,4 +1,4 @@
-package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
+package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 
 import org.metadatacenter.model.CedarNodeType;
 
@@ -40,19 +40,5 @@ public class TemplateNode {
   public String generatePath() {
     return String.join(".", path);
   }
-
-  /**
-   * @return The field path using JSON Path format (e.g., $['Address'].['Zip Code']')
-   */
-//  public String toJsonPathFormat() {
-//    String result = "$";
-//    for (String key : path) {
-//      result = result.concat("['" + key + "']");
-//      if (node.getInstanceNodetype() == Node.NodeType.ARRAY) {
-//        result = result.concat("[0:]");
-//      }
-//    }
-//    return result;
-//  }
 
 }

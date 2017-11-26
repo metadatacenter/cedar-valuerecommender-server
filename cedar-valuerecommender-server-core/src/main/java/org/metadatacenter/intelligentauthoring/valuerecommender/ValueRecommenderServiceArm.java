@@ -25,7 +25,6 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
     //String templateId = "https://repo.metadatacenter.orgx/templates/9144ee94-1607-4adc-b201-3fed97abf804";
     //String templateId = "https://repo.metadatacenter.orgx/templates/ac959264-4c5b-4371-9fa1-9e22ccda5a3c"; // Flat template
-
     //String templateId = "https://repo.metadatacenter.orgx/templates/314cbfaf-a4f3-4ebd-8ee4-e6f8063a648a"; // BioSample template with a couple of instances
     //String templateId = "https://repo.metadatacenter.orgx/templates/ba5a8bd9-c817-4e4a-b93a-6eb8e20618ea"; // Template with 3 levels of nesting
     //String templateId = "https://repo.metadatacenter.orgx/templates/daa3aa49-dca3-48b9-b4d9-ec71361ababa"; // Template with a multi-instance element
@@ -35,11 +34,11 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     AssociationRulesService service = new AssociationRulesService();
     try {
       long startTime = System.currentTimeMillis();
+      // TODO: generate rules for ALL templates
       service.generateRulesForTemplate(templateId);
       long endTime   = System.currentTimeMillis();
       long totalTime = (endTime - startTime)/1000;
       System.out.println("EXECUTION TIME: " + totalTime + " seg.");
-
     } catch (IOException e) {
       e.printStackTrace();
     } catch (ProcessingException e) {
@@ -51,15 +50,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   }
 
   @Override
-  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
-      IOException {
-//    ArmRecommender recommender = new ArmRecommender();
-//    templateId = templateId.toLowerCase();
-//    List<RecommendedValue> recommendedValues = null;
-//    recommendedValues = recommender.getRecommendation(templateId, populatedFields, targetField);
-//    Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
-//    return recommendation;
-
+  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws IOException {
+    // TODO: create recommendations using the association rules generated
     return null;
   }
 

@@ -11,6 +11,7 @@ import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.TemplateNode;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
@@ -30,8 +31,6 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ARFF_MISSING_VALUE;
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ITEMS_FIELD_NAME;
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.TYPE_FIELD_NAME;
 
 /**
  * Utilities to generate and manage association rules using Weka
@@ -64,58 +63,6 @@ public class AssociationRulesUtils {
   }
 
   /**
-   * Returns basic information of all template nodes (elements and fields)
-   */
-  public static List<TemplateNode> getTemplateNodes(JsonNode template, List<String> currentPath, List results) {
-    if (currentPath == null) {
-      currentPath = new ArrayList<>();
-    }
-    if (results == null) {
-      results = new ArrayList();
-    }
-    Iterator<Map.Entry<String, JsonNode>> fieldsIterator = template.fields();
-    while (fieldsIterator.hasNext()) {
-      Map.Entry<String, JsonNode> field = fieldsIterator.next();
-      final String fieldKey = field.getKey();
-      if (field.getValue().isContainerNode()) {
-        JsonNode fieldNode;
-        boolean isArray;
-        // Single-instance node
-        if (!field.getValue().has(ITEMS_FIELD_NAME)) {
-          fieldNode = field.getValue();
-          isArray = false;
-        }
-        // Multi-instance node
-        else {
-          fieldNode = field.getValue().get(ITEMS_FIELD_NAME);
-          isArray = true;
-        }
-        // Field
-        if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType
-            .FIELD.getAtType())) {
-          // Add field path to the results. I create a new list to not modify currentPath
-          List<String> fieldPath = new ArrayList<>(currentPath);
-          fieldPath.add(fieldKey);
-          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.FIELD, isArray));
-        }
-        // Element
-        else if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals
-            (CedarNodeType.ELEMENT.getAtType())) {
-          List<String> fieldPath = new ArrayList<>(currentPath);
-          fieldPath.add(fieldKey);
-          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.ELEMENT, isArray));
-          getTemplateNodes(fieldNode, fieldPath, results);
-        }
-        // All other nodes
-        else {
-          getTemplateNodes(fieldNode, currentPath, results);
-        }
-      }
-    }
-    return results;
-  }
-
-  /**
    * Generates an ARFF file with the instances for a particular template.
    *
    * @param templateId
@@ -139,7 +86,7 @@ public class AssociationRulesUtils {
     if (template == null) {
       throw new InstanceNotFoundException("Template not found (id=" + templateId + ")");
     }
-    List<TemplateNode> nodes = AssociationRulesUtils.getTemplateNodes(template, null, null);
+    List<TemplateNode> nodes = CedarUtils.getTemplateNodes(template, null, null);
 
     // Field nodes
     List<TemplateNode> fieldNodes = new ArrayList<>();
