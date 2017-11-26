@@ -25,14 +25,21 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
     //String templateId = "https://repo.metadatacenter.orgx/templates/9144ee94-1607-4adc-b201-3fed97abf804";
     //String templateId = "https://repo.metadatacenter.orgx/templates/ac959264-4c5b-4371-9fa1-9e22ccda5a3c"; // Flat template
+
     //String templateId = "https://repo.metadatacenter.orgx/templates/314cbfaf-a4f3-4ebd-8ee4-e6f8063a648a"; // BioSample template with a couple of instances
     //String templateId = "https://repo.metadatacenter.orgx/templates/ba5a8bd9-c817-4e4a-b93a-6eb8e20618ea"; // Template with 3 levels of nesting
     //String templateId = "https://repo.metadatacenter.orgx/templates/daa3aa49-dca3-48b9-b4d9-ec71361ababa"; // Template with a multi-instance element
-    String templateId = "https://repo.metadatacenter.orgx/templates/a8bf8e1f-0f18-44af-a49a-6966e883a0bc"; // Template with 2 multi-instance elements
+    //String templateId = "https://repo.metadatacenter.orgx/templates/a8bf8e1f-0f18-44af-a49a-6966e883a0bc"; // Template with 2 multi-instance elements
+    String templateId = "https://repo.metadatacenter.orgx/templates/f65616a4-51ff-43c4-8005-32e6673a522c"; // BioSample template with 40K instances
 
     AssociationRulesService service = new AssociationRulesService();
     try {
+      long startTime = System.currentTimeMillis();
       service.generateRulesForTemplate(templateId);
+      long endTime   = System.currentTimeMillis();
+      long totalTime = (endTime - startTime)/1000;
+      System.out.println("EXECUTION TIME: " + totalTime + " seg.");
+
     } catch (IOException e) {
       e.printStackTrace();
     } catch (ProcessingException e) {

@@ -177,7 +177,8 @@ public class AssociationRulesUtils {
     }
 
 
-
+    int i = 0;
+    final int MAX_ITERATIONS = 100;
     for (String tiId : templateInstancesIds) {
       JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
       Object templateInstanceDocument = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance
@@ -189,9 +190,13 @@ public class AssociationRulesUtils {
       for (ArffInstance instance : arffInstances) {
         out.println(instance.toArffFormat());
       }
+      i++;
+      if (MAX_ITERATIONS > 0 && i==MAX_ITERATIONS) {
+        break;
+      }
     }
     out.close();
-
+    System.out.println("Instances file created. Generating rules...");
     return fileName;
   }
 
@@ -281,12 +286,12 @@ public class AssociationRulesUtils {
         }
       }
       // Query the instance to extract the value
-      System.out.println("Path: " + jsonPath);
+      //System.out.println("Path: " + jsonPath);
       try {
         Map attValueMap = JsonPath.read(templateInstanceDocument, jsonPath);
-        Optional<String> attValue = CedarUtils.getValueOfField(attValueMap);
-        if (attValue.isPresent()) {
-          attValues.add(attValue.get());
+        Optional<String> attValue = CedarUtils.getValueOfField(attValueMap, true);
+        if (attValue.isPresent() && attValue.get().trim().length() > 0) {
+          attValues.add(attValue.get().replace("'","\\'"));
         } else {
           attValues.add(ARFF_MISSING_VALUE); // When the field value is null
         }

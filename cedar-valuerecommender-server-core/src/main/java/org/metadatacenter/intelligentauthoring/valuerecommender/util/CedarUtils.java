@@ -10,17 +10,21 @@ import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Cons
 public class CedarUtils {
 
 
-
   /**
    * Returns the value of a given field.
    *
    * @param node
    * @return
    */
-  public static Optional<String> getValueOfField(Map node) {
-    if (node.containsKey(VALUE_FIELD_NAME) && node.get(VALUE_FIELD_NAME)!=null) {
+  public static Optional<String> getValueOfField(Map node, boolean concatStringValue) {
+    if (node.containsKey(VALUE_FIELD_NAME) && node.get(VALUE_FIELD_NAME) != null) {
       return Optional.of(node.get(VALUE_FIELD_NAME).toString());
-    } else if (node.containsKey(ID_FIELD_NAME) && node.get(ID_FIELD_NAME)!=null) {
+    } else if (node.containsKey(ID_FIELD_NAME) && node.get(ID_FIELD_NAME) != null) {
+      if (concatStringValue) {
+        if (node.containsKey(LABEL_FIELD_NAME) && node.get(LABEL_FIELD_NAME) != null) {
+          return Optional.of(node.get(ID_FIELD_NAME).toString() + "|" + node.get(LABEL_FIELD_NAME).toString());
+        }
+      }
       return Optional.of(node.get(ID_FIELD_NAME).toString());
     } else {
       return Optional.empty();
