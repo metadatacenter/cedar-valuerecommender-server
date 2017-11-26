@@ -12,10 +12,10 @@ public class Constants {
   public static final String ID_FIELD_NAME = "@id";
   public static final String TYPE_FIELD_NAME = "@type";
   public static final String ITEMS_FIELD_NAME = "items";
-  public static final int MAX_ARRAY_ITEMS = 10000; // Upper bound for the number of array instances
+  public static final String ARFF_MISSING_VALUE = "?";
 
   // Apriori configuration
-  public static final int APRIORI_NUM_RULES = 500;
+  public static final int APRIORI_NUM_RULES = 5000;
 
   // PRIVATE //
 

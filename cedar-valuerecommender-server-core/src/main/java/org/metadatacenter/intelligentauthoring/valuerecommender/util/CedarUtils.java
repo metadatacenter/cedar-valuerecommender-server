@@ -18,9 +18,9 @@ public class CedarUtils {
    * @return
    */
   public static Optional<String> getValueOfField(Map node) {
-    if (node.containsKey(VALUE_FIELD_NAME)) {
+    if (node.containsKey(VALUE_FIELD_NAME) && node.get(VALUE_FIELD_NAME)!=null) {
       return Optional.of(node.get(VALUE_FIELD_NAME).toString());
-    } else if (node.containsKey(ID_FIELD_NAME)) {
+    } else if (node.containsKey(ID_FIELD_NAME) && node.get(ID_FIELD_NAME)!=null) {
       return Optional.of(node.get(ID_FIELD_NAME).toString());
     } else {
       return Optional.empty();

@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.net.UnknownHostException;
 import java.util.*;
 
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ARFF_MISSING_VALUE;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ITEMS_FIELD_NAME;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.TYPE_FIELD_NAME;
 
@@ -167,24 +168,6 @@ public class AssociationRulesUtils {
     out.println("\n@data");
     List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
 
-    for (String tiId : templateInstancesIds) {
-      JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
-      // Transform the template instances to a list of ARFF instances
-      List<ArffInstance> arffInstances = AssociationRulesUtils.instanceToArffInstances(templateInstance, fieldNodes,
-          arrayNodes);
-      System.out.println("** Arff Instances **");
-      for (ArffInstance instance : arffInstances) {
-        out.println(instance.toArffFormat());
-      }
-      System.out.println("*************");
-    }
-    out.close();
-
-    return fileName;
-  }
-
-  public static List<ArffInstance> instanceToArffInstances(JsonNode templateInstance, List<TemplateNode> fields,
-                                                           List<TemplateNode> arrayNodes) {
 
     Map<String, Integer> arraysIndexes = new LinkedHashMap<>();
 
@@ -193,51 +176,65 @@ public class AssociationRulesUtils {
       arraysIndexes.put(arrayNode.generatePath(), initialIndex);
     }
 
-    Object templateInstanceDocument = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance
-        .toString());
-    generateArffInstances(templateInstanceDocument, fields, new ArrayList(arraysIndexes.keySet()), new ArrayList
-        (arraysIndexes.values()), arrayNodes, 0);
 
-    return null;
+
+    for (String tiId : templateInstancesIds) {
+      JsonNode templateInstance = templateInstanceService.findTemplateInstance(tiId);
+      Object templateInstanceDocument = Configuration.defaultConfiguration().jsonProvider().parse(templateInstance
+          .toString());
+      // Transform the template instances to a list of ARFF instances
+      List<ArffInstance> arffInstances = generateArffInstances(templateInstanceDocument, fieldNodes, new ArrayList(arraysIndexes.keySet()), new ArrayList
+          (arraysIndexes.values()), arrayNodes, 0, null);
+
+      for (ArffInstance instance : arffInstances) {
+        out.println(instance.toArffFormat());
+      }
+    }
+    out.close();
+
+    return fileName;
   }
 
-  private static ArffInstance generateArffInstances(Object templateInstanceDocument, List<TemplateNode> fields,
+  private static List<ArffInstance> generateArffInstances(Object templateInstanceDocument, List<TemplateNode> fields,
                                                     List<String> arraysKeys, List<Integer> arraysIndexes,
                                                     List<TemplateNode> arrayNodes, int
-                                                        currentKeyIndex) {
+                                                        currentKeyIndex, List<ArffInstance> results) {
+    if (results == null) {
+      results = new ArrayList<>();
+    }
+
     int i = 0;
 
     boolean finished = false;
 
     while (!finished) {
 
-      // BEGIN check if the current level exists with that index
-      System.out.println("Check if " + arraysKeys.get(currentKeyIndex) + "[" + i + "] exists");
-      String jsonPath = "$";
-      String path = "";
-      TemplateNode currentArrayNode = arrayNodes.get(currentKeyIndex);
-      for (String key : currentArrayNode.getPath()) {
-        jsonPath = jsonPath + ("['" + key + "']");
-        // If it is an array, concat index
-        path = generatePath(key, path);
-        if (arraysKeys.contains(path)) {
-          int index = arraysKeys.indexOf(path);
+      if (i > 0) {
+        // BEGIN check if the current level exists with that index
+        String jsonPath = "$";
+        String path = "";
+        TemplateNode currentArrayNode = arrayNodes.get(currentKeyIndex);
+        for (String key : currentArrayNode.getPath()) {
+          jsonPath = jsonPath + ("['" + key + "']");
+          // If it is an array, concat index
+          path = generatePath(key, path);
+          if (arraysKeys.contains(path)) {
+            int index = arraysKeys.indexOf(path);
 
-          if (index != currentKeyIndex) {
-            jsonPath = jsonPath + ("[" + arraysIndexes.get(index) + "]");
-          } else { // the last index cannot be retrieved from arraysIndexes because it has not been updated yet. It
-            // is actually the one that we want to test for existence
-            jsonPath = jsonPath + ("[" + i + "]");
+            if (index != currentKeyIndex) {
+              jsonPath = jsonPath + ("[" + arraysIndexes.get(index) + "]");
+            } else { // the last index cannot be retrieved from arraysIndexes because it has not been updated yet. It
+              // is actually the one that we want to test for existence
+              jsonPath = jsonPath + ("[" + i + "]");
+            }
           }
         }
-      }
-      // Query the instance to check if the path exists
-      try {
-        //System.out.println("json path for array: " + jsonPath);
-        JsonPath.read(templateInstanceDocument, jsonPath);
-      } catch (PathNotFoundException e) {
-        System.out.println(arraysKeys.get(currentKeyIndex) + "[" + i + "] does not exist. Finished: " + jsonPath);
-        finished = true;
+        // Query the instance to check if the path exists
+        try {
+          JsonPath.read(templateInstanceDocument, jsonPath);
+        } catch (PathNotFoundException e) {
+          finished = true;
+        }
       }
       // END
 
@@ -247,16 +244,13 @@ public class AssociationRulesUtils {
 
         // check if it is the last level
         if (currentKeyIndex == arraysKeys.size() - 1) {
-          System.out.println(arraysIndexes.toString());
           ArffInstance arffInstance = generateArffInstance(templateInstanceDocument, fields, arraysKeys, arraysIndexes);
-//          if (arffInstance == null) {
-//            finished = true;
-//          }
+          results.add(arffInstance);
         } else {
 
           // if the path exists, continue
           generateArffInstances(templateInstanceDocument, fields, arraysKeys, arraysIndexes, arrayNodes,
-              currentKeyIndex + 1);
+              currentKeyIndex + 1, results);
 
         }
 
@@ -264,7 +258,7 @@ public class AssociationRulesUtils {
       i++;
 
     }
-    return null;
+    return results;
   }
 
   private static ArffInstance generateArffInstance(Object templateInstanceDocument, List<TemplateNode> fields,
@@ -287,13 +281,18 @@ public class AssociationRulesUtils {
         }
       }
       // Query the instance to extract the value
+      System.out.println("Path: " + jsonPath);
       try {
-        System.out.println(jsonPath);
         Map attValueMap = JsonPath.read(templateInstanceDocument, jsonPath);
-        String attValue = "'" + CedarUtils.getValueOfField(attValueMap).get() + "'";
-        attValues.add(attValue);
-      } catch (PathNotFoundException e) {
-        return null;
+        Optional<String> attValue = CedarUtils.getValueOfField(attValueMap);
+        if (attValue.isPresent()) {
+          attValues.add(attValue.get());
+        } else {
+          attValues.add(ARFF_MISSING_VALUE); // When the field value is null
+        }
+      }
+      catch (PathNotFoundException e) {
+        attValues.add(ARFF_MISSING_VALUE); // When the array has not been defined
       }
     }
     return new ArffInstance(attValues);
