@@ -29,7 +29,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     //String templateId = "https://repo.metadatacenter.orgx/templates/ba5a8bd9-c817-4e4a-b93a-6eb8e20618ea"; // Template with 3 levels of nesting
     //String templateId = "https://repo.metadatacenter.orgx/templates/daa3aa49-dca3-48b9-b4d9-ec71361ababa"; // Template with a multi-instance element
     //String templateId = "https://repo.metadatacenter.orgx/templates/a8bf8e1f-0f18-44af-a49a-6966e883a0bc"; // Template with 2 multi-instance elements
-    String templateId = "https://repo.metadatacenter.orgx/templates/f65616a4-51ff-43c4-8005-32e6673a522c"; // BioSample template with 40K instances
+    //String templateId = "https://repo.metadatacenter.orgx/templates/f65616a4-51ff-43c4-8005-32e6673a522c"; // BioSample template with 40K instances
+    String templateId = "https://repo.metadatacenter.orgx/templates/ec919efc-7f3d-47d4-975a-0e9e68249e61"; // Template with an array nested inside an element
 
     AssociationRulesService service = new AssociationRulesService();
     try {

@@ -37,7 +37,7 @@ public class TemplateNode {
     return isArray;
   }
 
-  public String generatePath() {
+  public String generatePathDotNotation() {
     return String.join(".", path);
   }
 
