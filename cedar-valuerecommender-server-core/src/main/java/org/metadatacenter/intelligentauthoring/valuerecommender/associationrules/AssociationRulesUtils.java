@@ -19,6 +19,7 @@ import org.metadatacenter.server.service.mongodb.TemplateInstanceServiceMongoDB;
 import org.metadatacenter.server.service.mongodb.TemplateServiceMongoDB;
 import weka.associations.Apriori;
 import weka.core.Instances;
+import weka.core.SelectedTag;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
 
@@ -30,8 +31,7 @@ import java.io.PrintWriter;
 import java.net.UnknownHostException;
 import java.util.*;
 
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ARFF_MISSING_VALUE;
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MAX_INSTANCES_FOR_ARM;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
 
 /**
  * Utilities to generate and manage association rules using Weka
@@ -93,7 +93,14 @@ public class AssociationRulesUtils {
     List<TemplateNode> fieldNodes = new ArrayList<>();
     for (TemplateNode node : nodes) {
       if (node.getType().equals(CedarNodeType.FIELD)) {
-        fieldNodes.add(node);
+        if (USE_ALL_FIELDS) { // Use all fields to generate rules
+          fieldNodes.add(node);
+        }
+        else { // Consider only field for which valueRecommendations are enabled
+          if (node.isValueRecommendationEnabled()) {
+            fieldNodes.add(node);
+          }
+        }
       }
     }
 
@@ -275,7 +282,7 @@ public class AssociationRulesUtils {
         Map attValueMap = JsonPath.read(templateInstanceDocument, jsonPath);
         Optional<String> attValue = CedarUtils.getValueOfField(attValueMap, true);
         if (attValue.isPresent() && attValue.get().trim().length() > 0) {
-          attValues.add(attValue.get().replace("'", "\\'")); // Escape single quote
+          attValues.add("'" + attValue.get().replace("'", "\\'") + "'"); // Escape single quote
         } else {
           attValues.add(ARFF_MISSING_VALUE); // If the field value is null we store a missing value
         }
@@ -344,6 +351,11 @@ public class AssociationRulesUtils {
    */
   public static Apriori runApriori(Instances data, int numRules) throws Exception {
     Apriori aprioriObj = new Apriori();
+    aprioriObj.setLowerBoundMinSupport(0.01);
+    aprioriObj.setMinMetric(0.01);
+
+
+
     aprioriObj.setNumRules(numRules);
     aprioriObj.buildAssociations(data);
     return aprioriObj;

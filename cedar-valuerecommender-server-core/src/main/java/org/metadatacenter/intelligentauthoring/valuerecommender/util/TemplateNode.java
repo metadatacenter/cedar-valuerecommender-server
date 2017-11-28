@@ -13,21 +13,21 @@ public class TemplateNode {
   private List<String> path; // List of json keys from the root (it includes the key of the current node)
   private CedarNodeType type;
   private boolean isArray;
+  private Boolean isValueRecommendationEnabled;
 
-  public TemplateNode(String key, List<String> path, CedarNodeType type, boolean isArray) {
+  public TemplateNode(String key, List<String> path, CedarNodeType type, boolean isArray, Boolean isValueRecommendationEnabled) {
     this.key = key;
     this.path = path;
     this.type = type;
     this.isArray = isArray;
+    this.isValueRecommendationEnabled = isValueRecommendationEnabled;
   }
 
   public String getKey() {
     return key;
   }
 
-  public List<String> getPath() {
-    return path;
-  }
+  public List<String> getPath() { return path;}
 
   public CedarNodeType getType() {
     return type;
@@ -36,6 +36,8 @@ public class TemplateNode {
   public boolean isArray() {
     return isArray;
   }
+
+  public boolean isValueRecommendationEnabled() { return isValueRecommendationEnabled;}
 
   public String generatePathDotNotation() {
     return String.join(".", path);

@@ -26,7 +26,7 @@ public class ArffInstance {
   public String toArffFormat() {
     String result = "";
     for (int i=0; i<values.size(); i++) {
-      String value = "'" + values.get(i) + "'";
+      String value = values.get(i);
       if (i==0)
         result = result.concat(value);
       else

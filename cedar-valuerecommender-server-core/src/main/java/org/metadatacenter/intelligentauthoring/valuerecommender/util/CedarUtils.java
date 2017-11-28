@@ -44,17 +44,23 @@ public class CedarUtils {
         // Field
         if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType
             .FIELD.getAtType())) {
+          boolean isValueRecommendationEnabled = false;
+          if (fieldNode.get(UI_FIELD_NAME) != null && fieldNode.get(UI_FIELD_NAME).get(RECOMMENDATION_ENABLED_FIELD_NAME) != null) {
+            if (fieldNode.get(UI_FIELD_NAME).get(RECOMMENDATION_ENABLED_FIELD_NAME).asBoolean() == true) {
+             isValueRecommendationEnabled = true;
+            }
+          }
           // Add field path to the results. I create a new list to not modify currentPath
           List<String> fieldPath = new ArrayList<>(currentPath);
           fieldPath.add(fieldKey);
-          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.FIELD, isArray));
+          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.FIELD, isArray, isValueRecommendationEnabled));
         }
         // Element
         else if (fieldNode.get(TYPE_FIELD_NAME) != null && fieldNode.get(TYPE_FIELD_NAME).asText().equals
             (CedarNodeType.ELEMENT.getAtType())) {
           List<String> fieldPath = new ArrayList<>(currentPath);
           fieldPath.add(fieldKey);
-          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.ELEMENT, isArray));
+          results.add(new TemplateNode(fieldKey, fieldPath, CedarNodeType.ELEMENT, isArray, null));
           getTemplateNodes(fieldNode, fieldPath, results);
         }
         // All other nodes
@@ -78,7 +84,9 @@ public class CedarUtils {
     } else if (node.containsKey(ID_FIELD_NAME) && node.get(ID_FIELD_NAME) != null) {
       if (concatStringValue) {
         if (node.containsKey(LABEL_FIELD_NAME) && node.get(LABEL_FIELD_NAME) != null) {
-          return Optional.of(node.get(ID_FIELD_NAME).toString() + "|" + node.get(LABEL_FIELD_NAME).toString());
+          // TODO: fix to store the ontology term URI
+          //return Optional.of(node.get(ID_FIELD_NAME).toString() + "|" + node.get(LABEL_FIELD_NAME).toString());
+          return Optional.of(node.get(LABEL_FIELD_NAME).toString());
         }
       }
       return Optional.of(node.get(ID_FIELD_NAME).toString());
