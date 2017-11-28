@@ -47,9 +47,7 @@ public class AssociationRulesService implements IAssociationRulesService {
     List<AssociationRule> rulesFound = new ArrayList<>();
 
     for (AssociationRule rule : rules) {
-      System.out.println("Checking rule: " + rule);
-      if (ruleMatchesRequirements(rule, fieldValues, targetField)) {
-        System.out.println("MATCH!!");
+      if (AssociationRulesUtils.ruleMatchesRequirements(rule, fieldValues, targetField)) {
         rulesFound.add(rule);
       }
 
@@ -57,45 +55,6 @@ public class AssociationRulesService implements IAssociationRulesService {
 
     return rulesFound;
 
-  }
-
-  // TODO: move to utils
-  private boolean ruleMatchesRequirements(AssociationRule rule, Map<String, String> fieldValues, Field targetField) {
-
-    // Check consequence (in general, faster that checking the premise). Note that we only require that the target
-    // Field is part of the consequence. Other fields in the consequence are ignored
-    boolean targetFieldFound = false;
-    if (rule.getConsequence().size() > 0) {
-      List<Item> consequenceItems =  new ArrayList(rule.getConsequence());
-      for (Item consequenceItem : consequenceItems) {
-        String attributeName = consequenceItem.getAttribute().name().toLowerCase();
-        if (targetField.getFieldPath().toLowerCase().equals(attributeName)) {
-          targetFieldFound = true;
-        }
-      }
-      if (!targetFieldFound) {
-        return false;
-      }
-    }
-    else {
-      return false;
-    }
-
-    // Check premise
-    if (rule.getPremise().size() == fieldValues.size()) {
-      List<Item> premiseItems =  new ArrayList(rule.getPremise());
-      for (Item premiseItem : premiseItems) {
-        String attributeName = premiseItem.getAttribute().name().toLowerCase();
-        String attributeValue = premiseItem.getItemValueAsString().toLowerCase();
-        if (!fieldValues.containsKey(attributeName) || !fieldValues.get(attributeName).toLowerCase().equals(attributeValue)) {
-          return false;
-        }
-      }
-    }
-    else {
-      return false;
-    }
-    return true;
   }
 
 }

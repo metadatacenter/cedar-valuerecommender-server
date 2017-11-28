@@ -15,7 +15,7 @@ public class Constants {
   public static final String UI_FIELD_NAME = "_ui";
   public static final String RECOMMENDATION_ENABLED_FIELD_NAME = "valueRecommendationEnabled";
   public static final String ARFF_MISSING_VALUE = "?";
-  public static final int MAX_INSTANCES_FOR_ARM = 100; // -1 means that there is no limit
+  public static final int MAX_INSTANCES_FOR_ARM = 1000; // -1 means that there is no limit
   public static final boolean USE_ALL_FIELDS = false; // If true, only fields with "valueRecommendationEnabled=true" are considered
 
   // Apriori configuration

@@ -9,6 +9,7 @@ import com.mongodb.MongoClient;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.TemplateNode;
@@ -18,8 +19,9 @@ import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.server.service.mongodb.TemplateInstanceServiceMongoDB;
 import org.metadatacenter.server.service.mongodb.TemplateServiceMongoDB;
 import weka.associations.Apriori;
+import weka.associations.AssociationRule;
+import weka.associations.Item;
 import weka.core.Instances;
-import weka.core.SelectedTag;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
 
@@ -354,11 +356,47 @@ public class AssociationRulesUtils {
     aprioriObj.setLowerBoundMinSupport(0.01);
     aprioriObj.setMinMetric(0.01);
 
-
-
     aprioriObj.setNumRules(numRules);
     aprioriObj.buildAssociations(data);
     return aprioriObj;
+  }
+
+  public static boolean ruleMatchesRequirements(AssociationRule rule, Map<String, String> fieldValues, Field targetField) {
+
+    // Check consequence (in general, faster that checking the premise). Note that we only require that the target
+    // Field is part of the consequence. Other fields in the consequence are ignored
+    boolean targetFieldFound = false;
+    if (rule.getConsequence().size() > 0) {
+      List<Item> consequenceItems =  new ArrayList(rule.getConsequence());
+      for (Item consequenceItem : consequenceItems) {
+        String attributeName = consequenceItem.getAttribute().name().toLowerCase();
+        if (targetField.getFieldPath().toLowerCase().equals(attributeName)) {
+          targetFieldFound = true;
+        }
+      }
+      if (!targetFieldFound) {
+        return false;
+      }
+    }
+    else {
+      return false;
+    }
+
+    // Check premise
+    if (rule.getPremise().size() == fieldValues.size()) {
+      List<Item> premiseItems =  new ArrayList(rule.getPremise());
+      for (Item premiseItem : premiseItems) {
+        String attributeName = premiseItem.getAttribute().name().toLowerCase();
+        String attributeValue = premiseItem.getItemValueAsString().toLowerCase();
+        if (!fieldValues.containsKey(attributeName) || !fieldValues.get(attributeName).toLowerCase().equals(attributeValue)) {
+          return false;
+        }
+      }
+    }
+    else {
+      return false;
+    }
+    return true;
   }
 
 }
