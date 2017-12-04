@@ -22,6 +22,7 @@ import weka.associations.Apriori;
 import weka.associations.AssociationRule;
 import weka.associations.Item;
 import weka.core.Instances;
+import weka.core.SelectedTag;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
 
@@ -353,8 +354,22 @@ public class AssociationRulesUtils {
    */
   public static Apriori runApriori(Instances data, int numRules) throws Exception {
     Apriori aprioriObj = new Apriori();
-    aprioriObj.setLowerBoundMinSupport(0.01);
-    aprioriObj.setMinMetric(0.01);
+    aprioriObj.setLowerBoundMinSupport(MIN_SUPPORT);
+
+    // 0 = confidence | 1 = lift | 2 = leverage | 3 = Conviction.
+    aprioriObj.setMetricType(new SelectedTag(METRIC_TYPE_ID, Apriori.TAGS_SELECTION));
+    if (METRIC_TYPE_ID == 0) { // Confidence
+      aprioriObj.setMinMetric(MIN_CONFIDENCE);
+    }
+    else if (METRIC_TYPE_ID == 1) { // Lift
+      aprioriObj.setMinMetric(MIN_LIFT);
+    }
+    else if (METRIC_TYPE_ID == 2) { // Leverage
+      aprioriObj.setMinMetric(MIN_LEVERAGE);
+    }
+    else { // Conviction
+      aprioriObj.setMinMetric(MIN_CONVICTION);
+    }
 
     aprioriObj.setNumRules(numRules);
     aprioriObj.buildAssociations(data);
@@ -363,10 +378,10 @@ public class AssociationRulesUtils {
 
   public static boolean ruleMatchesRequirements(AssociationRule rule, Map<String, String> fieldValues, Field targetField) {
 
-    // Check consequence (in general, faster that checking the premise). Note that we only require that the target
-    // Field is part of the consequence. Other fields in the consequence are ignored
+    // We check the consequence first because it is faster than checking the premise, because we limit the check to
+    // those rules that have only 1 attribute in the consequence
     boolean targetFieldFound = false;
-    if (rule.getConsequence().size() > 0) {
+    if (rule.getConsequence().size() == 1) {
       List<Item> consequenceItems =  new ArrayList(rule.getConsequence());
       for (Item consequenceItem : consequenceItems) {
         String attributeName = consequenceItem.getAttribute().name().toLowerCase();

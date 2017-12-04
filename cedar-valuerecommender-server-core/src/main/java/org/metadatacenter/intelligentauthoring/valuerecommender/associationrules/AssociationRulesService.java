@@ -3,14 +3,10 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.associationrule
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import weka.associations.Apriori;
 import weka.associations.AssociationRule;
-import weka.associations.Item;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.APRIORI_NUM_RULES;
 
@@ -31,7 +27,11 @@ public class AssociationRulesService implements IAssociationRulesService {
 
     // 4. Run the Apriori algorithm
     Apriori aprioriResults = AssociationRulesUtils.runApriori(filteredData, APRIORI_NUM_RULES);
-    System.out.println("A Priori Rules: " + aprioriResults.toString());
+    //System.out.println("Apriori results: " + aprioriResults.toString());
+    System.out.println("\nAPRIORI RESULTS: ");
+    // See info about options at: http://grepcode.com/file/repo1.maven.org/maven2/nz.ac.waikato.cms.weka/weka-stable/3.6.8/weka/associations/Apriori.java
+    System.out.println("Current options: " + Arrays.asList(aprioriResults.getOptions()).toString());
+    System.out.println("Number of rules generated: " + aprioriResults.getNumRules());
 
     return aprioriResults.getAssociationRules().getRules();
   }

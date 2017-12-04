@@ -19,7 +19,13 @@ public class Constants {
   public static final boolean USE_ALL_FIELDS = false; // If true, only fields with "valueRecommendationEnabled=true" are considered
 
   // Apriori configuration
-  public static final int APRIORI_NUM_RULES = 10000;
+  public static final int APRIORI_NUM_RULES = 100000;
+  public static final double MIN_SUPPORT = 0.001;
+  public static final double MIN_CONFIDENCE = 0.5;
+  public static final double MIN_LIFT = 1.1;
+  public static final double MIN_LEVERAGE = 1.1;
+  public static final double MIN_CONVICTION = 1.1;
+  public static final int METRIC_TYPE_ID = 1; // 0 = confidence | 1 = lift | 2 = leverage | 3 = Conviction
 
   // PRIVATE //
 

@@ -67,15 +67,23 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     // TODO: read from body, and don't forget to lowercase!!
     populatedFields = new ArrayList<>();
     populatedFields.add(new Field("optionalattribute.name", "disease"));
-//  populatedFields.add(new Field("optionalAttribute.value", "trachoma"));
+    populatedFields.add(new Field("tissue", "liver"));
 //  populatedFields.add(new Field("tissue", "palpebral conjunctiva"));
     targetField = new Field("optionalAttribute.value", null);
 
     List<AssociationRule> rulesFound = service.filterRules(generatedRules, populatedFields, targetField);
     System.out.println("RULES FOUND: ");
-    System.out.println(rulesFound.toString());
+    for (AssociationRule rule : rulesFound) {
+      System.out.println(rule);
+    }
 
     // TODO: create recommendations using the association rules generated
+
+
+
+
+
+
     return null;
   }
 
