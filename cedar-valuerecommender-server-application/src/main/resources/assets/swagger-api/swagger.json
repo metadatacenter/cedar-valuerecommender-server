@@ -45,7 +45,7 @@
           {
             "name": "template_id",
             "in": "query",
-            "description": "Template identifier. Example&#58; https://repo.metadatacenter.net/templates/8bc64ab5-df6b-48c8-8c61-6c016245918e",
+            "description": "Template identifier. Example&#58; https://repo.metadatacenter.org/templates/8bc64ab5-df6b-48c8-8c61-6c016245918e",
             "required": true,
             "type": "string"
           }
@@ -85,7 +85,7 @@
               "properties": {
                 "templateId": {
                   "type": "string",
-                  "description": "Example&#58; https://repo.metadatacenter.net/templates/8bc64av5-df6b-48c8-8c61-6c016245918e"
+                  "description": "Example&#58; https://repo.metadatacenter.org/templates/8bc64av5-df6b-48c8-8c61-6c016245918e"
                 },
                 "populatedFields": {
                   "type": "array",
