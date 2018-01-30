@@ -7,8 +7,8 @@ info:
   description: CEDAR Value Recommender Server API
   version: "1.0.0"
 # host: valuerecommender.metadatacenter.orgx
-# host: valuerecommender.staging.metadatacenter.net
-# host: valuerecommender.metadatacenter.net
+# host: valuerecommender.staging.metadatacenter.org
+# host: valuerecommender.metadatacenter.org
 #basePath: /bioportal
 schemes:
   - https
@@ -48,7 +48,7 @@ paths:
       parameters:
         - name: template_id
           in: query
-          description: Template identifier. Example&#58; https://repo.metadatacenter.net/templates/8bc64ab5-df6b-48c8-8c61-6c016245918e
+          description: Template identifier. Example&#58; https://repo.metadatacenter.org/templates/8bc64ab5-df6b-48c8-8c61-6c016245918e
           required: true
           type: string
       responses:
@@ -76,7 +76,7 @@ paths:
             properties:
               templateId:
                 type: string
-                description: Example&#58; https://repo.metadatacenter.net/templates/8bc64av5-df6b-48c8-8c61-6c016245918e
+                description: Example&#58; https://repo.metadatacenter.org/templates/8bc64av5-df6b-48c8-8c61-6c016245918e
               populatedFields:
                 type: array
                 items:
