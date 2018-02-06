@@ -9,6 +9,9 @@ import com.mongodb.MongoClient;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRules;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
@@ -25,6 +28,8 @@ import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.management.InstanceNotFoundException;
 import java.io.BufferedWriter;
@@ -44,6 +49,7 @@ public class AssociationRulesUtils {
   private static ElasticsearchQueryService esQueryService;
   private static TemplateInstanceService<String, JsonNode> templateInstanceService;
   private static TemplateService<String, JsonNode> templateService;
+  private static final Logger logger = LoggerFactory.getLogger(AssociationRulesUtils.class);
 
   static {
     try {
@@ -76,6 +82,9 @@ public class AssociationRulesUtils {
    */
   public static String generateInstancesFile(String templateId) throws IOException, ProcessingException,
       InstanceNotFoundException {
+
+    logger.info("Generating ARFF file for template id: " + templateId);
+
     // TODO: store the file in an appropriate location
     String fileName = templateId.substring(templateId.lastIndexOf("/") + 1) + ".arff";
     FileWriter fw = new FileWriter(fileName);
@@ -98,8 +107,7 @@ public class AssociationRulesUtils {
       if (node.getType().equals(CedarNodeType.FIELD)) {
         if (USE_ALL_FIELDS) { // Use all fields to generate rules
           fieldNodes.add(node);
-        }
-        else { // Consider only field for which valueRecommendations are enabled
+        } else { // Consider only field for which valueRecommendations are enabled
           if (node.isValueRecommendationEnabled()) {
             fieldNodes.add(node);
           }
@@ -116,14 +124,11 @@ public class AssociationRulesUtils {
     }
 
     // Generate ARFF attributes
-    System.out.println("\nARFF Attributes");
     for (TemplateNode node : fieldNodes) {
       if (node.getType().equals(CedarNodeType.FIELD)) {
         out.println("@attribute " + toWekaAttributeFormat(node.getPath()) + " string");
-        System.out.println("@attribute " + toWekaAttributeFormat(node.getPath()) + " string");
       }
     }
-    System.out.println();
 
     // 2. Get template instances in ARFF format
     out.println("\n@data");
@@ -152,7 +157,7 @@ public class AssociationRulesUtils {
       }
     }
     out.close();
-    System.out.println("Instances file created. Generating rules...");
+    logger.info("ARFF file created successfully (template id: " + templateId + ")");
     return fileName;
   }
 
@@ -360,14 +365,11 @@ public class AssociationRulesUtils {
     aprioriObj.setMetricType(new SelectedTag(METRIC_TYPE_ID, Apriori.TAGS_SELECTION));
     if (METRIC_TYPE_ID == 0) { // Confidence
       aprioriObj.setMinMetric(MIN_CONFIDENCE);
-    }
-    else if (METRIC_TYPE_ID == 1) { // Lift
+    } else if (METRIC_TYPE_ID == 1) { // Lift
       aprioriObj.setMinMetric(MIN_LIFT);
-    }
-    else if (METRIC_TYPE_ID == 2) { // Leverage
+    } else if (METRIC_TYPE_ID == 2) { // Leverage
       aprioriObj.setMinMetric(MIN_LEVERAGE);
-    }
-    else { // Conviction
+    } else { // Conviction
       aprioriObj.setMinMetric(MIN_CONVICTION);
     }
 
@@ -376,13 +378,14 @@ public class AssociationRulesUtils {
     return aprioriObj;
   }
 
-  public static boolean ruleMatchesRequirements(AssociationRule rule, Map<String, String> fieldValues, Field targetField) {
+  public static boolean ruleMatchesRequirements(AssociationRule rule, Map<String, String> fieldValues, Field
+      targetField) {
 
     // We check the consequence first because it is faster than checking the premise, because we limit the check to
     // those rules that have only 1 attribute in the consequence
     boolean targetFieldFound = false;
     if (rule.getConsequence().size() == 1) {
-      List<Item> consequenceItems =  new ArrayList(rule.getConsequence());
+      List<Item> consequenceItems = new ArrayList(rule.getConsequence());
       for (Item consequenceItem : consequenceItems) {
         String attributeName = consequenceItem.getAttribute().name().toLowerCase();
         if (targetField.getFieldPath().toLowerCase().equals(attributeName)) {
@@ -392,26 +395,85 @@ public class AssociationRulesUtils {
       if (!targetFieldFound) {
         return false;
       }
-    }
-    else {
+    } else {
       return false;
     }
 
     // Check premise
     if (rule.getPremise().size() == fieldValues.size()) {
-      List<Item> premiseItems =  new ArrayList(rule.getPremise());
+      List<Item> premiseItems = new ArrayList(rule.getPremise());
       for (Item premiseItem : premiseItems) {
         String attributeName = premiseItem.getAttribute().name().toLowerCase();
         String attributeValue = premiseItem.getItemValueAsString().toLowerCase();
-        if (!fieldValues.containsKey(attributeName) || !fieldValues.get(attributeName).toLowerCase().equals(attributeValue)) {
+        if (!fieldValues.containsKey(attributeName) || !fieldValues.get(attributeName).toLowerCase().equals
+            (attributeValue)) {
           return false;
         }
       }
-    }
-    else {
+    } else {
       return false;
     }
     return true;
+  }
+
+  /**
+   * @param aprioriResults results of applying the Apriori algorithm using Weka
+   * @param templateId template identifier
+   * @return rules for a particular template, represented in our own custom format that is appropriate for
+   * Elasticsearch storage and query
+   */
+  public static EsRules toEsRules(Apriori aprioriResults, String templateId) throws Exception {
+
+    List<AssociationRule> aprioriRules = aprioriResults.getAssociationRules().getRules();
+    List<EsRule> esRulesList = new ArrayList<>();
+
+    for (AssociationRule rule : aprioriRules) {
+      // Check that the relevant metrics exist
+      List<String> metricNames = Arrays.asList(rule.getMetricNamesForRule());
+      if (!metricNames.contains(CONFIDENCE_METRIC_NAME)) {
+        throw new NoSuchElementException("Metric not found: " + CONFIDENCE_METRIC_NAME);
+      }
+      if (!metricNames.contains(LIFT_METRIC_NAME)) {
+        throw new NoSuchElementException("Metric not found: " + LIFT_METRIC_NAME);
+      }
+      if (!metricNames.contains(LEVERAGE_METRIC_NAME)) {
+        throw new NoSuchElementException("Metric not found: " + LEVERAGE_METRIC_NAME);
+      }
+      if (!metricNames.contains(CONFIDENCE_METRIC_NAME)) {
+        throw new NoSuchElementException("Metric not found: " + CONVICTION_METRIC_NAME);
+      }
+
+      // Build premise
+      List<EsRuleItem> esPremise = new ArrayList<>();
+      Iterator<Item> itPremise = rule.getPremise().iterator();
+      while (itPremise.hasNext()) {
+        Item item = itPremise.next();
+        esPremise.add(new EsRuleItem(null, item.getAttribute().name(), item.getItemValueAsString()));
+      }
+
+      // Build consequence
+      List<EsRuleItem> esConsequence = new ArrayList<>();
+      Iterator<Item> itConsequence = rule.getConsequence().iterator();
+      while (itConsequence.hasNext()) {
+        Item item = itConsequence.next();
+        esConsequence.add(new EsRuleItem(null, item.getAttribute().name(), item.getItemValueAsString()));
+      }
+
+      EsRule esRule = new EsRule(esPremise, esConsequence, rule.getTotalSupport(),
+          rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME),
+          rule.getNamedMetricValue(LIFT_METRIC_NAME),
+          rule.getNamedMetricValue(LEVERAGE_METRIC_NAME),
+          rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME));
+
+      esRulesList.add(esRule);
+
+    }
+
+    EsRules esRules = new EsRules(templateId, esRulesList);
+
+    System.out.println(esRules);
+
+    return esRules;
   }
 
 }

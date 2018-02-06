@@ -39,8 +39,8 @@ public class ValueRecommenderServerApplication extends
     valueRecommenderService = new ValueRecommenderService(
         esc.getClusterName(),
         esc.getHost(),
-        esc.getIndexName(),
-        esc.getType(IndexedDocumentType.CONTENT),
+        esc.getIndexes().getSearchIndex().getName(),
+        esc.getIndexes().getSearchIndex().getType(IndexedDocumentType.CONTENT),
         esc.getTransportPort(),
         esc.getSize());
     valueRecommenderServiceArm = new ValueRecommenderServiceArm(cedarConfig);

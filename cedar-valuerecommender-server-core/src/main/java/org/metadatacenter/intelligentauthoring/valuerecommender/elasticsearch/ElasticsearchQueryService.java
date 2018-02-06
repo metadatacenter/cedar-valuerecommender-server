@@ -48,7 +48,7 @@ public class ElasticsearchQueryService {
 
     QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_TEMPLATEID_FIELD, templateId);
 
-    SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexName())
+    SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
 
     while (scrollResp.getHits().hits().length != 0) { // Zero hits mark the end of the scroll and the while loop
@@ -64,7 +64,7 @@ public class ElasticsearchQueryService {
 
     QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_DOCUMENT_CEDAR_ID, templateId);
 
-    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexName()).setTypes("content").setQuery(templateIdQuery).get();
+    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName()).setTypes("content").setQuery(templateIdQuery).get();
 
     if (response.getHits().hits().length == 0) {
       throw new InternalError("Summarized content not found for template (templateId=" + templateId + ")");

@@ -1,5 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRules;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import weka.associations.AssociationRule;
@@ -12,7 +13,7 @@ import java.util.List;
  */
 public interface IValueRecommenderArm {
 
-  List<AssociationRule> generateRules();
+  EsRules generateRules(List<String> templateIds);
   Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws IOException;
 
 }

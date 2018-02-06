@@ -120,8 +120,6 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     return Response.ok().entity(output).build();
   }
 
-
-
   // Value recommendation using Association Rule Mining (ARM)
   @Path("/recommend-arm")
   @POST
@@ -171,13 +169,31 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
    * Generates the mining rules that the value recommender will use to generate the recommendations. Note that this endpoint
    * is temporary. TODO: Think about the best strategy to invoke the rules generation process (e.g., use a cron job?,
    * generate the rules and index them in Elasticsearch when a new instance is created/updated/deleted?
+   *
+   * Parameters:
+   *  - templateIds (optional): list of ids for which the rules will be generated
    */
   @Path("/generate-rules")
   @POST
+
   public Response generateRules() throws CedarException {
+
+    //TODO: Check that the user is admin. We don't want to enable this call for all users
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
+
+    JsonNode body = c.request().getRequestBody().asJson();
+    ObjectMapper mapper = new ObjectMapper();
+
     try {
-      // Check that the user is admin
-      valueRecommenderServiceArm.generateRules();
+
+      List<String> templateIds = new ArrayList<>();
+      if (body.get("templateIds") != null) {
+        templateIds = mapper.readValue(body.get("templateIds").traverse(),
+            mapper.getTypeFactory().constructCollectionType(List.class, String.class));
+      }
+
+      valueRecommenderServiceArm.generateRules(templateIds);
     }
     catch (Exception e) {
       throw new CedarProcessingException(e);
@@ -186,3 +202,13 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   }
 
 }
+
+
+
+
+
+
+
+
+
+
