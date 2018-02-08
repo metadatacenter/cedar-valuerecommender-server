@@ -6,12 +6,12 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.associationrule
 public class EsRuleItem {
 
   private String fieldId;
-  private String fieldName;
+  private String fieldPath;
   private String fieldValue;
 
-  public EsRuleItem(String fieldId, String fieldName, String fieldValue) {
+  public EsRuleItem(String fieldId, String fieldPath, String fieldValue) {
     this.fieldId = fieldId;
-    this.fieldName = fieldName;
+    this.fieldPath = fieldPath;
     this.fieldValue = fieldValue;
   }
 
@@ -19,8 +19,8 @@ public class EsRuleItem {
     return fieldId;
   }
 
-  public String getFieldName() {
-    return fieldName;
+  public String getFieldPath() {
+    return fieldPath;
   }
 
   public String getFieldValue() {
@@ -31,7 +31,7 @@ public class EsRuleItem {
   public String toString() {
     return "EsRuleItem{" +
         "fieldId='" + fieldId + '\'' +
-        ", fieldName='" + fieldName + '\'' +
+        ", fieldPath='" + fieldPath + '\'' +
         ", fieldValue='" + fieldValue + '\'' +
         '}';
   }

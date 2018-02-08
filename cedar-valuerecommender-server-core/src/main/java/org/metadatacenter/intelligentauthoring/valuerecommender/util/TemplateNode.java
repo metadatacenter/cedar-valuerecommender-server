@@ -9,19 +9,23 @@ import java.util.List;
  */
 public class TemplateNode {
 
+  private String id; // resource identifier (i.e., @id field)
   private String key; // json key
   private List<String> path; // List of json keys from the root (it includes the key of the current node)
   private CedarNodeType type;
   private boolean isArray;
   private Boolean isValueRecommendationEnabled;
 
-  public TemplateNode(String key, List<String> path, CedarNodeType type, boolean isArray, Boolean isValueRecommendationEnabled) {
+  public TemplateNode(String id, String key, List<String> path, CedarNodeType type, boolean isArray, Boolean isValueRecommendationEnabled) {
+    this.id = id;
     this.key = key;
     this.path = path;
     this.type = type;
     this.isArray = isArray;
     this.isValueRecommendationEnabled = isValueRecommendationEnabled;
   }
+
+  public String getId() { return id;}
 
   public String getKey() {
     return key;

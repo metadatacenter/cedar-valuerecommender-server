@@ -39,9 +39,9 @@ public class AssociationRulesService implements IAssociationRulesService {
     logger.info("Numer of rules limit: " + aprioriResults.getNumRules());
     logger.info("Number of rules generated: " + aprioriResults.getAssociationRules().getRules().size());
     logger.info("Rules:\n");
-    int ruleNumber = 1;
+    int ruleCount = 1;
     for (AssociationRule rule : aprioriResults.getAssociationRules().getRules()) {
-      logger.info(ruleNumber++ + ") " + rule.toString());
+      logger.info(ruleCount++ + ") " + rule.toString());
     }
 
     return AssociationRulesUtils.toEsRules(aprioriResults, templateId);

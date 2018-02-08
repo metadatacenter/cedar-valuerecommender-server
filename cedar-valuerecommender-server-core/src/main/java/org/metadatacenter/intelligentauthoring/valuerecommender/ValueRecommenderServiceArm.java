@@ -39,8 +39,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
         // Store the rules in Elasticsearch
         ObjectMapper mapper = new ObjectMapper();
         String rulesJsonString = mapper.writeValueAsString(esRules);
-        System.out.println(rulesJsonString);
-        JsonNode rulesJson = mapper.readTree(rulesJsonString);
+//        System.out.println(rulesJsonString);
+//        JsonNode rulesJson = mapper.readTree(rulesJsonString);
 
 
         long endTime   = System.currentTimeMillis();

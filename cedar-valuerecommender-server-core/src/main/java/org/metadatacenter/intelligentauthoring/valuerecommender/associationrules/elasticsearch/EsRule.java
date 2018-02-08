@@ -61,12 +61,14 @@ public class EsRule {
 
     String premiseString = "";
     for (EsRuleItem ruleItem : premise) {
-      premiseString += "[" + ruleItem.getFieldName() + "=" + ruleItem.getFieldValue() + "] ";
+      String shortId = ruleItem.getFieldId().substring(ruleItem.getFieldId().length() - 4, ruleItem.getFieldId().length());
+      premiseString += "[" + shortId + "(" + ruleItem.getFieldPath() + ")" + "=" + ruleItem.getFieldValue() + "] ";
     }
 
     String consequenceString = "";
     for (EsRuleItem ruleItem : consequence) {
-      consequenceString += "[" + ruleItem.getFieldName() + "=" + ruleItem.getFieldValue() + "] ";
+      String shortId = ruleItem.getFieldId().substring(ruleItem.getFieldId().length() - 4, ruleItem.getFieldId().length());
+      consequenceString += "[" + shortId + "(" + ruleItem.getFieldPath() + ")" + "=" + ruleItem.getFieldValue() + "] ";
     }
 
     return "\n" + premiseString + " ==> " + consequenceString + "(" +

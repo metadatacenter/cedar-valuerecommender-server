@@ -80,8 +80,7 @@ public class AssociationRulesUtils {
    * @throws IOException
    * @throws ProcessingException
    */
-  public static String generateInstancesFile(String templateId) throws IOException, ProcessingException,
-      InstanceNotFoundException {
+  public static String generateInstancesFile(String templateId) throws Exception {
 
     logger.info("Generating ARFF file for template id: " + templateId);
 
@@ -126,7 +125,7 @@ public class AssociationRulesUtils {
     // Generate ARFF attributes
     for (TemplateNode node : fieldNodes) {
       if (node.getType().equals(CedarNodeType.FIELD)) {
-        out.println("@attribute " + toWekaAttributeFormat(node.getPath()) + " string");
+        out.println(toWekaAttributeFormat(node.getId(), node.getPath(), " string"));
       }
     }
 
@@ -319,9 +318,12 @@ public class AssociationRulesUtils {
   }
 
   /**
-   * @return The field path using Weka's attribute format (e.g., 'Address.Zip Code')
+   * Generates the path using dot notation
+   *
+   * @param path
+   * @return
    */
-  public static String toWekaAttributeFormat(List<String> path) {
+  public static String generatePathDotNotation(List<String> path) {
     String result = "";
     for (String key : path) {
       if (result.trim().length() > 0) {
@@ -329,7 +331,26 @@ public class AssociationRulesUtils {
       }
       result = result.concat(key);
     }
-    return "'" + result + "'";
+    return result;
+  }
+
+  /**
+   * @return The field id and path using a custom format
+   *
+   *
+   * Weka's attribute format (e.g., 'Address.Zip Code')
+   */
+
+  /**
+   *
+   * @param id CEDAR field identifier (i.e., @id)
+   * @param path path to the field
+   * @param dataType data type
+   * @return The field id and path using a custom format that is valid in ARFF ('[fieldId](fieldPath)')
+   */
+  public static String toWekaAttributeFormat(String id, List<String> path, String dataType) {
+    String pathDotNotation = generatePathDotNotation(path);
+    return "@attribute '[" + id + "](" + pathDotNotation + ")'" + dataType;
   }
 
   /**
@@ -431,16 +452,16 @@ public class AssociationRulesUtils {
       // Check that the relevant metrics exist
       List<String> metricNames = Arrays.asList(rule.getMetricNamesForRule());
       if (!metricNames.contains(CONFIDENCE_METRIC_NAME)) {
-        throw new NoSuchElementException("Metric not found: " + CONFIDENCE_METRIC_NAME);
+        throw new Exception("Metric not found: " + CONFIDENCE_METRIC_NAME);
       }
       if (!metricNames.contains(LIFT_METRIC_NAME)) {
-        throw new NoSuchElementException("Metric not found: " + LIFT_METRIC_NAME);
+        throw new Exception("Metric not found: " + LIFT_METRIC_NAME);
       }
       if (!metricNames.contains(LEVERAGE_METRIC_NAME)) {
-        throw new NoSuchElementException("Metric not found: " + LEVERAGE_METRIC_NAME);
+        throw new Exception("Metric not found: " + LEVERAGE_METRIC_NAME);
       }
       if (!metricNames.contains(CONFIDENCE_METRIC_NAME)) {
-        throw new NoSuchElementException("Metric not found: " + CONVICTION_METRIC_NAME);
+        throw new Exception("Metric not found: " + CONVICTION_METRIC_NAME);
       }
 
       // Build premise
@@ -448,7 +469,7 @@ public class AssociationRulesUtils {
       Iterator<Item> itPremise = rule.getPremise().iterator();
       while (itPremise.hasNext()) {
         Item item = itPremise.next();
-        esPremise.add(new EsRuleItem(null, item.getAttribute().name(), item.getItemValueAsString()));
+        esPremise.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), item.getItemValueAsString()));
       }
 
       // Build consequence
@@ -456,7 +477,7 @@ public class AssociationRulesUtils {
       Iterator<Item> itConsequence = rule.getConsequence().iterator();
       while (itConsequence.hasNext()) {
         Item item = itConsequence.next();
-        esConsequence.add(new EsRuleItem(null, item.getAttribute().name(), item.getItemValueAsString()));
+        esConsequence.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), item.getItemValueAsString()));
       }
 
       EsRule esRule = new EsRule(esPremise, esConsequence, rule.getTotalSupport(),
@@ -474,6 +495,34 @@ public class AssociationRulesUtils {
     System.out.println(esRules);
 
     return esRules;
+  }
+
+  /**
+   *
+   * @param item
+   * @return The field identifier (i.e., @id)
+   */
+  public static String getEsItemFieldId(Item item) {
+    String attributeName = item.getAttribute().name();
+    String separator = "](";
+    // Note that attributeName follows the format: ('[fieldId](fieldPath)')
+    int index = item.getAttribute().name().indexOf(separator);
+    String id = attributeName.substring(1, index);
+    return id;
+  }
+
+  /**
+   *
+   * @param item
+   * @return The field name
+   */
+  public static String getEsItemFieldPath(Item item) throws Exception {
+    String attributeName = item.getAttribute().name();
+    String separator = "](";
+    // Note that attributeName follows the format: ('[fieldId](fieldPath)')
+    int index = item.getAttribute().name().indexOf(separator);
+    String path = attributeName.substring(index + separator.length(), attributeName.length() - 1);
+    return path;
   }
 
 }
