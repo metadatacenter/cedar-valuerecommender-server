@@ -12,12 +12,11 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommender
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
 import org.metadatacenter.model.ServerName;
 import org.metadatacenter.model.search.IndexedDocumentType;
+import org.metadatacenter.server.search.elasticsearch.service.ElasticsearchServiceFactory;
+import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
 
 public class ValueRecommenderServerApplication extends
     CedarMicroserviceApplication<ValueRecommenderServerConfiguration> {
-
-  protected static ValueRecommenderService valueRecommenderService;
-  protected static ValueRecommenderServiceArm valueRecommenderServiceArm;
 
   public static void main(String[] args) throws Exception {
     new ValueRecommenderServerApplication().run(args);
@@ -35,18 +34,22 @@ public class ValueRecommenderServerApplication extends
 
   @Override
   public void initializeApp() {
+    ElasticsearchServiceFactory esServiceFactory = ElasticsearchServiceFactory.getInstance(cedarConfig);
     ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
-    valueRecommenderService = new ValueRecommenderService(
+
+    ValueRecommenderService valueRecommenderService = new ValueRecommenderService(
         esc.getClusterName(),
         esc.getHost(),
         esc.getIndexes().getSearchIndex().getName(),
         esc.getIndexes().getSearchIndex().getType(IndexedDocumentType.CONTENT),
         esc.getTransportPort(),
         esc.getSize());
-    valueRecommenderServiceArm = new ValueRecommenderServiceArm(cedarConfig);
+    ValueRecommenderIndexingService valueRecommenderIndexingService = esServiceFactory.valueRecommenderIndexingService();
+    ValueRecommenderServiceArm valueRecommenderServiceArm =
+        new ValueRecommenderServiceArm(cedarConfig, valueRecommenderIndexingService);
 
-    ValueRecommenderResource.injectValueRecommenderService(valueRecommenderService);
-    ValueRecommenderResource.injectValueRecommenderServiceArm(valueRecommenderServiceArm);
+
+    ValueRecommenderResource.injectServices(valueRecommenderService, valueRecommenderServiceArm);
   }
 
   @Override

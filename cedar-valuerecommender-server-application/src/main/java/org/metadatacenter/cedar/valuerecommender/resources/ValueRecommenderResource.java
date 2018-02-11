@@ -15,6 +15,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -39,11 +40,9 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     super(cedarConfig);
   }
 
-  public static void injectValueRecommenderService(ValueRecommenderService valueRecommenderService) {
+  public static void injectServices(ValueRecommenderService valueRecommenderService,
+                                    ValueRecommenderServiceArm valueRecommenderServiceArm) {
     ValueRecommenderResource.valueRecommenderService = valueRecommenderService;
-  }
-
-  public static void injectValueRecommenderServiceArm(ValueRecommenderServiceArm valueRecommenderServiceArm) {
     ValueRecommenderResource.valueRecommenderServiceArm = valueRecommenderServiceArm;
   }
 

@@ -8,6 +8,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRules;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
+import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,11 +17,13 @@ import java.util.List;
 
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
-  protected final Logger logger = LoggerFactory.getLogger(ValueRecommenderServiceArm.class);
+  private final Logger logger = LoggerFactory.getLogger(ValueRecommenderServiceArm.class);
+  private ValueRecommenderIndexingService vrIndexingService;
 
-  public ValueRecommenderServiceArm(CedarConfig config) {
+  public ValueRecommenderServiceArm(CedarConfig config, ValueRecommenderIndexingService valueRecommenderIndexingService) {
     // Initialize configuration manager, which will provide access to the Cedar configuration
     ConfigManager.getInstance().initialize(config);
+    vrIndexingService = valueRecommenderIndexingService;
   }
 
   /**
@@ -39,9 +42,9 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
         // Store the rules in Elasticsearch
         ObjectMapper mapper = new ObjectMapper();
         String rulesJsonString = mapper.writeValueAsString(esRules);
-//        System.out.println(rulesJsonString);
-//        JsonNode rulesJson = mapper.readTree(rulesJsonString);
-
+        System.out.println(rulesJsonString);
+        JsonNode rulesJson = mapper.readTree(rulesJsonString);
+        vrIndexingService.indexTemplateRules(rulesJson, templateId);
 
         long endTime   = System.currentTimeMillis();
         long totalTime = (endTime - startTime)/1000;
