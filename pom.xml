@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-parent</artifactId>
-    <version>1.6.3-SNAPSHOT</version>
+    <version>1.6.4-SNAPSHOT</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
   <artifactId>cedar-valuerecommender-server</artifactId>
   <name>CEDAR Value Recommender Server</name>
   <description>CEDAR service that provides intelligent value suggestions for metadata template fields</description>
-  <version>1.6.3-SNAPSHOT</version>
+  <version>1.6.4-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <scm>
