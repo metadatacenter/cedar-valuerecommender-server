@@ -16,9 +16,11 @@ public class EsRule {
   private double lift;
   private double leverage;
   private double conviction;
+  private int premiseSize; // Used to simplify Elasticsearch queries
+  private int consequenceSize; // Used to simplify Elasticsearch queries
 
   public EsRule(List<EsRuleItem> premise, List<EsRuleItem> consequence, double support, double confidence, double lift,
-                double leverage, double conviction) {
+                double leverage, double conviction, int premiseSize, int consequenceSize) {
     this.premise = premise;
     this.consequence = consequence;
     this.support = support;
@@ -26,6 +28,8 @@ public class EsRule {
     this.lift = lift;
     this.leverage = leverage;
     this.conviction = conviction;
+    this.premiseSize = premiseSize;
+    this.consequenceSize = consequenceSize;
   }
 
   public List<EsRuleItem> getPremise() {
@@ -55,6 +59,10 @@ public class EsRule {
   public double getConviction() {
     return conviction;
   }
+
+  public int getPremiseSize() { return premiseSize; }
+
+  public int getConsequenceSize() { return consequenceSize; }
 
   @Override
   public String toString() {

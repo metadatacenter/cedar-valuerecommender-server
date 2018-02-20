@@ -342,9 +342,8 @@ public class AssociationRulesUtils {
    */
 
   /**
-   *
-   * @param id CEDAR field identifier (i.e., @id)
-   * @param path path to the field
+   * @param id       CEDAR field identifier (i.e., @id)
+   * @param path     path to the field
    * @param dataType data type
    * @return The field id and path using a custom format that is valid in ARFF ('[fieldId](fieldPath)')
    */
@@ -439,7 +438,7 @@ public class AssociationRulesUtils {
 
   /**
    * @param aprioriResults results of applying the Apriori algorithm using Weka
-   * @param templateId template identifier
+   * @param templateId     template identifier
    * @return rules for a particular template, represented in our own custom format that is appropriate for
    * Elasticsearch storage and query
    */
@@ -477,14 +476,16 @@ public class AssociationRulesUtils {
       Iterator<Item> itConsequence = rule.getConsequence().iterator();
       while (itConsequence.hasNext()) {
         Item item = itConsequence.next();
-        esConsequence.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), item.getItemValueAsString()));
+        esConsequence.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), item.getItemValueAsString
+            ()));
       }
 
       EsRule esRule = new EsRule(esPremise, esConsequence, rule.getTotalSupport(),
           rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME),
           rule.getNamedMetricValue(LIFT_METRIC_NAME),
           rule.getNamedMetricValue(LEVERAGE_METRIC_NAME),
-          rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME));
+          rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME),
+          esPremise.size(), esConsequence.size());
 
       esRulesList.add(esRule);
 
@@ -498,7 +499,6 @@ public class AssociationRulesUtils {
   }
 
   /**
-   *
    * @param item
    * @return The field identifier (i.e., @id)
    */
@@ -512,7 +512,6 @@ public class AssociationRulesUtils {
   }
 
   /**
-   *
    * @param item
    * @return The field name
    */
