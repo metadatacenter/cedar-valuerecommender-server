@@ -9,6 +9,7 @@ import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Cons
  */
 public class EsRule {
 
+  private String templateId;
   private List<EsRuleItem> premise;
   private List<EsRuleItem> consequence;
   private double support;
@@ -19,8 +20,9 @@ public class EsRule {
   private int premiseSize; // Used to simplify Elasticsearch queries
   private int consequenceSize; // Used to simplify Elasticsearch queries
 
-  public EsRule(List<EsRuleItem> premise, List<EsRuleItem> consequence, double support, double confidence, double lift,
+  public EsRule(String templateId, List<EsRuleItem> premise, List<EsRuleItem> consequence, double support, double confidence, double lift,
                 double leverage, double conviction, int premiseSize, int consequenceSize) {
+    this.templateId = templateId;
     this.premise = premise;
     this.consequence = consequence;
     this.support = support;
@@ -31,6 +33,8 @@ public class EsRule {
     this.premiseSize = premiseSize;
     this.consequenceSize = consequenceSize;
   }
+
+  public String getTemplateId() { return templateId; }
 
   public List<EsRuleItem> getPremise() {
     return premise;

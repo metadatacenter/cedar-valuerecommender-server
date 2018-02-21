@@ -1,6 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
 
-import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRules;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public class AssociationRulesService implements IAssociationRulesService {
   protected final Logger logger = LoggerFactory.getLogger(AssociationRulesService.class);
 
   @Override
-  public EsRules generateRulesForTemplate(String templateId) throws Exception {
+  public List<EsRule> generateRulesForTemplate(String templateId) throws Exception {
 
     // 1. Generate ARFF file for template
     String instancesFileName = AssociationRulesUtils.generateInstancesFile(templateId);

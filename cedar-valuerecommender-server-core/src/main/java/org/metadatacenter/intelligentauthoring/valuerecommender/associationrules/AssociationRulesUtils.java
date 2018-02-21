@@ -11,7 +11,6 @@ import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
-import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRules;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
@@ -21,6 +20,8 @@ import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.server.service.mongodb.TemplateInstanceServiceMongoDB;
 import org.metadatacenter.server.service.mongodb.TemplateServiceMongoDB;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import weka.associations.Apriori;
 import weka.associations.AssociationRule;
 import weka.associations.Item;
@@ -28,8 +29,6 @@ import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.management.InstanceNotFoundException;
 import java.io.BufferedWriter;
@@ -442,10 +441,10 @@ public class AssociationRulesUtils {
    * @return rules for a particular template, represented in our own custom format that is appropriate for
    * Elasticsearch storage and query
    */
-  public static EsRules toEsRules(Apriori aprioriResults, String templateId) throws Exception {
+  public static List<EsRule> toEsRules(Apriori aprioriResults, String templateId) throws Exception {
 
     List<AssociationRule> aprioriRules = aprioriResults.getAssociationRules().getRules();
-    List<EsRule> esRulesList = new ArrayList<>();
+    List<EsRule> esRules = new ArrayList<>();
 
     for (AssociationRule rule : aprioriRules) {
       // Check that the relevant metrics exist
@@ -480,18 +479,16 @@ public class AssociationRulesUtils {
             ()));
       }
 
-      EsRule esRule = new EsRule(esPremise, esConsequence, rule.getTotalSupport(),
+      EsRule esRule = new EsRule(templateId, esPremise, esConsequence, rule.getTotalSupport(),
           rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME),
           rule.getNamedMetricValue(LIFT_METRIC_NAME),
           rule.getNamedMetricValue(LEVERAGE_METRIC_NAME),
           rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME),
           esPremise.size(), esConsequence.size());
 
-      esRulesList.add(esRule);
+      esRules.add(esRule);
 
     }
-
-    EsRules esRules = new EsRules(templateId, esRulesList);
 
     System.out.println(esRules);
 

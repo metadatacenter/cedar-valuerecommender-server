@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
-import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRules;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
@@ -30,9 +30,9 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
    * Generates association mining rules for the templates specified
    */
   @Override
-  public EsRules generateRules(List<String> templateIds) {
+  public List<EsRule> generateRules(List<String> templateIds) {
     AssociationRulesService service = new AssociationRulesService();
-    EsRules esRules = null;
+    List<EsRule> esRules = null;
     try {
       for (String templateId : templateIds) {
         logger.info("Generating rules for template id: " + templateId);
@@ -41,10 +41,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
         // Store the rules in Elasticsearch
         ObjectMapper mapper = new ObjectMapper();
-        String rulesJsonString = mapper.writeValueAsString(esRules);
-        System.out.println(rulesJsonString);
-        JsonNode rulesJson = mapper.readTree(rulesJsonString);
-        vrIndexingService.indexTemplateRules(rulesJson, templateId);
+        JsonNode rules = mapper.valueToTree(esRules);
+        vrIndexingService.indexTemplateRules(rules, templateId);
 
         long endTime   = System.currentTimeMillis();
         long totalTime = (endTime - startTime)/1000;

@@ -8,6 +8,7 @@ import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.ElasticsearchConfig;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
 import org.metadatacenter.model.ServerName;
@@ -44,7 +45,12 @@ public class ValueRecommenderServerApplication extends
         esc.getIndexes().getSearchIndex().getType(IndexedDocumentType.CONTENT),
         esc.getTransportPort(),
         esc.getSize());
-    ValueRecommenderIndexingService valueRecommenderIndexingService = esServiceFactory.valueRecommenderIndexingService();
+    ValueRecommenderIndexingService valueRecommenderIndexingService = null;
+    try {
+      valueRecommenderIndexingService = esServiceFactory.valueRecommenderIndexingService();
+    } catch (CedarProcessingException e) {
+      e.printStackTrace();
+    }
     ValueRecommenderServiceArm valueRecommenderServiceArm =
         new ValueRecommenderServiceArm(cedarConfig, valueRecommenderIndexingService);
 
