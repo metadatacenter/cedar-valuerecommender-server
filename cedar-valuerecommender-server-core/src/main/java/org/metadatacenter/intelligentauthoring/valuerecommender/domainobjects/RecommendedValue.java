@@ -18,31 +18,25 @@ public class RecommendedValue {
     return value;
   }
 
-  public void setValue(String value) {
-    this.value = value;
-  }
-
   public String getValueUri() {
     return valueUri;
-  }
-
-  public void setValueUri(String valueUri) {
-    this.valueUri = valueUri;
   }
 
   public double getScore() {
     return score;
   }
 
-  public void setScore(double score) {
-    this.score = score;
-  }
-
   public RecommendationType getType() {
     return type;
   }
 
-  public void setType(RecommendationType type) {
-    this.type = type;
+  @Override
+  public String toString() {
+    return "RecommendedValue{" +
+        "value='" + value + '\'' +
+        ", valueUri='" + valueUri + '\'' +
+        ", score=" + score +
+        ", type=" + type +
+        '}';
   }
 }

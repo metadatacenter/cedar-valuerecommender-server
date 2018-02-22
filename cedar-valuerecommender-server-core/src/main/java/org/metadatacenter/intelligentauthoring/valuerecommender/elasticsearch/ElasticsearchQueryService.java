@@ -40,6 +40,10 @@ public class ElasticsearchQueryService {
         InetSocketTransportAddress(InetAddress.getByName(esc.getHost()), esc.getTransportPort()));
   }
 
+  public Client getClient() {
+    return client;
+  }
+
   // It uses the scroll API to retrieve all results
   // More info: https://www.elastic.co/guide/en/elasticsearch/reference/5.6/search-request-scroll.html
   // https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/java-search-scrolling.html

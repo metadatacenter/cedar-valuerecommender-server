@@ -66,7 +66,7 @@ public class AssociationRulesUtils {
           templateServerConfig.getDatabaseName(),
           templateServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
     } catch (UnknownHostException e) {
-      // TODO: log the exception
+      logger.error(e.getMessage());
       e.printStackTrace();
     }
   }
@@ -378,9 +378,12 @@ public class AssociationRulesUtils {
    */
   public static Apriori runApriori(Instances data, int numRules) throws Exception {
     Apriori aprioriObj = new Apriori();
+
+    // Set minimum support
     aprioriObj.setLowerBoundMinSupport(MIN_SUPPORT);
 
-    // 0 = confidence | 1 = lift | 2 = leverage | 3 = Conviction.
+    // Set the threshold for the other metric
+    // 0 = confidence | 1 = lift | 2 = leverage | 3 = Conviction
     aprioriObj.setMetricType(new SelectedTag(METRIC_TYPE_ID, Apriori.TAGS_SELECTION));
     if (METRIC_TYPE_ID == 0) { // Confidence
       aprioriObj.setMinMetric(MIN_CONFIDENCE);

@@ -25,7 +25,7 @@ public class Constants {
   public static final double MIN_LIFT = 1.1;
   public static final double MIN_LEVERAGE = 1.1;
   public static final double MIN_CONVICTION = 1.1;
-  public static final int METRIC_TYPE_ID = 1; // 0 = Confidence | 1 = Lift | 2 = Leverage | 3 = Conviction
+  public static final int METRIC_TYPE_ID = 0; // 0 = Confidence | 1 = Lift | 2 = Leverage | 3 = Conviction
   public static final String SUPPORT_METRIC_NAME = "Support";
   public static final String CONFIDENCE_METRIC_NAME = "Confidence";
   public static final String LIFT_METRIC_NAME = "Lift";
