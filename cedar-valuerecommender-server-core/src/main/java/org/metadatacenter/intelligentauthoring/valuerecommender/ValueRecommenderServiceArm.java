@@ -3,20 +3,14 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
-import org.apache.lucene.search.join.*;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.lucene.search.function.FiltersFunctionScoreQuery;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHitField;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
@@ -36,9 +30,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.*;
-
-import static org.elasticsearch.common.lucene.search.function.FiltersFunctionScoreQuery.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
@@ -102,21 +96,14 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     // Extract the recommendedValues from the search results
     List<RecommendedValue> recommendedValues = readValuesFromBuckets(response);
 
-    for (RecommendedValue v : recommendedValues) {
-      System.out.println(v);
-    }
-
-
-
-
-
-
-    return null;
+    return new Recommendation(targetField.getFieldPath(), recommendedValues);
   }
 
   /**
    * This method creates and executes an Elasticsearch query that:
-   * 1) Finds all association rules that match the populated fields as premises and the target field as consequence.
+   * 1) Finds all association rules that contain the populated fields as premises and the target field as consequence
+   * . This search is strict in the sense that it will only return the rules that contain exactly the same number of
+   * premises as populated fields and just one consequence, which corresponds to the target field.
    * 2) Aggregates all target field values in those rules and ranks them by rule confidence.
    *
    * @param templateId      Template identifier (optional). If it is provided, the query is limited to the rules of

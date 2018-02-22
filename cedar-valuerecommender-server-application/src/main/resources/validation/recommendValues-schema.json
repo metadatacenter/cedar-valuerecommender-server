@@ -37,7 +37,7 @@
     }
   },
   "required": [
-    "templateId", "targetField"
+    "targetField"
   ],
   "additionalProperties": false
 }
