@@ -55,29 +55,46 @@ public class ElasticsearchQueryService {
     SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
 
-    while (scrollResp.getHits().hits().length != 0) { // Zero hits mark the end of the scroll and the while loop
+    while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
       for (SearchHit hit : scrollResp.getHits().getHits()) {
-        templateInstancesIds.add(hit.sourceAsMap().get(ES_DOCUMENT_CEDAR_ID).toString());
+        templateInstancesIds.add(hit.getSourceAsMap().get(ES_DOCUMENT_CEDAR_ID).toString());
       }
       scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(scrollTimeout).execute().actionGet();
     }
     return templateInstancesIds;
   }
 
-  public JsonNode getTemplateSummary(String templateId) {
+  public List<String> getTemplateIds() {
+    List<String> templateIds = new ArrayList<>();
 
-    QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_DOCUMENT_CEDAR_ID, templateId);
+    QueryBuilder templateIdsQuery = QueryBuilders.termQuery("info.nodeType", "template");
 
-    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName()).setTypes("content").setQuery(templateIdQuery).get();
+    SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
+        .setQuery(templateIdsQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
 
-    if (response.getHits().hits().length == 0) {
-      throw new InternalError("Summarized content not found for template (templateId=" + templateId + ")");
+    while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
+      for (SearchHit hit : scrollResp.getHits().getHits()) {
+        templateIds.add(hit.getSourceAsMap().get(ES_DOCUMENT_CEDAR_ID).toString());
+      }
+      scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(scrollTimeout).execute().actionGet();
     }
-    else {
-      Object summarizedContent = response.getHits().hits()[0].sourceAsMap().get(Constants.SUMMARIZED_CONTENT_FIELD);
-      JsonNode templateSummary = JsonMapper.MAPPER.convertValue(summarizedContent, JsonNode.class);
-      return templateSummary;
-    }
+    return templateIds;
   }
+
+//  public JsonNode getTemplateSummary(String templateId) {
+//
+//    QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_DOCUMENT_CEDAR_ID, templateId);
+//
+//    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName()).setTypes("content").setQuery(templateIdQuery).get();
+//
+//    if (response.getHits().hits().length == 0) {
+//      throw new InternalError("Summarized content not found for template (templateId=" + templateId + ")");
+//    }
+//    else {
+//      Object summarizedContent = response.getHits().hits()[0].sourceAsMap().get(Constants.SUMMARIZED_CONTENT_FIELD);
+//      JsonNode templateSummary = JsonMapper.MAPPER.convertValue(summarizedContent, JsonNode.class);
+//      return templateSummary;
+//    }
+//  }
 
 }

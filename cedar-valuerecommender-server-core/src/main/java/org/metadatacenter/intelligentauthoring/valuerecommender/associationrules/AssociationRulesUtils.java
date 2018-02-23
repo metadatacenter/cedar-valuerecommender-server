@@ -31,10 +31,7 @@ import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
 
 import javax.management.InstanceNotFoundException;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.UnknownHostException;
 import java.util.*;
 
@@ -79,16 +76,16 @@ public class AssociationRulesUtils {
    * @throws IOException
    * @throws ProcessingException
    */
-  public static String generateInstancesFile(String templateId) throws Exception {
+  public static Optional<String> generateInstancesFile(String templateId) throws Exception {
 
     logger.info("Generating ARFF file for template id: " + templateId);
 
-    // TODO: store the file in an appropriate location
     String fileName = templateId.substring(templateId.lastIndexOf("/") + 1) + ".arff";
-    FileWriter fw = new FileWriter(fileName);
-    BufferedWriter bw = new BufferedWriter(fw);
-    PrintWriter out = new PrintWriter(bw);
-
+    String filePath = System.getProperty("java.io.tmpdir") + "/" + ARFF_FOLDER_NAME + "/" + fileName;
+    File file = new File(filePath);
+    file.getParentFile().mkdirs();
+    PrintWriter out = new PrintWriter(new FileWriter(file));
+    logger.info("File path: " + file.getAbsolutePath());
     out.println("% ARFF file for CEDAR template id = " + templateId);
     out.println("\n@relation example\n");
 
@@ -155,8 +152,13 @@ public class AssociationRulesUtils {
       }
     }
     out.close();
+    if (count == 0) { // No instances have been generated
+      logger.info("No data found for template (template id: " + templateId + ")");
+      file.delete();
+      return Optional.empty();
+    }
     logger.info("ARFF file created successfully (template id: " + templateId + ")");
-    return fileName;
+    return Optional.ofNullable(fileName);
   }
 
   /**
@@ -490,7 +492,6 @@ public class AssociationRulesUtils {
           esPremise.size(), esConsequence.size());
 
       esRules.add(esRule);
-
     }
 
     System.out.println(esRules);

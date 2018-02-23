@@ -60,8 +60,14 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   @Override
   public List<EsRule> generateRules(List<String> templateIds) {
     AssociationRulesService service = new AssociationRulesService();
+
     List<EsRule> esRules = null;
     try {
+      // Generate rules for all the templates (with instances) in the system
+      if (templateIds.isEmpty()) {
+        esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
+        templateIds = esQueryService.getTemplateIds();
+      }
       for (String templateId : templateIds) {
         logger.info("Generating rules for template id: " + templateId);
         long startTime = System.currentTimeMillis();
