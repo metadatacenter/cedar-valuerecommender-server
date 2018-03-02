@@ -374,12 +374,15 @@ public class AssociationRulesUtils {
   /**
    * Runs the Apriori algorithm
    *
-   * @param data     Instances data
-   * @param numRules Maximum number of rules that will be generated
+   * @param data        Instances data
+   * @param numRules    Maximum number of rules that will be generated
+   * @param verboseMode Report progress iteratively
    * @return
    */
-  public static Apriori runApriori(Instances data, int numRules) throws Exception {
+  public static Apriori runApriori(Instances data, int numRules, boolean verboseMode) throws Exception {
     Apriori aprioriObj = new Apriori();
+
+    aprioriObj.setVerbose(verboseMode);
 
     // Set minimum support
     aprioriObj.setLowerBoundMinSupport(MIN_SUPPORT);
@@ -441,6 +444,22 @@ public class AssociationRulesUtils {
   }
 
   /**
+   * Filters a list of rules by the number of consequences
+   * @param rules
+   * @param maxNumberOfConsequences
+   * @return
+   */
+  public static List<EsRule> filterRulesByNumberOfConsequences(List<EsRule> rules, int maxNumberOfConsequences) {
+    List<EsRule> outputRules = new ArrayList<>();
+    for (EsRule rule : rules) {
+      if (rule.getConsequenceSize() <= maxNumberOfConsequences) {
+        outputRules.add(rule);
+      }
+    }
+    return outputRules;
+  }
+
+  /**
    * @param aprioriResults results of applying the Apriori algorithm using Weka
    * @param templateId     template identifier
    * @return rules for a particular template, represented in our own custom format that is appropriate for
@@ -493,8 +512,6 @@ public class AssociationRulesUtils {
 
       esRules.add(esRule);
     }
-
-    System.out.println(esRules);
 
     return esRules;
   }

@@ -19,6 +19,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
@@ -61,7 +62,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   public List<EsRule> generateRules(List<String> templateIds) {
     AssociationRulesService service = new AssociationRulesService();
 
-    List<EsRule> esRules = null;
+    List<EsRule> rules = null;
     try {
       // Generate rules for all the templates (with instances) in the system
       if (templateIds.isEmpty()) {
@@ -69,18 +70,31 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
         templateIds = esQueryService.getTemplateIds();
       }
       for (String templateId : templateIds) {
-        logger.info("Generating rules for template id: " + templateId);
+        logger.info("Removing all rules for templateId: " + templateId + " from the index");
+        long removedCount = vrIndexingService.removeTemplateRulesFromIndex(templateId);
+        logger.info("Removed " + removedCount + " rules from the index");
+
+        logger.info("Generating rules for templateId: " + templateId);
         long startTime = System.currentTimeMillis();
-        esRules = service.generateRulesForTemplate(templateId);
+        List<EsRule> allRules = service.generateRulesForTemplate(templateId);
+
+        logger.info("Filtering rules by number of consequences");
+        rules = AssociationRulesUtils.filterRulesByNumberOfConsequences(allRules, 1);
+        logger.info("No. rules after filtering: " + rules.size());
 
         // Store the rules in Elasticsearch
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rules = mapper.valueToTree(esRules);
-        vrIndexingService.indexTemplateRules(rules, templateId);
+//        ObjectMapper mapper = new ObjectMapper();
+//        JsonNode rules = mapper.valueToTree(esRules);
+//        vrIndexingService.indexTemplateRules(rules, templateId);
+
+        // Index all the template rules in bulk
+        logger.info("Indexing rules in Elasticsearch");
+        esQueryService.indexRulesBulk(rules);
+        logger.info("Indexing completed");
 
         long endTime = System.currentTimeMillis();
         long totalTime = (endTime - startTime) / 1000;
-        logger.info("Rules generation completed. Execution time: " + totalTime + " seg.");
+        logger.info("Rules generation and indexing completed. Execution time: " + totalTime + " seg.");
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -89,7 +103,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    return esRules;
+    return rules;
   }
 
   @Override
@@ -190,7 +204,6 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     SearchResponse response = search.execute().actionGet();
 
     return response;
-
   }
 
   private List<RecommendedValue> readValuesFromBuckets(SearchResponse response) {

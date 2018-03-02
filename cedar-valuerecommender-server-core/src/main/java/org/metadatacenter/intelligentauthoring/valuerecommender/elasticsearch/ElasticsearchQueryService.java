@@ -1,6 +1,9 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
@@ -11,13 +14,16 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
+import org.metadatacenter.model.search.IndexedDocumentType;
 import org.metadatacenter.util.json.JsonMapper;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.metadatacenter.constant.ElasticsearchConstants.ES_DOCUMENT_CEDAR_ID;
 import static org.metadatacenter.constant.ElasticsearchConstants.ES_TEMPLATEID_FIELD;
@@ -81,11 +87,39 @@ public class ElasticsearchQueryService {
     return templateIds;
   }
 
+  /**
+   * Index all rules in a single API call
+   *
+   * @param rules
+   */
+  public void indexRulesBulk(List<EsRule> rules) {
+
+    BulkRequestBuilder bulkRequest = client.prepareBulk();
+    ObjectMapper mapper = new ObjectMapper();
+
+    int count = 0;
+    for (EsRule rule : rules) {
+      // either use client#prepare, or use Requests# to directly build index/delete requests
+      bulkRequest.add(client.prepareIndex(elasticsearchConfig.getIndexes().getValueRecommenderIndex().getName(),
+          elasticsearchConfig.getIndexes().getValueRecommenderIndex().getType(IndexedDocumentType.RULES_DOC), Integer
+              .toString
+              (count++)).setSource(mapper.convertValue(rule, Map.class))
+      );
+    }
+
+    BulkResponse bulkResponse = bulkRequest.get();
+    if (bulkResponse.hasFailures()) {
+      // process failures by iterating through each bulk response item
+      System.out.println("FAILURE!!!");
+    }
+  }
+
 //  public JsonNode getTemplateSummary(String templateId) {
 //
 //    QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_DOCUMENT_CEDAR_ID, templateId);
 //
-//    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName()).setTypes("content").setQuery(templateIdQuery).get();
+//    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
+// .setTypes("content").setQuery(templateIdQuery).get();
 //
 //    if (response.getHits().hits().length == 0) {
 //      throw new InternalError("Summarized content not found for template (templateId=" + templateId + ")");

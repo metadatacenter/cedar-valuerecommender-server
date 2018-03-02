@@ -11,8 +11,9 @@ import weka.core.converters.ConverterUtils.DataSource;
 
 import java.util.*;
 
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.APRIORI_NUM_RULES;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.APRIORI_MAX_NUM_RULES;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.ARFF_FOLDER_NAME;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.VERBOSE_MODE;
 
 public class AssociationRulesService implements IAssociationRulesService {
 
@@ -26,15 +27,18 @@ public class AssociationRulesService implements IAssociationRulesService {
 
     if (instancesFileName.isPresent()) {
       // 2. Read the ARFF file
-      DataSource source = new DataSource(System.getProperty("java.io.tmpdir") + "/" + ARFF_FOLDER_NAME + "/" +
-          instancesFileName.get());
+      String filePath = System.getProperty("java.io.tmpdir") + "/" + ARFF_FOLDER_NAME + "/" + instancesFileName.get();
+      logger.info("Reading ARFF file: " + filePath);
+      DataSource source = new DataSource(filePath);
       Instances data = source.getDataSet();
 
       // 3. Data preprocessing (apply the StringToNominal filter)
       Instances filteredData = AssociationRulesUtils.applyStringToNominalFilter(data);
+      logger.info("Applying filter: StringToNominal");
 
       // 4. Run the Apriori algorithm
-      Apriori aprioriResults = AssociationRulesUtils.runApriori(filteredData, APRIORI_NUM_RULES);
+      logger.info("Running Apriori");
+      Apriori aprioriResults = AssociationRulesUtils.runApriori(filteredData, APRIORI_MAX_NUM_RULES, VERBOSE_MODE);
 
       logger.info("\n******************* APRIORI RESULTS *******************");
       // See info about options at: http://grepcode.com/file/repo1.maven.org/maven2/nz.ac.waikato.cms
@@ -42,11 +46,11 @@ public class AssociationRulesService implements IAssociationRulesService {
       logger.info("Current options: " + Arrays.asList(aprioriResults.getOptions()).toString());
       logger.info("Numer of rules limit: " + aprioriResults.getNumRules());
       logger.info("Number of rules generated: " + aprioriResults.getAssociationRules().getRules().size());
-      logger.info("Rules:\n");
-      int ruleCount = 1;
-      for (AssociationRule rule : aprioriResults.getAssociationRules().getRules()) {
-        logger.info(ruleCount++ + ") " + rule.toString());
-      }
+//      logger.info("Rules:\n");
+//      int ruleCount = 1;
+//      for (AssociationRule rule : aprioriResults.getAssociationRules().getRules()) {
+//        logger.info(ruleCount++ + ") " + rule.toString());
+//      }
       return AssociationRulesUtils.toEsRules(aprioriResults, templateId);
     }
     else {
