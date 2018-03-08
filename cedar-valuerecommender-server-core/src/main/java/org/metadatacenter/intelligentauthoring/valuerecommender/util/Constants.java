@@ -16,7 +16,7 @@ public class Constants {
   public static final String RECOMMENDATION_ENABLED_FIELD_NAME = "valueRecommendationEnabled";
   public static final String ARFF_MISSING_VALUE = "?";
   public static final int MAX_INSTANCES_FOR_ARM = -1; // -1 means that there is no limit
-  public static final boolean USE_ALL_FIELDS = true; // If true, only fields with "valueRecommendationEnabled=true" are considered
+  public static final boolean USE_ALL_FIELDS = false; // If true, only fields with "valueRecommendationEnabled=true" are considered
   public static final String ARFF_FOLDER_NAME = "cedar-valuerecommender-server/arff-files";
 
   // Apriori configuration
