@@ -15,6 +15,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.TemplateNode;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.TextUtils;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
@@ -33,7 +34,12 @@ import weka.filters.unsupervised.attribute.StringToNominal;
 import javax.management.InstanceNotFoundException;
 import java.io.*;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
 
@@ -127,7 +133,7 @@ public class AssociationRulesUtils {
 
     // 2. Get template instances in ARFF format
     out.println("\n@data");
-    List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
+    final AtomicInteger instancesCount = new AtomicInteger(0);
 
     Map<String, Integer> arraysPathsAndIndexes = new LinkedHashMap<>();
     Integer initialIndex = 0;
@@ -135,24 +141,56 @@ public class AssociationRulesUtils {
       arraysPathsAndIndexes.put(arrayNode.generatePathDotNotation(), initialIndex);
     }
 
-    int count = 0;
-    for (String tiId : templateInstancesIds) {
-      JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
-      Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
-      // Transform the template instances to a list of ARFF instances
-      List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
-          (arraysPathsAndIndexes.values()), 0, null);
+    if (READ_INSTANCES_FROM_CEDAR) { // Read instances from the CEDAR system
+      List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
 
-      for (ArffInstance instance : arffInstances) {
-        out.println(instance.toArffFormat());
+      for (String tiId : templateInstancesIds) {
+        JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
+        Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
+        // Transform the template instances to a list of ARFF instances
+        List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
+            (arraysPathsAndIndexes.values()), 0, null);
+
+        for (ArffInstance arffInstance : arffInstances) {
+          out.println(arffInstance.toArffFormat());
+        }
+        instancesCount.getAndAdd(1);
+        if (MAX_INSTANCES_FOR_ARM > 0 && instancesCount.get() == MAX_INSTANCES_FOR_ARM) {
+          break;
+        }
       }
-      count++;
-      if (MAX_INSTANCES_FOR_ARM > 0 && count == MAX_INSTANCES_FOR_ARM) {
-        break;
+    } else { // Read instances from a local folder
+      try (Stream<Path> paths = Files.walk(Paths.get(CEDAR_INSTANCES_PATH))) {
+        paths.filter(Files::isRegularFile).forEach(p -> {
+          try {
+            if (MAX_INSTANCES_FOR_ARM == -1 || instancesCount.get() < MAX_INSTANCES_FOR_ARM) {
+
+              String fileContent = new String(Files.readAllBytes(p));
+              Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(fileContent);
+              // Transform the template instances to a list of ARFF instances
+              List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
+                  (arraysPathsAndIndexes.values()), 0, null);
+
+              for (ArffInstance arffInstance : arffInstances) {
+                out.println(arffInstance.toArffFormat());
+              }
+
+              instancesCount.getAndAdd(1);
+              if (instancesCount.get() % 1000 == 0) {
+                logger.info("No. instances processed: " + instancesCount.get());
+              }
+            }
+          } catch (FileNotFoundException e) {
+            e.printStackTrace();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        });
       }
     }
+
     out.close();
-    if (count == 0) { // No instances have been generated
+    if (instancesCount.get() == 0) { // No instances have been generated
       logger.info("No data found for template (template id: " + templateId + ")");
       file.delete();
       return Optional.empty();
@@ -385,7 +423,9 @@ public class AssociationRulesUtils {
     aprioriObj.setVerbose(verboseMode);
 
     // Set minimum support
-    aprioriObj.setLowerBoundMinSupport(MIN_SUPPORT);
+    double support = (double) MIN_SUPPORTING_INSTANCES / (double) data.numInstances();
+    logger.info("Support that will be used: " + support);
+    aprioriObj.setLowerBoundMinSupport(support);
 
     // Set the threshold for the other metric
     // 0 = confidence | 1 = lift | 2 = leverage | 3 = Conviction
@@ -445,6 +485,7 @@ public class AssociationRulesUtils {
 
   /**
    * Filters a list of rules by the number of consequences
+   *
    * @param rules
    * @param maxNumberOfConsequences
    * @return
@@ -491,7 +532,9 @@ public class AssociationRulesUtils {
       Iterator<Item> itPremise = rule.getPremise().iterator();
       while (itPremise.hasNext()) {
         Item item = itPremise.next();
-        esPremise.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), item.getItemValueAsString()));
+        String value = item.getItemValueAsString();
+        esPremise.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), value, TextUtils.normalize
+            (value)));
       }
 
       // Build consequence
@@ -499,8 +542,9 @@ public class AssociationRulesUtils {
       Iterator<Item> itConsequence = rule.getConsequence().iterator();
       while (itConsequence.hasNext()) {
         Item item = itConsequence.next();
-        esConsequence.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), item.getItemValueAsString
-            ()));
+        String value = item.getItemValueAsString();
+        esConsequence.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), value, TextUtils.normalize
+            (value)));
       }
 
       EsRule esRule = new EsRule(templateId, esPremise, esConsequence, rule.getTotalSupport(),

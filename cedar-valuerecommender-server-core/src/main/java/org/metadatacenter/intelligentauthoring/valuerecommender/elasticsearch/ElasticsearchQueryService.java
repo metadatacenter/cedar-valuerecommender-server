@@ -14,10 +14,13 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.model.search.IndexedDocumentType;
 import org.metadatacenter.util.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -34,6 +37,8 @@ public class ElasticsearchQueryService {
   private Client client = null;
   private TimeValue scrollTimeout;
   private int scrollLimit = 5000;
+
+  protected final Logger logger = LoggerFactory.getLogger(ElasticsearchQueryService.class);
 
   public ElasticsearchQueryService(ElasticsearchConfig esc) throws UnknownHostException {
     this.elasticsearchConfig = esc;
@@ -94,23 +99,29 @@ public class ElasticsearchQueryService {
    */
   public void indexRulesBulk(List<EsRule> rules) {
 
-    BulkRequestBuilder bulkRequest = client.prepareBulk();
-    ObjectMapper mapper = new ObjectMapper();
+    if (rules.size() > 0) {
 
-    int count = 0;
-    for (EsRule rule : rules) {
-      // either use client#prepare, or use Requests# to directly build index/delete requests
-      bulkRequest.add(client.prepareIndex(elasticsearchConfig.getIndexes().getValueRecommenderIndex().getName(),
-          elasticsearchConfig.getIndexes().getValueRecommenderIndex().getType(IndexedDocumentType.RULES_DOC), Integer
-              .toString
-              (count++)).setSource(mapper.convertValue(rule, Map.class))
-      );
+      BulkRequestBuilder bulkRequest = client.prepareBulk();
+      ObjectMapper mapper = new ObjectMapper();
+
+      int count = 0;
+      for (EsRule rule : rules) {
+        // either use client#prepare, or use Requests# to directly build index/delete requests
+        bulkRequest.add(client.prepareIndex(elasticsearchConfig.getIndexes().getValueRecommenderIndex().getName(),
+            elasticsearchConfig.getIndexes().getValueRecommenderIndex().getType(IndexedDocumentType.RULES_DOC), Integer
+                .toString
+                    (count++)).setSource(mapper.convertValue(rule, Map.class))
+        );
+      }
+
+      BulkResponse bulkResponse = bulkRequest.get();
+      if (bulkResponse.hasFailures()) {
+        // process failures by iterating through each bulk response item
+        System.out.println("FAILURE!!!");
+      }
     }
-
-    BulkResponse bulkResponse = bulkRequest.get();
-    if (bulkResponse.hasFailures()) {
-      // process failures by iterating through each bulk response item
-      System.out.println("FAILURE!!!");
+    else {
+      logger.warn("There are no rules to be indexed");
     }
   }
 

@@ -8,11 +8,13 @@ public class EsRuleItem {
   private String fieldId;
   private String fieldPath;
   private String fieldValue;
+  private String fieldNormalizedValue;
 
-  public EsRuleItem(String fieldId, String fieldPath, String fieldValue) {
+  public EsRuleItem(String fieldId, String fieldPath, String fieldValue, String fieldNormalizedValue) {
     this.fieldId = fieldId;
     this.fieldPath = fieldPath;
     this.fieldValue = fieldValue;
+    this.fieldNormalizedValue = fieldNormalizedValue;
   }
 
   public String getFieldId() {
@@ -27,15 +29,19 @@ public class EsRuleItem {
     return fieldValue;
   }
 
+  public String getFieldNormalizedValue() {
+    return fieldNormalizedValue;
+  }
+
   @Override
   public String toString() {
     return "EsRuleItem{" +
         "fieldId='" + fieldId + '\'' +
         ", fieldPath='" + fieldPath + '\'' +
         ", fieldValue='" + fieldValue + '\'' +
+        ", fieldNormalizedValue='" + fieldNormalizedValue + '\'' +
         '}';
   }
-
 }
 
 

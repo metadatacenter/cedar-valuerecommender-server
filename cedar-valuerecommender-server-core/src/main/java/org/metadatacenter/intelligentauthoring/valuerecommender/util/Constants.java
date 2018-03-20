@@ -6,7 +6,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
  */
 public class Constants {
 
-  public static final String SUMMARIZED_CONTENT_FIELD = "resourceSummarizedContent";
+  //public static final String SUMMARIZED_CONTENT_FIELD = "resourceSummarizedContent";
   public static final String VALUE_FIELD_NAME = "@value";
   public static final String ID_FIELD_NAME = "@id";
   public static final String LABEL_FIELD_NAME = "rdfs:label";
@@ -19,10 +19,15 @@ public class Constants {
   public static final boolean USE_ALL_FIELDS = false; // If true, only fields with "valueRecommendationEnabled=true" are considered
   public static final String ARFF_FOLDER_NAME = "cedar-valuerecommender-server/arff-files";
 
+  // If true, the instances are read from CEDAR. If false, they are read from a local folder
+  public static final boolean READ_INSTANCES_FROM_CEDAR = false;
+  public static final String CEDAR_INSTANCES_PATH = "/Users/marcosmr/tmp/ARM_resources/ncbi_biosample/cedar_instances/homo_sapiens-min_3_attribs_valid/training";
+
   // Apriori configuration
-  public static final int APRIORI_MAX_NUM_RULES = 10000000;
-  public static final double MIN_SUPPORT = 0.003;
-  public static final double MIN_CONFIDENCE = 0.2;
+  public static final int APRIORI_MAX_NUM_RULES = 1000000;
+  //public static double MIN_SUPPORT = 0.00004;
+  public static int MIN_SUPPORTING_INSTANCES = 10; // The support will be dynamically calculated based on this value
+  public static final double MIN_CONFIDENCE = 0.3;
   public static final double MIN_LIFT = 1.2;
   public static final double MIN_LEVERAGE = 1.1;
   public static final double MIN_CONVICTION = 1.1;

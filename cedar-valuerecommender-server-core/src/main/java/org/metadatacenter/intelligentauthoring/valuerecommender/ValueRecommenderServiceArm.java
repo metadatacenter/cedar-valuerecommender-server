@@ -25,6 +25,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.TextUtils;
 import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,13 +159,14 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       // Match field (by id)
       MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery("premise.fieldPath", field.getFieldPath());
 
-      // Match field value
-      MatchQueryBuilder matchPremiseFieldValue = QueryBuilders.matchQuery("premise.fieldValue", field.getFieldValue());
+      // Match field normalized value
+      MatchQueryBuilder matchPremiseFieldNormalizedValue =
+          QueryBuilders.matchQuery("premise.fieldNormalizedValue", TextUtils.normalize(field.getFieldValue()));
 
       // Premise bool query
       BoolQueryBuilder premiseBoolQuery = QueryBuilders.boolQuery();
       premiseBoolQuery = premiseBoolQuery.must(matchPremiseField);
-      premiseBoolQuery = premiseBoolQuery.must(matchPremiseFieldValue);
+      premiseBoolQuery = premiseBoolQuery.must(matchPremiseFieldNormalizedValue);
 
       NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery("premise", premiseBoolQuery, ScoreMode.Avg);
 
