@@ -21,12 +21,13 @@ public class Constants {
 
   // If true, the instances are read from CEDAR. If false, they are read from a local folder
   public static final boolean READ_INSTANCES_FROM_CEDAR = false;
-  public static final String CEDAR_INSTANCES_PATH = "/Users/marcosmr/tmp/ARM_resources/ncbi_biosample/cedar_instances/homo_sapiens-min_3_attribs_valid/training";
+  public static final String CEDAR_INSTANCES_PATH =
+      "/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_20_1-training_130K_ncbi-testing-5000_ebi/training_samples";
 
   // Apriori configuration
   public static final int APRIORI_MAX_NUM_RULES = 1000000;
   //public static double MIN_SUPPORT = 0.00004;
-  public static int MIN_SUPPORTING_INSTANCES = 10; // The support will be dynamically calculated based on this value
+  public static int MIN_SUPPORTING_INSTANCES = 5; // The support will be dynamically calculated based on this value
   public static final double MIN_CONFIDENCE = 0.3;
   public static final double MIN_LIFT = 1.2;
   public static final double MIN_LEVERAGE = 1.1;
