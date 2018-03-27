@@ -7,16 +7,15 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.MatchQueryBuilder;
-import org.elasticsearch.index.query.NestedQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.*;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
+import org.elasticsearch.search.aggregations.metrics.max.Max;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesUtils;
@@ -35,6 +34,10 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.FILTER_BY_CONFIDENCE;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MAX_RESULTS;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MIN_CONFIDENCE_QUERY;
 
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
@@ -108,11 +111,11 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   }
 
   @Override
-  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField) throws
+  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField, boolean strictMatch) throws
       IOException {
 
     // Find the rules that match the condition
-    SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField);
+    SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch, FILTER_BY_CONFIDENCE);
 
     // Extract the recommendedValues from the search results
     List<RecommendedValue> recommendedValues = readValuesFromBuckets(response);
@@ -122,22 +125,33 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
   /**
    * This method creates and executes an Elasticsearch query that:
-   * 1) Finds all association rules that contain the populated fields as premises and the target field as consequence
-   * . This search is strict in the sense that it will only return the rules that contain exactly the same number of
-   * premises as populated fields and just one consequence, which corresponds to the target field.
-   * 2) Aggregates all target field values in those rules and ranks them by rule confidence.
+   * 1) Finds all association rules that contain the populated fields as premises and the target field as consequence.
+   * 2) Aggregates all target field values in those rules and ranks them by (1) Elasticsearch max score, (2) max
+   *    confidence and (3) max support.
    *
    * @param templateId      Template identifier (optional). If it is provided, the query is limited to the rules of
    *                        a particular template. Otherwise, all the rules in the system are queried.
    * @param populatedFields Populated fields and their values.
    * @param targetField     Target field.
+   * @param strictMatch     It performs a strict search in the sense that it will only return the rules that contain
+   *                        premises that exactly match the populated fields and just one consequence, which corresponds
+   *                        to the target field. If set to false, the search will be more flexible (using an
+   *                        Elasticsearch SHOULD clause for the premises), so that it will match any rules whose
+   *                        consequence matches the target field.
+   * @param filterByConfidence Sets a minimum confidence threshold
    * @return An Elasticsearch response.
    */
-  private SearchResponse esQueryRules(Optional<String> templateId, List<Field> populatedFields, Field targetField) {
+  private SearchResponse esQueryRules(Optional<String> templateId, List<Field> populatedFields, Field targetField,
+                                      boolean strictMatch, boolean filterByConfidence) {
 
     /** Query definition **/
 
     BoolQueryBuilder mainBoolQuery = QueryBuilders.boolQuery();
+
+    if (filterByConfidence) {
+      RangeQueryBuilder minConfidence = QueryBuilders.rangeQuery("confidence").from(MIN_CONFIDENCE_QUERY).includeLower(true);
+      mainBoolQuery = mainBoolQuery.must(minConfidence);
+    }
 
     // If templateId is present, the query will be limited to rules from a particular template
     if (templateId.isPresent()) {
@@ -147,7 +161,12 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
     // Match number of premises
     MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery("premiseSize", populatedFields.size());
-    mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
+    if (strictMatch) {
+      mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
+    }
+    else {
+      mainBoolQuery = mainBoolQuery.should(matchPremiseSize);
+    }
 
     // Match number of consequences (i.e., 1)
     MatchQueryBuilder matchConsequenceSize = QueryBuilders.matchQuery("consequenceSize", 1);
@@ -171,7 +190,12 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery("premise", premiseBoolQuery, ScoreMode.Avg);
 
       // Add the premise query to the main query
-      mainBoolQuery = mainBoolQuery.must(premiseNestedQuery);
+      if (strictMatch) {
+        mainBoolQuery = mainBoolQuery.must(premiseNestedQuery);
+      }
+      else {
+        mainBoolQuery = mainBoolQuery.should(premiseNestedQuery);
+      }
     }
 
     // Match target field
@@ -184,15 +208,22 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     mainBoolQuery = mainBoolQuery.must(consequenceNestedQuery);
 
     /** Aggregations definition **/
+    List<Terms.Order> aggOrders = new ArrayList();
+    aggOrders.add(Terms.Order.aggregation("metrics_info>max_score", false));
+    aggOrders.add(Terms.Order.aggregation("metrics_info>max_confidence", false));
+    aggOrders.add(Terms.Order.aggregation("metrics_info>max_support", false));
+
+
     // The following aggregations are used to group the values of the target fields by number of occurrences and sort
     // them by confidence.
     NestedAggregationBuilder mainAgg = AggregationBuilders
         .nested("by_nested_object", "consequence").subAggregation(
-            AggregationBuilders.terms("by_target_field_value").field("consequence.fieldValue").size(1000).
-                order(Terms.Order.aggregation("metrics_info>confidence_avg", false)).subAggregation(
+            AggregationBuilders.terms("by_target_field_value").field("consequence.fieldValue").size(MAX_RESULTS).
+                order(aggOrders).subAggregation(
                 AggregationBuilders.reverseNested("metrics_info").subAggregation(
-                    AggregationBuilders.avg("support_avg").field("support")).subAggregation(
-                    AggregationBuilders.avg("confidence_avg").field("confidence"))));
+                    AggregationBuilders.max("max_score").script(new Script("_score"))).subAggregation(
+                    AggregationBuilders.max("max_support").field("support")).subAggregation(
+                    AggregationBuilders.max("max_confidence").field("confidence"))));
 
     /**  Execute query and return search results **/
 
@@ -217,8 +248,11 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     for (Terms.Bucket bucket : buckets) {
       String value = bucket.getKeyAsString();
       ReverseNested aggReverseNested = bucket.getAggregations().get("metrics_info");
-      Avg aggAvg = aggReverseNested.getAggregations().get("support_avg");
-      Double score = aggAvg.getValue();
+      // Final score calculation
+      Max maxScore = aggReverseNested.getAggregations().get("max_score");
+      Max maxSupport = aggReverseNested.getAggregations().get("max_support");
+      Max maxConfidence = aggReverseNested.getAggregations().get("max_confidence");
+      Double score = maxScore.getValue() * maxConfidence.getValue() * maxSupport.getValue();
       recommendedValues.add(new RecommendedValue(value, null, score, null));
     }
     return recommendedValues;

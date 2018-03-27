@@ -22,7 +22,7 @@ public class Constants {
   // If true, the instances are read from CEDAR. If false, they are read from a local folder
   public static final boolean READ_INSTANCES_FROM_CEDAR = false;
   public static final String CEDAR_INSTANCES_PATH =
-      "/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_20_1-training_130K_ncbi-testing-5000_ebi/training_samples";
+      "/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_26_1-training_124200_ebi-testing-12800_ebi/training_samples";
 
   // Apriori configuration
   public static final int APRIORI_MAX_NUM_RULES = 1000000;
@@ -39,6 +39,11 @@ public class Constants {
   public static final String LEVERAGE_METRIC_NAME = "Leverage";
   public static final String CONVICTION_METRIC_NAME = "Conviction";
   public static final boolean VERBOSE_MODE = true;
+
+  // Value Recommender configuration
+  public static boolean FILTER_BY_CONFIDENCE = false;
+  public static final double MIN_CONFIDENCE_QUERY = 0.7; // Confidence threshold used when querying the rules
+  public static final int MAX_RESULTS = 10;
 
   // PRIVATE //
 

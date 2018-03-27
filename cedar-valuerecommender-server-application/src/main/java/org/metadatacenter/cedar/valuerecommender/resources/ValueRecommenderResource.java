@@ -151,7 +151,11 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
             mapper.getTypeFactory().constructCollectionType(List.class, Field.class));
       }
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
-      recommendation = valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField);
+      boolean strictMatch = false;
+      if (input.get("strictMatch") != null) {
+        strictMatch =  input.get("strictMatch").asBoolean();
+      }
+      recommendation = valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField, strictMatch);
       output = mapper.valueToTree(recommendation);
     } catch (IllegalArgumentException e) {
       return CedarResponse.badRequest()
