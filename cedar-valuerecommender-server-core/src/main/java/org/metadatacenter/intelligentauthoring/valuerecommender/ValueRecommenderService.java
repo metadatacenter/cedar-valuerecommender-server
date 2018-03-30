@@ -377,9 +377,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
       String delimiter = "[[ST]]";
       if (value.contains(delimiter)) {
         String[] v = value.split("\\[\\[ST\\]\\]");
-        recommendedValues.add(new RecommendedValue(v[0], v[1], score, recommendationType));
+        recommendedValues.add(new RecommendedValue(v[0], v[1], score, null, null, recommendationType));
       } else {
-        recommendedValues.add(new RecommendedValue(value, null, score, recommendationType));
+        recommendedValues.add(new RecommendedValue(value, null, score, null, null, recommendationType));
       }
     }
     return recommendedValues;

@@ -36,8 +36,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.FILTER_BY_CONFIDENCE;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.FILTER_BY_SUPPORT;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MAX_RESULTS;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MIN_CONFIDENCE_QUERY;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MIN_SUPPORT_QUERY;
 
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
@@ -115,7 +117,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       IOException {
 
     // Find the rules that match the condition
-    SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch, FILTER_BY_CONFIDENCE);
+    SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch, FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT);
 
     // Extract the recommendedValues from the search results
     List<RecommendedValue> recommendedValues = readValuesFromBuckets(response);
@@ -142,7 +144,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
    * @return An Elasticsearch response.
    */
   private SearchResponse esQueryRules(Optional<String> templateId, List<Field> populatedFields, Field targetField,
-                                      boolean strictMatch, boolean filterByConfidence) {
+                                      boolean strictMatch, boolean filterByConfidence, boolean filterBySupport) {
 
     /** Query definition **/
 
@@ -151,6 +153,11 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     if (filterByConfidence) {
       RangeQueryBuilder minConfidence = QueryBuilders.rangeQuery("confidence").from(MIN_CONFIDENCE_QUERY).includeLower(true);
       mainBoolQuery = mainBoolQuery.must(minConfidence);
+    }
+
+    if (filterBySupport) {
+      RangeQueryBuilder minSupport = QueryBuilders.rangeQuery("support").from(MIN_SUPPORT_QUERY).includeLower(true);
+      mainBoolQuery = mainBoolQuery.must(minSupport);
     }
 
     // If templateId is present, the query will be limited to rules from a particular template
@@ -253,7 +260,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       Max maxSupport = aggReverseNested.getAggregations().get("max_support");
       Max maxConfidence = aggReverseNested.getAggregations().get("max_confidence");
       Double score = maxScore.getValue() * maxConfidence.getValue() * maxSupport.getValue();
-      recommendedValues.add(new RecommendedValue(value, null, score, null));
+      recommendedValues.add(new RecommendedValue(value, null, score,
+          maxConfidence.getValue(), maxSupport.getValue(), null));
     }
     return recommendedValues;
   }

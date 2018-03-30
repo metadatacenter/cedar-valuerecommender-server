@@ -41,8 +41,10 @@ public class Constants {
   public static final boolean VERBOSE_MODE = true;
 
   // Value Recommender configuration
-  public static boolean FILTER_BY_CONFIDENCE = false;
-  public static final double MIN_CONFIDENCE_QUERY = 0.7; // Confidence threshold used when querying the rules
+  public static boolean FILTER_BY_CONFIDENCE = true;
+  public static final double MIN_CONFIDENCE_QUERY = 0.9; // Confidence threshold used when querying the rules
+  public static boolean FILTER_BY_SUPPORT = true;
+  public static final double MIN_SUPPORT_QUERY = 20; // Confidence threshold used when querying the rules
   public static final int MAX_RESULTS = 10;
 
   // PRIVATE //
