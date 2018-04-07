@@ -9,6 +9,7 @@ import com.mongodb.MongoClient;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.ArffAttributeValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
@@ -127,7 +128,7 @@ public class AssociationRulesUtils {
     // Generate ARFF attributes
     for (TemplateNode node : fieldNodes) {
       if (node.getType().equals(CedarNodeType.FIELD)) {
-        out.println(toWekaAttributeFormat(node.getId(), node.getPath(), " string"));
+        out.println(toWekaAttributeFormat(node, " string"));
       }
     }
 
@@ -296,10 +297,8 @@ public class AssociationRulesUtils {
    * @param fields
    * @param arraysPaths              List of array paths (e.g., Researcher.Publications, Addresses)
    * @param arraysIndexes            List of array indexes to be accessed. Every position in the list corresponds to
-   *                                 the same
-   *                                 position in the list of array paths. For example, arraysIndexes = [1,2] will
-   *                                 mean that
-   *                                 the method will access Researcher.Publications[1] and Addresses[2]
+   *                                 the same position in the list of array paths. For example, arraysIndexes = [1,2] will
+   *                                 mean that the method will access Researcher.Publications[1] and Addresses[2]
    * @return
    */
   private static ArffInstance generateArffInstance(Object templateInstanceDocument, List<TemplateNode> fields,
@@ -326,14 +325,17 @@ public class AssociationRulesUtils {
       //System.out.println("Path: " + jsonPath);
       try {
         Map attValueMap = JsonPath.read(templateInstanceDocument, jsonPath);
-        Optional<String> attValue = CedarUtils.getValueOfField(attValueMap, true);
-        if (attValue.isPresent() && attValue.get().trim().length() > 0) {
-          attValues.add("'" + attValue.get().replace("'", "\\'") + "'"); // Escape single quote
+        Optional<ArffAttributeValue> attValue = CedarUtils.getValueOfField(attValueMap);
+        if (attValue.isPresent()) {
+          attValues.add(attValue.get().getArffValueString()); // Escape single quote
         } else {
           attValues.add(ARFF_MISSING_VALUE); // If the field value is null we store a missing value
         }
-      } catch (PathNotFoundException e) {
-        attValues.add(ARFF_MISSING_VALUE); // If the array has not been defined we store a missing value
+      } catch (PathNotFoundException e) { // If the array has not been defined we store a missing value
+        attValues.add(ARFF_MISSING_VALUE);
+      }
+     catch (IOException e) { // If there was no label defined for an ontology term
+        attValues.add(ARFF_MISSING_VALUE);
       }
     }
     return new ArffInstance(attValues);
@@ -374,21 +376,22 @@ public class AssociationRulesUtils {
   }
 
   /**
-   * @return The field id and path using a custom format
+   * Generates the attribute name in a custom format ([term uri](field name))
    *
-   *
-   * Weka's attribute format (e.g., 'Address.Zip Code')
+   * @param node
+   * @param dataType
+   * @return
+   * @throws UnsupportedEncodingException
    */
-
-  /**
-   * @param id       CEDAR field identifier (i.e., @id)
-   * @param path     path to the field
-   * @param dataType data type
-   * @return The field id and path using a custom format that is valid in ARFF ('[fieldId](fieldPath)')
-   */
-  public static String toWekaAttributeFormat(String id, List<String> path, String dataType) {
-    String pathDotNotation = generatePathDotNotation(path);
-    return "@attribute '[" + id + "](" + pathDotNotation + ")'" + dataType;
+  public static String toWekaAttributeFormat(TemplateNode node, String dataType) throws UnsupportedEncodingException {
+    String instanceType = "";
+    if (node.getInstanceType().isPresent()) {
+      instanceType = node.getInstanceType().get();
+      instanceType = CedarUtils.getTermPreferredUri(instanceType);
+    }
+    String pathDotNotation = generatePathDotNotation(node.getPath());
+    String result = "@attribute '[" + instanceType + "](" + pathDotNotation + ")'" + dataType;
+    return result;
   }
 
   /**
@@ -405,7 +408,6 @@ public class AssociationRulesUtils {
     stringToNominalFilter.setInputFormat(data);
     // Apply the filter
     Instances filteredData = Filter.useFilter(data, stringToNominalFilter);
-
     return filteredData;
   }
 

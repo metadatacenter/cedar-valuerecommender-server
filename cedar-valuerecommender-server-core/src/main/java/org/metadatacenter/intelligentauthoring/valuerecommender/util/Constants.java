@@ -7,12 +7,17 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 public class Constants {
 
   //public static final String SUMMARIZED_CONTENT_FIELD = "resourceSummarizedContent";
+  public static final String BIOPORTAL_API_BASE = "http://data.bioontology.org/";
+  public static final String BIOPORTAL_API_CLASSES_FRAGMENT = "/classes/";
   public static final String VALUE_FIELD_NAME = "@value";
   public static final String ID_FIELD_NAME = "@id";
   public static final String LABEL_FIELD_NAME = "rdfs:label";
   public static final String TYPE_FIELD_NAME = "@type";
   public static final String ITEMS_FIELD_NAME = "items";
   public static final String UI_FIELD_NAME = "_ui";
+  public static final String PROPERTIES_FIELD_NAME = "properties";
+  public static final String ONEOF_FIELD_NAME = "oneOf";
+  public static final String ENUM_FIELD_NAME = "enum";
   public static final String RECOMMENDATION_ENABLED_FIELD_NAME = "valueRecommendationEnabled";
   public static final String ARFF_MISSING_VALUE = "?";
   public static final int MAX_INSTANCES_FOR_ARM = -1; // -1 means that there is no limit
@@ -22,7 +27,9 @@ public class Constants {
   // If true, the instances are read from CEDAR. If false, they are read from a local folder
   public static final boolean READ_INSTANCES_FROM_CEDAR = false;
   public static final String CEDAR_INSTANCES_PATH =
-      "/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_26_1-training_124200_ebi-testing-12800_ebi/training_samples";
+      //"/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_26_1-training_124200_ebi-testing-12800_ebi/training_samples";
+      "/Users/marcosmr/Desktop/tmp/annotated_instances_big";
+
 
   // Apriori configuration
   public static final int APRIORI_MAX_NUM_RULES = 1000000;
