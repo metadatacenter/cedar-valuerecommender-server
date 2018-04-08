@@ -297,7 +297,8 @@ public class AssociationRulesUtils {
    * @param fields
    * @param arraysPaths              List of array paths (e.g., Researcher.Publications, Addresses)
    * @param arraysIndexes            List of array indexes to be accessed. Every position in the list corresponds to
-   *                                 the same position in the list of array paths. For example, arraysIndexes = [1,2] will
+   *                                 the same position in the list of array paths. For example, arraysIndexes = [1,2]
+   *                                 will
    *                                 mean that the method will access Researcher.Publications[1] and Addresses[2]
    * @return
    */
@@ -333,8 +334,7 @@ public class AssociationRulesUtils {
         }
       } catch (PathNotFoundException e) { // If the array has not been defined we store a missing value
         attValues.add(ARFF_MISSING_VALUE);
-      }
-     catch (IOException e) { // If there was no label defined for an ontology term
+      } catch (IOException e) { // If there was no label defined for an ontology term
         attValues.add(ARFF_MISSING_VALUE);
       }
     }
@@ -534,9 +534,7 @@ public class AssociationRulesUtils {
       Iterator<Item> itPremise = rule.getPremise().iterator();
       while (itPremise.hasNext()) {
         Item item = itPremise.next();
-        String value = item.getItemValueAsString();
-        esPremise.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), value, TextUtils.normalize
-            (value)));
+        esPremise.add(buildEsRuleItem(item));
       }
 
       // Build consequence
@@ -544,9 +542,7 @@ public class AssociationRulesUtils {
       Iterator<Item> itConsequence = rule.getConsequence().iterator();
       while (itConsequence.hasNext()) {
         Item item = itConsequence.next();
-        String value = item.getItemValueAsString();
-        esConsequence.add(new EsRuleItem(getEsItemFieldId(item), getEsItemFieldPath(item), value, TextUtils.normalize
-            (value)));
+        esConsequence.add(buildEsRuleItem(item));
       }
 
       EsRule esRule = new EsRule(templateId, esPremise, esConsequence, rule.getTotalSupport(),
@@ -563,16 +559,17 @@ public class AssociationRulesUtils {
   }
 
   /**
+   * Builds an EsRuleItem object form an Item object
    * @param item
-   * @return The field identifier (i.e., @id)
+   * @return
+   * @throws Exception
    */
-  public static String getEsItemFieldId(Item item) {
-    String attributeName = item.getAttribute().name();
-    String separator = "](";
-    // Note that attributeName follows the format: ('[fieldId](fieldPath)')
-    int index = item.getAttribute().name().indexOf(separator);
-    String id = attributeName.substring(1, index);
-    return id;
+  public static EsRuleItem buildEsRuleItem(Item item) throws Exception {
+    String fieldPath = getEsItemFieldPath(item);
+    String fieldInstanceType = getEsItemFieldInstanceType(item);
+    String fieldValue = getEsItemFieldValue(item);
+    String fieldNormalizedValue = getEsItemFieldNormalizedValue(item);
+    return new EsRuleItem(fieldPath, fieldInstanceType, fieldValue, fieldNormalizedValue);
   }
 
   /**
@@ -582,10 +579,97 @@ public class AssociationRulesUtils {
   public static String getEsItemFieldPath(Item item) throws Exception {
     String attributeName = item.getAttribute().name();
     String separator = "](";
-    // Note that attributeName follows the format: ('[fieldId](fieldPath)')
-    int index = item.getAttribute().name().indexOf(separator);
+    // Note that attributeName follows the format: ('[fieldInstanceType](fieldPath)')
+    int index = attributeName.indexOf(separator);
+    if (index == -1) {
+      logger.error("Separator not found in: " + attributeName);
+    }
     String path = attributeName.substring(index + separator.length(), attributeName.length() - 1);
     return path;
+  }
+
+
+  /**
+   * @param item
+   * @return The field instance type (i.e., @type)
+   */
+  public static String getEsItemFieldInstanceType(Item item) {
+    String attributeName = item.getAttribute().name();
+    String separator = "](";
+    // Note that attributeName follows the format: ('[fieldInstanceType](fieldPath)')
+    int index = attributeName.indexOf(separator);
+    if (index == -1) {
+      logger.error("Separator not found in: " + attributeName);
+    }
+    String instanceType = attributeName.substring(1, index);
+    // e.g. when attribute is [http://purl.obolibrary.org/obo/UBERON_0001870](FRONTAL CORTEX)
+    if (instanceType.length() > 0) {
+      return instanceType; // e.g. http://purl.obolibrary.org/obo/UBERON_0001870
+    }
+    // e.g. when attribute is [](frontal cortex)
+    else {
+      return null;
+    }
+  }
+
+  /**
+   * @param item
+   * @return The field value (i.e., @value or rdfs:label)
+   */
+  public static String getEsItemFieldValue(Item item) {
+    String attributeFullValue = item.getItemValueAsString();
+    String separator = "](";
+    // Note that the attribute value follows the format: ('[fieldValueType](fieldValue)')
+    int index = attributeFullValue.indexOf(separator);
+    if (index == -1) {
+      logger.error("Separator not found in: " + attributeFullValue);
+    }
+    String value = attributeFullValue.substring(index + separator.length(), attributeFullValue.length() - 1);
+    // e.g. when attribute value is [http://purl.obolibrary.org/obo/PATO_0000384](MALE)
+    if (value.length() > 0) {
+      return value; // e.g. MALE
+    }
+    // e.g. when attribute value is []()
+    else {
+      return null;
+    }
+  }
+
+  /**
+   * @param item
+   * @return For ontology terms, the term uri (i.e., @id)
+   */
+  public static String getEsItemFieldValueType(Item item) {
+    String attributeFullValue = item.getItemValueAsString();
+    String separator = "](";
+    // Note that the attribute value follows the format: ('[fieldValueType](fieldValue)')
+    int index = attributeFullValue.indexOf(separator);
+    if (index == -1) {
+      logger.error("Separator not found in: " + attributeFullValue);
+    }
+    String valueType = attributeFullValue.substring(1, index);
+    // e.g. when attribute value is [http://purl.obolibrary.org/obo/PATO_0000384](MALE)
+    if (valueType.length() > 0) {
+      return valueType; // e.g. http://purl.obolibrary.org/obo/PATO_0000384
+    }
+    // e.g. when attribute value is [](male)
+    else {
+      return null;
+    }
+  }
+
+  /**
+   * @param item
+   * @return The field normalized value. For ontology terms, it returns the term uri. For free text values, it
+   * returns the value after applying a basic normalization
+   */
+  public static String getEsItemFieldNormalizedValue(Item item) {
+    String valueType = getEsItemFieldValueType(item);
+    if (valueType != null) {
+      return valueType;
+    } else {
+      return TextUtils.normalize(getEsItemFieldValue(item));
+    }
   }
 
 }

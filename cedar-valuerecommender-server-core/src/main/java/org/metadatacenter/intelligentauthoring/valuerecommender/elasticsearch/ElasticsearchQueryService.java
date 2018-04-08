@@ -117,7 +117,8 @@ public class ElasticsearchQueryService {
       BulkResponse bulkResponse = bulkRequest.get();
       if (bulkResponse.hasFailures()) {
         // process failures by iterating through each bulk response item
-        System.out.println("FAILURE!!!");
+        logger.error("Failure when processing bulk request:");
+        logger.error(bulkResponse.buildFailureMessage());
       }
     }
     else {

@@ -73,14 +73,12 @@ public class EsRule {
 
     String premiseString = "";
     for (EsRuleItem ruleItem : premise) {
-      String shortId = ruleItem.getFieldId().substring(ruleItem.getFieldId().length() - 4, ruleItem.getFieldId().length());
-      premiseString += "[" + shortId + "(" + ruleItem.getFieldPath() + ")" + "=" + ruleItem.getFieldValue() + "] ";
+      premiseString += ruleItem.toPrettyString();
     }
 
     String consequenceString = "";
     for (EsRuleItem ruleItem : consequence) {
-      String shortId = ruleItem.getFieldId().substring(ruleItem.getFieldId().length() - 4, ruleItem.getFieldId().length());
-      consequenceString += "[" + shortId + "(" + ruleItem.getFieldPath() + ")" + "=" + ruleItem.getFieldValue() + "] ";
+      consequenceString += ruleItem.toPrettyString();
     }
 
     return "\n" + premiseString + " ==> " + consequenceString + "(" +

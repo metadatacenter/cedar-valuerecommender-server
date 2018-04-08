@@ -27,8 +27,8 @@ public class ArffAttributeValue {
     String valueString = null;
     if (label.isPresent()) { // It is an ontology term
       valueString = "[" + value + "](" + label.get() + ")";
-    } else {
-      valueString = value;
+    } else { // Not an ontology term
+      valueString = "[](" + value + ")";
     }
     return "'" + valueString.replace("'", "\\'").trim() + "'";
   }
