@@ -14,9 +14,9 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.TemplateNode;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.TextUtils;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
@@ -560,6 +560,7 @@ public class AssociationRulesUtils {
 
   /**
    * Builds an EsRuleItem object form an Item object
+   *
    * @param item
    * @return
    * @throws Exception
@@ -567,9 +568,11 @@ public class AssociationRulesUtils {
   public static EsRuleItem buildEsRuleItem(Item item) throws Exception {
     String fieldPath = getEsItemFieldPath(item);
     String fieldInstanceType = getEsItemFieldInstanceType(item);
+    String fieldNormalizedPath = getEsItemFieldNormalizedPath(fieldPath, fieldInstanceType);
     String fieldValue = getEsItemFieldValue(item);
+    String fieldValueLabel = getEsItemFieldValueLabel(item);
     String fieldNormalizedValue = getEsItemFieldNormalizedValue(item);
-    return new EsRuleItem(fieldPath, fieldInstanceType, fieldValue, fieldNormalizedValue);
+    return new EsRuleItem(fieldPath, fieldInstanceType, fieldNormalizedPath, fieldValue, fieldValueLabel, fieldNormalizedValue);
   }
 
   /**
@@ -587,7 +590,6 @@ public class AssociationRulesUtils {
     String path = attributeName.substring(index + separator.length(), attributeName.length() - 1);
     return path;
   }
-
 
   /**
    * @param item
@@ -612,26 +614,25 @@ public class AssociationRulesUtils {
     }
   }
 
+  public static String getEsItemFieldNormalizedPath(String fieldPath, String fieldInstanceType) {
+    if (fieldInstanceType == null) {
+      return fieldPath;
+    } else {
+      return fieldInstanceType;
+    }
+  }
+
   /**
    * @param item
-   * @return The field value (i.e., @value or rdfs:label)
+   * @return The field value (i.e., @value or @id)
    */
   public static String getEsItemFieldValue(Item item) {
-    String attributeFullValue = item.getItemValueAsString();
-    String separator = "](";
-    // Note that the attribute value follows the format: ('[fieldValueType](fieldValue)')
-    int index = attributeFullValue.indexOf(separator);
-    if (index == -1) {
-      logger.error("Separator not found in: " + attributeFullValue);
+    String valueType = getEsItemFieldValueType(item);
+    if (valueType != null) {  // e.g., when attribute value is [http://purl.obolibrary.org/obo/PATO_0000384](MALE)
+      return valueType; // e.g., http://purl.obolibrary.org/obo/PATO_0000384
     }
-    String value = attributeFullValue.substring(index + separator.length(), attributeFullValue.length() - 1);
-    // e.g. when attribute value is [http://purl.obolibrary.org/obo/PATO_0000384](MALE)
-    if (value.length() > 0) {
-      return value; // e.g. MALE
-    }
-    // e.g. when attribute value is []()
     else {
-      return null;
+      return getEsItemFieldValueLabel(item);
     }
   }
 
@@ -660,6 +661,30 @@ public class AssociationRulesUtils {
 
   /**
    * @param item
+   * @return The field value label (i.e., @value or rdfs:label)
+   */
+  public static String getEsItemFieldValueLabel(Item item) {
+      String attributeFullValue = item.getItemValueAsString();
+      String separator = "](";
+      // Note that the attribute value follows the format: ('[fieldValueType](fieldValue)') and that we consider that
+      // fieldValue will be always the label
+      int index = attributeFullValue.indexOf(separator);
+      if (index == -1) {
+        logger.error("Separator not found in: " + attributeFullValue);
+      }
+      String value = attributeFullValue.substring(index + separator.length(), attributeFullValue.length() - 1);
+
+      if (value.length() > 0) {
+        return value; // e.g. MALE
+      }
+      // e.g. when attribute value is []()
+      else {
+        return null;
+    }
+  }
+
+  /**
+   * @param item
    * @return The field normalized value. For ontology terms, it returns the term uri. For free text values, it
    * returns the value after applying a basic normalization
    */
@@ -668,7 +693,7 @@ public class AssociationRulesUtils {
     if (valueType != null) {
       return valueType;
     } else {
-      return TextUtils.normalize(getEsItemFieldValue(item));
+      return CedarTextUtils.normalizeValue(getEsItemFieldValue(item));
     }
   }
 

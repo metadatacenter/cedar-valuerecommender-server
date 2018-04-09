@@ -1,7 +1,5 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -14,7 +12,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.aggregations.metrics.max.Max;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
@@ -24,7 +21,8 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.TextUtils;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.FILTER_BY_CONFIDENCE;
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.FILTER_BY_SUPPORT;
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MAX_RESULTS;
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MIN_CONFIDENCE_QUERY;
-import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.MIN_SUPPORT_QUERY;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
 
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
@@ -182,12 +176,17 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     // Match fields and values in premises
     for (Field field : populatedFields) {
 
-      // Match field (by id)
-      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery("premise.fieldPath", field.getFieldPath());
+      // Match field (by id) (Note that we compare the path to the normalized path)
+      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery("premise.fieldNormalizedPath", field.getFieldPath());
+
+      String fieldValue = field.getFieldValue();
+      if (!CedarUtils.isUri(fieldValue)) { // Ontology term uris will not be normalized
+        fieldValue = CedarTextUtils.normalizeValue(fieldValue);
+      }
 
       // Match field normalized value
       MatchQueryBuilder matchPremiseFieldNormalizedValue =
-          QueryBuilders.matchQuery("premise.fieldNormalizedValue", TextUtils.normalize(field.getFieldValue()));
+          QueryBuilders.matchQuery("premise.fieldNormalizedValue", fieldValue);
 
       // Premise bool query
       BoolQueryBuilder premiseBoolQuery = QueryBuilders.boolQuery();
@@ -205,8 +204,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       }
     }
 
-    // Match target field
-    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery("consequence.fieldPath", targetField
+    // Match target field (Note that we compare the path to the normalized path)
+    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery("consequence.fieldNormalizedPath", targetField
         .getFieldPath());
     NestedQueryBuilder consequenceNestedQuery = QueryBuilders.nestedQuery("consequence", matchConsequenceField,
         ScoreMode.Avg);

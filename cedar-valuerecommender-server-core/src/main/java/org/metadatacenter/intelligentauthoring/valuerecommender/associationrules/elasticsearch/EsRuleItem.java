@@ -7,7 +7,9 @@ public class EsRuleItem {
 
   private String fieldPath;
   private String fieldInstanceType;
+  private String fieldNormalizedPath;
   private String fieldValue;
+  private String fieldValueLabel;
   private String fieldNormalizedValue;
 
   /**
@@ -21,8 +23,12 @@ public class EsRuleItem {
 
   /**
    * @param fieldPath
-   * @param fieldInstanceType
-   * @param fieldValue           Free text value, from either the @value or the rdfs:label field
+   * @param fieldInstanceType    Instance type. It is the content of the @type field, if it exists.
+   * @param fieldNormalizedPath  Normalized path. For fields without an instance type, a normalized string (e.g.,
+   *                             STUDY.TITLE). For fields that have been annotated with an instance type, it contains
+   *                             the term URI that annotates the field (e.g., http://purl.obolibrary.org/obo/DOID_4)
+   * @param fieldValue           Content of the @value or the @id field
+   * @param fieldValueLabel      When the value is a term uri (from @id), it stores the corresponding label (rdfs:label)
    * @param fieldNormalizedValue Normalized value. For free text values, a normalized string. For ontology terms, it
    *                             contains the term URI.
    *                             <p>
@@ -38,11 +44,13 @@ public class EsRuleItem {
    *                             - fieldValue = colorectal cancer
    *                             - fieldNormalizedValue = http://purl.obolibrary.org/obo/DOID_9256
    */
-  public EsRuleItem(String fieldPath, String fieldInstanceType, String fieldValue, String
-      fieldNormalizedValue) {
+  public EsRuleItem(String fieldPath, String fieldInstanceType, String fieldNormalizedPath, String fieldValue,
+                    String fieldValueLabel, String fieldNormalizedValue) {
     this.fieldPath = fieldPath;
     this.fieldInstanceType = fieldInstanceType;
+    this.fieldNormalizedPath = fieldNormalizedPath;
     this.fieldValue = fieldValue;
+    this.fieldValueLabel = fieldValueLabel;
     this.fieldNormalizedValue = fieldNormalizedValue;
   }
 
@@ -54,8 +62,16 @@ public class EsRuleItem {
     return fieldInstanceType;
   }
 
+  public String getFieldNormalizedPath() {
+    return fieldNormalizedPath;
+  }
+
   public String getFieldValue() {
     return fieldValue;
+  }
+
+  public String getFieldValueLabel() {
+    return fieldValueLabel;
   }
 
   public String getFieldNormalizedValue() {
@@ -64,17 +80,7 @@ public class EsRuleItem {
 
   public String toPrettyString() {
     String stringField = "[" + getFieldInstanceType() + "]" + "(" + getFieldPath() + ")";
-    return stringField + "=" + "[" + getFieldNormalizedValue() + "]" + "(" + getFieldValue() + ")";
-  }
-
-  @Override
-  public String toString() {
-    return "EsRuleItem{" +
-        "fieldPath='" + fieldPath + '\'' +
-        ", fieldInstanceType=" + fieldInstanceType +
-        ", fieldValue='" + fieldValue + '\'' +
-        ", fieldNormalizedValue='" + fieldNormalizedValue + '\'' +
-        '}';
+    return stringField + "=" + "[" + getFieldValue() + "]" + "(" + getFieldValueLabel() + ")";
   }
 }
 

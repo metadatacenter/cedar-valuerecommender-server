@@ -1,7 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.sun.deploy.security.ValidationState;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.ArffAttributeValue;
 import org.metadatacenter.model.CedarNodeType;
 
@@ -198,4 +197,20 @@ public class CedarUtils {
       return termUri;
     }
   }
+
+  /**
+   * Basic test to check if a string corresponds to a URI (just for http and https)
+   * @return
+   */
+  public static boolean isUri(String value) {
+    value = value.toLowerCase();
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+
 }
