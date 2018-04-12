@@ -111,7 +111,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       IOException {
 
     // Find the rules that match the condition
-    SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch, FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT);
+    SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch,
+        FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT, USE_MAPPINGS);
 
     // Extract the recommendedValues from the search results
     List<RecommendedValue> recommendedValues = readValuesFromBuckets(response);
@@ -135,10 +136,13 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
    *                        Elasticsearch SHOULD clause for the premises), so that it will match any rules whose
    *                        consequence matches the target field.
    * @param filterByConfidence Sets a minimum confidence threshold
+   * @param filterBySupport Sets a minimum support threshold
+   * @param useMappings For ontology uris, tries to match the uri with other equivalent uris
    * @return An Elasticsearch response.
    */
   private SearchResponse esQueryRules(Optional<String> templateId, List<Field> populatedFields, Field targetField,
-                                      boolean strictMatch, boolean filterByConfidence, boolean filterBySupport) {
+                                      boolean strictMatch, boolean filterByConfidence, boolean filterBySupport,
+                                      boolean useMappings) {
 
     /** Query definition **/
 
@@ -188,10 +192,23 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       MatchQueryBuilder matchPremiseFieldNormalizedValue =
           QueryBuilders.matchQuery("premise.fieldNormalizedValue", fieldValue);
 
+      // Match field normalized value with other uris
+      MatchQueryBuilder matchPremiseFieldNormalizedValues =
+          QueryBuilders.matchQuery("premise.fieldNormalizedValues", fieldValue);
+
+
+      // Match field value bool query
+      BoolQueryBuilder premiseFieldValueBoolQuery = QueryBuilders.boolQuery();
+      premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValue);
+      if (useMappings) {
+        premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValues);
+      }
+      premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.minimumShouldMatch(1); // Logical OR
+
       // Premise bool query
       BoolQueryBuilder premiseBoolQuery = QueryBuilders.boolQuery();
       premiseBoolQuery = premiseBoolQuery.must(matchPremiseField);
-      premiseBoolQuery = premiseBoolQuery.must(matchPremiseFieldNormalizedValue);
+      premiseBoolQuery = premiseBoolQuery.must(premiseFieldValueBoolQuery);
 
       NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery("premise", premiseBoolQuery, ScoreMode.Avg);
 

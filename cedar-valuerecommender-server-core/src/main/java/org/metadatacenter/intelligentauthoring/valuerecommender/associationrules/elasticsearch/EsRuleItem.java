@@ -1,5 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch;
 
+import java.util.List;
+
 /**
  * A component of the premise/consequence of an association rule
  */
@@ -8,9 +10,11 @@ public class EsRuleItem {
   private String fieldPath;
   private String fieldInstanceType;
   private String fieldNormalizedPath;
+  private List<String> fieldNormalizedPaths;
   private String fieldValue;
   private String fieldValueLabel;
   private String fieldNormalizedValue;
+  private List<String> fieldNormalizedValues;
 
   /**
    * TODO: We are currently using two different fields: fieldPath and fieldInstanceType to identify the field in the
@@ -27,6 +31,7 @@ public class EsRuleItem {
    * @param fieldNormalizedPath  Normalized path. For fields without an instance type, a normalized string (e.g.,
    *                             STUDY.TITLE). For fields that have been annotated with an instance type, it contains
    *                             the term URI that annotates the field (e.g., http://purl.obolibrary.org/obo/DOID_4)
+   * @param fieldNormalizedPaths List of URIs equivalent to the fieldNormalizedPath (only for annotated instances)
    * @param fieldValue           Content of the @value or the @id field
    * @param fieldValueLabel      When the value is a term uri (from @id), it stores the corresponding label (rdfs:label)
    * @param fieldNormalizedValue Normalized value. For free text values, a normalized string. For ontology terms, it
@@ -43,15 +48,19 @@ public class EsRuleItem {
    *                             - fieldInstanceType = http://purl.obolibrary.org/obo/DOID_4 ("disease" in DOID)
    *                             - fieldValue = colorectal cancer
    *                             - fieldNormalizedValue = http://purl.obolibrary.org/obo/DOID_9256
+   * @param fieldNormalizedValues List of URIs equivalent to the fieldNormalizedValue (only for annotated instances)
    */
-  public EsRuleItem(String fieldPath, String fieldInstanceType, String fieldNormalizedPath, String fieldValue,
-                    String fieldValueLabel, String fieldNormalizedValue) {
+  public EsRuleItem(String fieldPath, String fieldInstanceType, String fieldNormalizedPath,
+                    List<String> fieldNormalizedPaths, String fieldValue,
+                    String fieldValueLabel, String fieldNormalizedValue, List<String> fieldNormalizedValues) {
     this.fieldPath = fieldPath;
     this.fieldInstanceType = fieldInstanceType;
     this.fieldNormalizedPath = fieldNormalizedPath;
+    this.fieldNormalizedPaths = fieldNormalizedPaths;
     this.fieldValue = fieldValue;
     this.fieldValueLabel = fieldValueLabel;
     this.fieldNormalizedValue = fieldNormalizedValue;
+    this.fieldNormalizedValues = fieldNormalizedValues;
   }
 
   public String getFieldPath() {
@@ -66,6 +75,10 @@ public class EsRuleItem {
     return fieldNormalizedPath;
   }
 
+  public List<String> getFieldNormalizedPaths() {
+    return fieldNormalizedPaths;
+  }
+
   public String getFieldValue() {
     return fieldValue;
   }
@@ -76,6 +89,10 @@ public class EsRuleItem {
 
   public String getFieldNormalizedValue() {
     return fieldNormalizedValue;
+  }
+
+  public List<String> getFieldNormalizedValues() {
+    return fieldNormalizedValues;
   }
 
   public String toPrettyString() {

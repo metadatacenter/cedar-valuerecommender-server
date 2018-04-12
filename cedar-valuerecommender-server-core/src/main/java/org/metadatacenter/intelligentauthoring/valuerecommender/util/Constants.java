@@ -23,10 +23,12 @@ public class Constants {
   public static final int MAX_INSTANCES_FOR_ARM = -1; // -1 means that there is no limit
   public static final boolean USE_ALL_FIELDS = false; // If true, only fields with "valueRecommendationEnabled=true" are considered
   public static final String ARFF_FOLDER_NAME = "cedar-valuerecommender-server/arff-files";
+  public static final String MAPPINGS_FILE_PATH = "mappings/mappings.json";
 
   // If true, the instances are read from CEDAR. If false, they are read from a local folder
   public static final boolean READ_INSTANCES_FROM_CEDAR = false;
   public static final String CEDAR_INSTANCES_PATH =
+      //"/Users/marcosmr/Desktop/tmp/annotated_instances";
       //"/Users/marcosmr/Desktop/tmp/non_annotated_instances_big";
       //"/Users/marcosmr/Desktop/tmp/annotated_instances_big";
       //"/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_26_1-training_124200_ebi-testing-12800_ebi/training_samples_annotated";
@@ -49,6 +51,7 @@ public class Constants {
   public static final boolean VERBOSE_MODE = true;
 
   // Value Recommender configuration
+  public static boolean USE_MAPPINGS = true; // For ontology terms, match using mappings too
   public static boolean FILTER_BY_CONFIDENCE = false;
   public static final double MIN_CONFIDENCE_QUERY = 0.9; // Confidence threshold used when querying the rules
   public static boolean FILTER_BY_SUPPORT = false;

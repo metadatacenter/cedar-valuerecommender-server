@@ -14,6 +14,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.mappings.MappingsService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.TemplateNode;
@@ -569,10 +570,13 @@ public class AssociationRulesUtils {
     String fieldPath = getEsItemFieldPath(item);
     String fieldInstanceType = getEsItemFieldInstanceType(item);
     String fieldNormalizedPath = getEsItemFieldNormalizedPath(fieldPath, fieldInstanceType);
+    List<String> fieldNormalizedPaths = getEsItemFieldNormalizedPaths(fieldNormalizedPath, fieldInstanceType);
     String fieldValue = getEsItemFieldValue(item);
     String fieldValueLabel = getEsItemFieldValueLabel(item);
     String fieldNormalizedValue = getEsItemFieldNormalizedValue(item);
-    return new EsRuleItem(fieldPath, fieldInstanceType, fieldNormalizedPath, fieldValue, fieldValueLabel, fieldNormalizedValue);
+    List<String> fieldNormalizedValues = getEsItemFieldNormalizedValues(fieldNormalizedValue);
+    return new EsRuleItem(fieldPath, fieldInstanceType, fieldNormalizedPath, fieldNormalizedPaths,
+        fieldValue, fieldValueLabel, fieldNormalizedValue, fieldNormalizedValues);
   }
 
   /**
@@ -622,6 +626,15 @@ public class AssociationRulesUtils {
     }
   }
 
+  public static List<String> getEsItemFieldNormalizedPaths(String fieldNormalizedPath, String fieldInstanceType) {
+    if (fieldInstanceType == null) {
+      return new ArrayList<>();
+    }
+    else {
+      return MappingsService.getMappings(fieldNormalizedPath, false);
+    }
+  }
+
   /**
    * @param item
    * @return The field value (i.e., @value or @id)
@@ -634,6 +647,10 @@ public class AssociationRulesUtils {
     else {
       return getEsItemFieldValueLabel(item);
     }
+  }
+
+  public static List<String> getEsItemFieldNormalizedValues(String fieldNormalizedValue) {
+    return MappingsService.getMappings(fieldNormalizedValue, false);
   }
 
   /**
