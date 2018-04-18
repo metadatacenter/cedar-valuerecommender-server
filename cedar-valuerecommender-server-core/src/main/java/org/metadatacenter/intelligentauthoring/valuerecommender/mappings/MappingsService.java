@@ -24,10 +24,15 @@ public class MappingsService {
     try {
       JsonNode mappingsJson = JsonMapper.MAPPER.readTree(MappingsService.class.getClassLoader().getResourceAsStream
           (MAPPINGS_FILE_PATH));
-      mappings = new ObjectMapper().convertValue(mappingsJson, Map.class);
+      if (mappingsJson != null) {
+        mappings = new ObjectMapper().convertValue(mappingsJson, Map.class);
+      } else {
+        throw new IOException("Couldn't open the mappings file");
 
+      }
     } catch (IOException e) {
       logger.error(e.getMessage());
+      e.printStackTrace();
     }
   }
 
@@ -45,9 +50,8 @@ public class MappingsService {
   public static boolean isSameConcept(String uri1, String uri2) {
     if (uri1.toLowerCase().equals(uri2.toLowerCase())) {
       return true;
-    }
-    else {
-     return false;
+    } else {
+      return false;
     }
   }
 

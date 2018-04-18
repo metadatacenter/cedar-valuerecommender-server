@@ -28,11 +28,7 @@ public class Constants {
   // If true, the instances are read from CEDAR. If false, they are read from a local folder
   public static final boolean READ_INSTANCES_FROM_CEDAR = false;
   public static final String CEDAR_INSTANCES_PATH =
-      //"/Users/marcosmr/Desktop/tmp/annotated_instances";
-      //"/Users/marcosmr/Desktop/tmp/non_annotated_instances_big";
-      //"/Users/marcosmr/Desktop/tmp/annotated_instances_big";
-      //"/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_26_1-training_124200_ebi-testing-12800_ebi/training_samples_annotated";
-      "/Users/marcosmr/tmp/ARM_resources/evaluation_results/2018_03_25_1-training_124200_ncbi-testing-12800_ncbi/training_samples_annotated";
+      "/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ncbi_cedar_instances/training";
 
   // Apriori configuration
   public static final int APRIORI_MAX_NUM_RULES = 1000000;

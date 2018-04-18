@@ -21,6 +21,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.mappings.MappingsService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
