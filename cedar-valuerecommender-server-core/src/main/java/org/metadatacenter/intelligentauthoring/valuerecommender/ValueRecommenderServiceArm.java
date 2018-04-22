@@ -184,6 +184,17 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       // Match field (by id) (Note that we compare the path to the normalized path)
       MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery("premise.fieldNormalizedPath", field.getFieldPath());
 
+      // Match field with other uris
+      MatchQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.matchQuery("premise.fieldNormalizedPaths", field.getFieldPath());
+
+      // Match field bool query
+      BoolQueryBuilder premiseFieldBoolQuery = QueryBuilders.boolQuery();
+      premiseFieldBoolQuery = premiseFieldBoolQuery.should(matchPremiseField);
+      if (useMappings) {
+        premiseFieldBoolQuery = premiseFieldBoolQuery.should(matchPremiseFieldOtherUris);
+      }
+      premiseFieldBoolQuery = premiseFieldBoolQuery.minimumShouldMatch(1); // Logical OR
+
       String fieldValue = field.getFieldValue();
       if (!CedarUtils.isUri(fieldValue)) { // Ontology term uris will not be normalized
         fieldValue = CedarTextUtils.normalizeValue(fieldValue);
@@ -208,7 +219,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
       // Premise bool query
       BoolQueryBuilder premiseBoolQuery = QueryBuilders.boolQuery();
-      premiseBoolQuery = premiseBoolQuery.must(matchPremiseField);
+      premiseBoolQuery = premiseBoolQuery.must(premiseFieldBoolQuery);
       premiseBoolQuery = premiseBoolQuery.must(premiseFieldValueBoolQuery);
 
       NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery("premise", premiseBoolQuery, ScoreMode.Avg);
@@ -225,7 +236,19 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     // Match target field (Note that we compare the path to the normalized path)
     MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery("consequence.fieldNormalizedPath", targetField
         .getFieldPath());
-    NestedQueryBuilder consequenceNestedQuery = QueryBuilders.nestedQuery("consequence", matchConsequenceField,
+    MatchQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.matchQuery("consequence.fieldNormalizedPaths",
+        targetField.getFieldPath());
+
+    // Match target field bool query
+    BoolQueryBuilder consequenceFieldBoolQuery = QueryBuilders.boolQuery();
+    consequenceFieldBoolQuery = consequenceFieldBoolQuery.should(matchConsequenceField);
+    if (useMappings) {
+      consequenceFieldBoolQuery = consequenceFieldBoolQuery.should(matchConsequenceFieldOtherUris);
+    }
+    consequenceFieldBoolQuery = consequenceFieldBoolQuery.minimumShouldMatch(1); // Logical OR
+
+
+    NestedQueryBuilder consequenceNestedQuery = QueryBuilders.nestedQuery("consequence", consequenceFieldBoolQuery,
         ScoreMode.Avg);
 
     // Add the consequence query to the main query

@@ -23,12 +23,13 @@ public class Constants {
   public static final int MAX_INSTANCES_FOR_ARM = -1; // -1 means that there is no limit
   public static final boolean USE_ALL_FIELDS = false; // If true, only fields with "valueRecommendationEnabled=true" are considered
   public static final String ARFF_FOLDER_NAME = "cedar-valuerecommender-server/arff-files";
-  public static final String MAPPINGS_FILE_PATH = "mappings/mappings.json";
+  public static final String MAPPINGS_FILE_PATH = "mappings/mappings_merged.json";
 
   // If true, the instances are read from CEDAR. If false, they are read from a local folder
   public static final boolean READ_INSTANCES_FROM_CEDAR = false;
   public static final String CEDAR_INSTANCES_PATH =
-      "/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ncbi_cedar_instances/training";
+      //"/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ebi_cedar_instances/training";
+      "/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ebi_cedar_instances_different_ontologies/training";
 
   // Apriori configuration
   public static final int APRIORI_MAX_NUM_RULES = 1000000;
