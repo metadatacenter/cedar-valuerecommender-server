@@ -29,7 +29,8 @@ public class Constants {
   public static final boolean READ_INSTANCES_FROM_CEDAR = false;
   public static final String CEDAR_INSTANCES_PATH =
       //"/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ebi_cedar_instances/training";
-      "/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ebi_cedar_instances_different_ontologies/training";
+      //"/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ebi_cedar_instances_different_ontologies/training";
+      "/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ncbi_cedar_instances/training";
 
   // Apriori configuration
   public static final int APRIORI_MAX_NUM_RULES = 1000000;
