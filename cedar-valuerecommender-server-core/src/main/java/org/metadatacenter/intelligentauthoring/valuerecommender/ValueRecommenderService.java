@@ -61,10 +61,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
     SearchResponse response = null;
     try {
       client = getClient();
-      QueryBuilder qb = QueryBuilders.termQuery("templateId", templateId);
+      QueryBuilder qb = QueryBuilders.termQuery("info.schema:isBasedOn", templateId);
       SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
           .setQuery(qb);
-      //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
+      System.out.println("Search query in Query DSL: " +  search.toString());
       response = search.execute().actionGet();
     } catch (UnknownHostException e) {
       throw e;
@@ -101,7 +101,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
       // Bool filter for templateId and all populated fields, if there are any
       BoolQueryBuilder mainQuery = QueryBuilders.boolQuery();
-      TermQueryBuilder templateIdTermQuery = QueryBuilders.termQuery("templateId", templateId);
+      TermQueryBuilder templateIdTermQuery = QueryBuilders.termQuery("info.schema:isBasedOn", templateId);
       mainQuery = mainQuery.must(templateIdTermQuery);
 
       // Aggregation for populated fields. It is used when any of the populated fields is at the same nesting level
