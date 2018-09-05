@@ -33,16 +33,17 @@ public class ValueRecommenderServerApplication extends
 
   @Override
   public void initializeApp() {
-    ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
-    valueRecommenderService = new ValueRecommenderService(
+    //TODO: Value recommender is disabled here
+    //ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
+    /*valueRecommenderService = new ValueRecommenderService(
         esc.getClusterName(),
         esc.getHost(),
         esc.getIndexName(),
-        esc.getType(IndexedDocumentType.CONTENT),
+        esc.getType(IndexedDocumentType.DOC),
         esc.getTransportPort(),
-        esc.getSize());
+        esc.getSize());*/
 
-    ValueRecommenderResource.injectValueRecommenderService(valueRecommenderService);
+    //ValueRecommenderResource.injectValueRecommenderService(valueRecommenderService);
   }
 
   @Override
