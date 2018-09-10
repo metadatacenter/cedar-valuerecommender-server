@@ -6,9 +6,8 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.lucene.search.function.FiltersFunctionScoreQuery;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -256,7 +255,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     // Execute search
     response = search.execute().actionGet();
     //System.out.println("Search response: " + response.toString());
-    if (response.getHits().totalHits() > 0) {
+    if (response.getHits().totalHits > 0) {
       ObjectMapper mapper = new ObjectMapper();
       JsonNode source = mapper.readTree(response.getHits().getAt(0).getSourceAsString());
       return source;
@@ -374,7 +373,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
   private Client getClient() throws UnknownHostException {
     if (client == null) {
       client = new PreBuiltTransportClient(settings).addTransportAddress(new
-          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
+          TransportAddress(InetAddress.getByName(esHost), esTransportPort));
     }
     return client;
   }
