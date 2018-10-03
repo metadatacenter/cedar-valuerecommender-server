@@ -7,10 +7,9 @@ import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHe
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.model.ServerName;
-import org.metadatacenter.model.search.IndexedDocumentType;
+import org.metadatacenter.search.IndexedDocumentType;
 
 public class ValueRecommenderServerApplication extends
     CedarMicroserviceApplication<ValueRecommenderServerConfiguration> {
