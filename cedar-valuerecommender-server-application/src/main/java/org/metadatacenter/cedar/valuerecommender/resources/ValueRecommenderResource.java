@@ -13,7 +13,6 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommender
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -45,7 +44,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @Timed
   @Path("/has-instances")
   public Response hasInstances(@QueryParam(QP_TEMPLATE_ID) String templateId) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     if (templateId.isEmpty()) {
@@ -73,8 +72,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @Path("/recommend")
   @POST
   public Response recommendValues() throws CedarException {
-
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     JsonNode input = c.request().getRequestBody().asJson();
