@@ -274,8 +274,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     /**  Execute query and return search results **/
 
     Client client = esQueryService.getClient();
-    String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getValueRecommenderIndex
-        ().getName();
+    String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
     String type = "rulesDoc";
     SearchRequestBuilder search = client.prepareSearch(indexName).setTypes(type).setQuery(mainBoolQuery)
         .addAggregation(mainAgg);
