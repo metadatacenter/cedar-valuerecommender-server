@@ -8,6 +8,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
@@ -21,10 +22,9 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Fi
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
-import org.metadatacenter.intelligentauthoring.valuerecommender.mappings.MappingsService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
-import org.metadatacenter.server.search.elasticsearch.service.ValueRecommenderIndexingService;
+import org.metadatacenter.server.search.elasticsearch.service.RuleIndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,14 +39,13 @@ import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Cons
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
   private final Logger logger = LoggerFactory.getLogger(ValueRecommenderServiceArm.class);
-  private ValueRecommenderIndexingService vrIndexingService;
+  private RuleIndexingService ruleIndexingService;
   private static ElasticsearchQueryService esQueryService;
 
-  public ValueRecommenderServiceArm(CedarConfig config, ValueRecommenderIndexingService
-      valueRecommenderIndexingService) {
+  public ValueRecommenderServiceArm(CedarConfig config, RuleIndexingService ruleIndexingService) {
     // Initialize configuration manager, which will provide access to the Cedar configuration
     ConfigManager.getInstance().initialize(config);
-    vrIndexingService = valueRecommenderIndexingService;
+    ruleIndexingService = ruleIndexingService;
     // Initialize ElasticsearchQueryService
     try {
       esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
@@ -72,7 +71,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       }
       for (String templateId : templateIds) {
         logger.info("Removing all rules for templateId: " + templateId + " from the index");
-        long removedCount = vrIndexingService.removeTemplateRulesFromIndex(templateId);
+        long removedCount = ruleIndexingService.removeRulesFromIndex(templateId);
         logger.info("Removed " + removedCount + " rules from the index");
 
         logger.info("Generating rules for templateId: " + templateId);
@@ -255,10 +254,10 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     mainBoolQuery = mainBoolQuery.must(consequenceNestedQuery);
 
     /** Aggregations definition **/
-    List<Terms.Order> aggOrders = new ArrayList();
-    aggOrders.add(Terms.Order.aggregation("metrics_info>max_score", false));
-    aggOrders.add(Terms.Order.aggregation("metrics_info>max_confidence", false));
-    aggOrders.add(Terms.Order.aggregation("metrics_info>max_support", false));
+    List<BucketOrder> aggOrders = new ArrayList();
+    aggOrders.add(BucketOrder.aggregation("metrics_info>max_score", false));
+    aggOrders.add(BucketOrder.aggregation("metrics_info>max_confidence", false));
+    aggOrders.add(BucketOrder.aggregation("metrics_info>max_support", false));
 
 
     // The following aggregations are used to group the values of the target fields by number of occurrences and sort

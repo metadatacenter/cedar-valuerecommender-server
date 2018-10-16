@@ -7,7 +7,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -60,10 +60,10 @@ public class ValueRecommenderService implements IValueRecommenderService {
     SearchResponse response = null;
     try {
       client = getClient();
-      QueryBuilder qb = QueryBuilders.termQuery("templateId", templateId);
+      QueryBuilder qb = QueryBuilders.termQuery("info.schema:isBasedOn", templateId);
       SearchRequestBuilder search = client.prepareSearch(esIndex).setTypes(esType)
           .setQuery(qb);
-      //System.out.println("Search query in Query DSL: " +  search.internalBuilder());
+      System.out.println("Search query in Query DSL: " +  search.toString());
       response = search.execute().actionGet();
     } catch (UnknownHostException e) {
       throw e;
@@ -111,7 +111,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
       // Bool filter for templateId and all populated fields, if there are any
       BoolQueryBuilder mainQuery = QueryBuilders.boolQuery();
-      TermQueryBuilder templateIdTermQuery = QueryBuilders.termQuery("templateId", templateId);
+      TermQueryBuilder templateIdTermQuery = QueryBuilders.termQuery("info.schema:isBasedOn", templateId);
       mainQuery = mainQuery.must(templateIdTermQuery);
 
       // Aggregation for populated fields. It is used when any of the populated fields is at the same nesting level
@@ -267,7 +267,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     // Execute search
     response = search.execute().actionGet();
     //System.out.println("Search response: " + response.toString());
-    if (response.getHits().totalHits() > 0) {
+    if (response.getHits().totalHits > 0) {
       ObjectMapper mapper = new ObjectMapper();
       JsonNode source = mapper.readTree(response.getHits().getAt(0).getSourceAsString());
       return source;
@@ -387,7 +387,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
   private Client getClient() throws UnknownHostException {
     if (client == null) {
       client = new PreBuiltTransportClient(settings).addTransportAddress(new
-          InetSocketTransportAddress(InetAddress.getByName(esHost), esTransportPort));
+          TransportAddress(InetAddress.getByName(esHost), esTransportPort));
     }
     return client;
   }

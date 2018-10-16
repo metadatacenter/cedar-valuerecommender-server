@@ -6,7 +6,7 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -14,7 +14,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
-import org.metadatacenter.model.search.IndexedDocumentType;
+import org.metadatacenter.search.IndexedDocumentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.metadatacenter.constant.ElasticsearchConstants.ES_DOCUMENT_CEDAR_ID;
-import static org.metadatacenter.constant.ElasticsearchConstants.ES_TEMPLATEID_FIELD;
+import static org.metadatacenter.constant.ElasticsearchConstants.DOCUMENT_CEDAR_ID;
+import static org.metadatacenter.constant.ElasticsearchConstants.TEMPLATEID_FIELD;
 
 public class ElasticsearchQueryService {
 
@@ -44,7 +44,7 @@ public class ElasticsearchQueryService {
         .put("cluster.name", esc.getClusterName()).build();
 
     client = new PreBuiltTransportClient(settings).addTransportAddress(new
-        InetSocketTransportAddress(InetAddress.getByName(esc.getHost()), esc.getTransportPort()));
+        TransportAddress(InetAddress.getByName(esc.getHost()), esc.getTransportPort()));
   }
 
   public Client getClient() {
@@ -57,14 +57,14 @@ public class ElasticsearchQueryService {
   public List<String> getTemplateInstancesIdsByTemplateId(String templateId) {
     List<String> templateInstancesIds = new ArrayList<>();
 
-    QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_TEMPLATEID_FIELD, templateId);
+    QueryBuilder templateIdQuery = QueryBuilders.termQuery(TEMPLATEID_FIELD, templateId);
 
     SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
 
     while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
       for (SearchHit hit : scrollResp.getHits().getHits()) {
-        templateInstancesIds.add(hit.getSourceAsMap().get(ES_DOCUMENT_CEDAR_ID).toString());
+        templateInstancesIds.add(hit.getSourceAsMap().get(DOCUMENT_CEDAR_ID).toString());
       }
       scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(scrollTimeout).execute().actionGet();
     }
@@ -81,7 +81,7 @@ public class ElasticsearchQueryService {
 
     while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
       for (SearchHit hit : scrollResp.getHits().getHits()) {
-        templateIds.add(hit.getSourceAsMap().get(ES_DOCUMENT_CEDAR_ID).toString());
+        templateIds.add(hit.getSourceAsMap().get(DOCUMENT_CEDAR_ID).toString());
       }
       scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(scrollTimeout).execute().actionGet();
     }
@@ -104,9 +104,7 @@ public class ElasticsearchQueryService {
       for (EsRule rule : rules) {
         // either use client#prepare, or use Requests# to directly build index/delete requests
         bulkRequest.add(client.prepareIndex(elasticsearchConfig.getIndexes().getValueRecommenderIndex().getName(),
-            elasticsearchConfig.getIndexes().getValueRecommenderIndex().getType(IndexedDocumentType.RULES_DOC), Integer
-                .toString
-                    (count++)).setSource(mapper.convertValue(rule, Map.class))
+            IndexedDocumentType.DOC.getValue(), Integer.toString(count++)).setSource(mapper.convertValue(rule, Map.class))
         );
       }
 

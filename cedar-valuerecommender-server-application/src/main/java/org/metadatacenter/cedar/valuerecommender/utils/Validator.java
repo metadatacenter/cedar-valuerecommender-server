@@ -24,14 +24,11 @@ public class Validator {
     }
   }
 
-  public static ProcessingReport validateInput(JsonNode input) throws IOException, ProcessingException {
+  public static ProcessingReport validateInput(JsonNode input) throws ProcessingException {
     return validate(schema, input);
   }
 
-  /**
-   * JSON Schema Validation
-   */
-  public static ProcessingReport validate(JsonNode schema, JsonNode instance) throws ProcessingException {
+  private static ProcessingReport validate(JsonNode schema, JsonNode instance) throws ProcessingException {
     JsonValidator validator = JsonSchemaFactory.byDefault().getValidator();
     return validator.validate(schema, instance);
   }
