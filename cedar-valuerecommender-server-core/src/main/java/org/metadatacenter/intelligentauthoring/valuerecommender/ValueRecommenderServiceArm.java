@@ -24,7 +24,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Re
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
-import org.metadatacenter.server.search.elasticsearch.service.RuleIndexingService;
+import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +39,10 @@ import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Cons
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
   private final Logger logger = LoggerFactory.getLogger(ValueRecommenderServiceArm.class);
-  private RuleIndexingService ruleIndexingService;
+  private RulesIndexingService ruleIndexingService;
   private static ElasticsearchQueryService esQueryService;
 
-  public ValueRecommenderServiceArm(CedarConfig config, RuleIndexingService ruleIndexingService) {
+  public ValueRecommenderServiceArm(CedarConfig config, RulesIndexingService ruleIndexingService) {
     // Initialize configuration manager, which will provide access to the Cedar configuration
     ConfigManager.getInstance().initialize(config);
     ruleIndexingService = ruleIndexingService;
