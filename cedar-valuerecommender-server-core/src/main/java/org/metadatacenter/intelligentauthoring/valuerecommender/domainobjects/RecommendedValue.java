@@ -4,13 +4,17 @@ public class RecommendedValue {
   public enum RecommendationType {CONTEXT_INDEPENDENT, CONTEXT_DEPENDENT};
   private String value;
   private String valueUri;
-  private double score;
+  private Double score;
+  private Double confidence;
+  private Double support;
   private RecommendationType type;
 
-  public RecommendedValue(String value, String valueUri, double score, RecommendationType type) {
+  public RecommendedValue(String value, String valueUri, Double score, Double confidence, Double support, RecommendationType type) {
     this.value = value;
     this.valueUri = valueUri;
     this.score = score;
+    this.confidence = confidence;
+    this.support = support;
     this.type = type;
   }
 
@@ -18,31 +22,32 @@ public class RecommendedValue {
     return value;
   }
 
-  public void setValue(String value) {
-    this.value = value;
-  }
-
   public String getValueUri() {
     return valueUri;
   }
 
-  public void setValueUri(String valueUri) {
-    this.valueUri = valueUri;
-  }
-
-  public double getScore() {
+  public Double getScore() {
     return score;
   }
 
-  public void setScore(double score) {
-    this.score = score;
-  }
+  public Double getConfidence() { return confidence; }
+
+  public Double getSupport() { return support; }
 
   public RecommendationType getType() {
     return type;
   }
 
-  public void setType(RecommendationType type) {
-    this.type = type;
+  @Override
+  public String toString() {
+    return "RecommendedValue{" +
+        "value='" + value + '\'' +
+        ", valueUri='" + valueUri + '\'' +
+        ", score=" + score +
+        ", confidence=" + confidence +
+        ", support=" + support +
+        ", type=" + type +
+        '}';
   }
+
 }
