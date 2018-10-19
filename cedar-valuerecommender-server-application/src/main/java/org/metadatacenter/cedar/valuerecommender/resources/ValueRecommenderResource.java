@@ -121,7 +121,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @POST
   public Response recommendValuesArm() throws CedarException {
 
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     JsonNode input = c.request().getRequestBody().asJson();
@@ -150,9 +150,10 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
       boolean strictMatch = false;
       if (input.get("strictMatch") != null) {
-        strictMatch =  input.get("strictMatch").asBoolean();
+        strictMatch = input.get("strictMatch").asBoolean();
       }
-      recommendation = valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField, strictMatch);
+      recommendation =
+          valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField, strictMatch);
       output = mapper.valueToTree(recommendation);
     } catch (IllegalArgumentException e) {
       return CedarResponse.badRequest()
@@ -166,12 +167,13 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   }
 
   /**
-   * Generates the mining rules that the value recommender will use to generate the recommendations. Note that this endpoint
+   * Generates the mining rules that the value recommender will use to generate the recommendations. Note that this
+   * endpoint
    * is temporary. TODO: Think about the best strategy to invoke the rules generation process (e.g., use a cron job?,
    * generate the rules and index them in Elasticsearch when a new instance is created/updated/deleted?
-   *
+   * <p>
    * Parameters:
-   *  - templateIds (optional): list of ids for which the rules will be generated
+   * - templateIds (optional): list of ids for which the rules will be generated
    */
   @Path("/generate-rules")
   @POST
@@ -179,7 +181,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   public Response generateRules() throws CedarException {
 
     //TODO: Check that the user is admin. We don't want to enable this call for all users
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     JsonNode body = c.request().getRequestBody().asJson();
@@ -194,8 +196,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
       }
 
       valueRecommenderServiceArm.generateRules(templateIds);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       throw new CedarProcessingException(e);
     }
     return Response.noContent().build();
