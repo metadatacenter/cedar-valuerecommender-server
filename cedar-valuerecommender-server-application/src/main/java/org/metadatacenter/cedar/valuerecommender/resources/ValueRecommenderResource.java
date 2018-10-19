@@ -50,7 +50,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @Timed
   @Path("/has-instances")
   public Response hasInstances(@QueryParam(QP_TEMPLATE_ID) String templateId) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     if (templateId.isEmpty()) {
@@ -78,8 +78,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @Path("/recommend")
   @POST
   public Response recommendValues() throws CedarException {
-
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     JsonNode input = c.request().getRequestBody().asJson();
@@ -124,7 +123,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @POST
   public Response recommendValuesArm() throws CedarException {
 
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     JsonNode input = c.request().getRequestBody().asJson();
@@ -153,9 +152,10 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
       Field targetField = mapper.readValue(input.get("targetField").traverse(), Field.class);
       boolean strictMatch = false;
       if (input.get("strictMatch") != null) {
-        strictMatch =  input.get("strictMatch").asBoolean();
+        strictMatch = input.get("strictMatch").asBoolean();
       }
-      recommendation = valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField, strictMatch);
+      recommendation =
+          valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField, strictMatch);
       output = mapper.valueToTree(recommendation);
     } catch (IllegalArgumentException e) {
       return CedarResponse.badRequest()
@@ -169,19 +169,20 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   }
 
   /**
-   * Generates the mining rules that the value recommender will use to generate the recommendations. Note that this endpoint
+   * Generates the mining rules that the value recommender will use to generate the recommendations. Note that this
+   * endpoint
    * is temporary. TODO: Think about the best strategy to invoke the rules generation process (e.g., use a cron job?,
    * generate the rules and index them in Elasticsearch when a new instance is created/updated/deleted?
-   *
+   * <p>
    * Parameters:
-   *  - templateIds (optional): list of ids for which the rules will be generated
+   * - templateIds (optional): list of ids for which the rules will be generated
    */
   @Path("/generate-rules")
   @POST
 
   public Response generateRules() throws CedarException {
-
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    //TODO: Check that the user is admin. We don't want to enable this call for all users
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
     // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index, not to the rules index
     c.must(c.user()).have(CedarPermission.SEARCH_INDEX_REINDEX);
@@ -197,8 +198,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
             mapper.getTypeFactory().constructCollectionType(List.class, String.class));
       }
       valueRecommenderServiceArm.generateRules(templateIds);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       throw new CedarProcessingException(e);
     }
     return Response.noContent().build();
