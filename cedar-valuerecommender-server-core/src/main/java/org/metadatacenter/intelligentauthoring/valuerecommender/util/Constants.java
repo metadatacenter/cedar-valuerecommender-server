@@ -21,12 +21,12 @@ public class Constants {
   public static final String RECOMMENDATION_ENABLED_FIELD_NAME = "valueRecommendationEnabled";
   public static final String ARFF_MISSING_VALUE = "?";
   public static final int MAX_INSTANCES_FOR_ARM = -1; // -1 means that there is no limit
-  public static final boolean USE_ALL_FIELDS = false; // If true, only fields with "valueRecommendationEnabled=true" are considered
+  public static final boolean USE_ALL_FIELDS = true; // If false, only fields with "valueRecommendationEnabled=true" are considered
   public static final String ARFF_FOLDER_NAME = "cedar-valuerecommender-server/arff-files";
   public static final String MAPPINGS_FILE_PATH = "mappings/mappings_merged.json";
 
   // If true, the instances are read from CEDAR. If false, they are read from a local folder
-  public static final boolean READ_INSTANCES_FROM_CEDAR = false;
+  public static final boolean READ_INSTANCES_FROM_CEDAR = true;
   public static final String CEDAR_INSTANCES_PATH =
       //"/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ebi_cedar_instances/training";
       //"/Users/marcosmr/tmp/ARM_resources/EVALUATION/cedar_instances_annotated/ebi_cedar_instances_different_ontologies/training";
@@ -35,7 +35,7 @@ public class Constants {
   // Apriori configuration
   public static final int APRIORI_MAX_NUM_RULES = 1000000;
   //public static double MIN_SUPPORT = 0.00004;
-  public static int MIN_SUPPORTING_INSTANCES = 5; // The support will be dynamically calculated based on this value
+  public static int MIN_SUPPORTING_INSTANCES = 1/*5*/; // The support will be dynamically calculated based on this value
   public static final double MIN_CONFIDENCE = 0.3;
   public static final double MIN_LIFT = 1.2;
   public static final double MIN_LEVERAGE = 1.1;

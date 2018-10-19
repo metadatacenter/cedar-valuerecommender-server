@@ -92,15 +92,16 @@ public class AssociationRulesUtils {
     String filePath = System.getProperty("java.io.tmpdir") + "/" + ARFF_FOLDER_NAME + "/" + fileName;
     File file = new File(filePath);
     file.getParentFile().mkdirs();
-    PrintWriter out = new PrintWriter(new FileWriter(file));
+    PrintWriter fileWriter = new PrintWriter(new FileWriter(file));
     logger.info("File path: " + file.getAbsolutePath());
-    out.println("% ARFF file for CEDAR template id = " + templateId);
-    out.println("\n@relation example\n");
+    fileWriter.println("% ARFF file for CEDAR template id = " + templateId);
+    fileWriter.println("\n@relation example\n");
 
     // 1. Get instance attributes
     JsonNode template = templateService.findTemplate(templateId);
     if (template == null) {
-      throw new InstanceNotFoundException("Template not found (id=" + templateId + ")");
+      logger.warn("Template not found (id=" + templateId + ")");
+      return Optional.empty();
     }
     List<TemplateNode> nodes = CedarUtils.getTemplateNodes(template, null, null);
 
@@ -118,87 +119,95 @@ public class AssociationRulesUtils {
       }
     }
 
-    // Array nodes
-    List<TemplateNode> arrayNodes = new ArrayList<>();
-    for (TemplateNode node : nodes) {
-      if (node.isArray()) {
-        arrayNodes.add(node);
-      }
-    }
-
-    // Generate ARFF attributes
-    for (TemplateNode node : fieldNodes) {
-      if (node.getType().equals(CedarNodeType.FIELD)) {
-        out.println(toWekaAttributeFormat(node, " string"));
-      }
-    }
-
-    // 2. Get template instances in ARFF format
-    out.println("\n@data");
-    final AtomicInteger instancesCount = new AtomicInteger(0);
-
-    Map<String, Integer> arraysPathsAndIndexes = new LinkedHashMap<>();
-    Integer initialIndex = 0;
-    for (TemplateNode arrayNode : arrayNodes) {
-      arraysPathsAndIndexes.put(arrayNode.generatePathDotNotation(), initialIndex);
-    }
-
-    if (READ_INSTANCES_FROM_CEDAR) { // Read instances from the CEDAR system
-      List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
-
-      for (String tiId : templateInstancesIds) {
-        JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
-        Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
-        // Transform the template instances to a list of ARFF instances
-        List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
-            (arraysPathsAndIndexes.values()), 0, null);
-
-        for (ArffInstance arffInstance : arffInstances) {
-          out.println(arffInstance.toArffFormat());
-        }
-        instancesCount.getAndAdd(1);
-        if (MAX_INSTANCES_FOR_ARM > 0 && instancesCount.get() == MAX_INSTANCES_FOR_ARM) {
-          break;
-        }
-      }
-    } else { // Read instances from a local folder
-      try (Stream<Path> paths = Files.walk(Paths.get(CEDAR_INSTANCES_PATH))) {
-        paths.filter(Files::isRegularFile).forEach(p -> {
-          try {
-            if (MAX_INSTANCES_FOR_ARM == -1 || instancesCount.get() < MAX_INSTANCES_FOR_ARM) {
-
-              String fileContent = new String(Files.readAllBytes(p));
-              Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(fileContent);
-              // Transform the template instances to a list of ARFF instances
-              List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
-                  (arraysPathsAndIndexes.values()), 0, null);
-
-              for (ArffInstance arffInstance : arffInstances) {
-                out.println(arffInstance.toArffFormat());
-              }
-
-              instancesCount.getAndAdd(1);
-              if (instancesCount.get() % 1000 == 0) {
-                logger.info("No. instances processed: " + instancesCount.get());
-              }
-            }
-          } catch (FileNotFoundException e) {
-            e.printStackTrace();
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-        });
-      }
-    }
-
-    out.close();
-    if (instancesCount.get() == 0) { // No instances have been generated
-      logger.info("No data found for template (template id: " + templateId + ")");
+    // If there are no fields we cannot generate a valid ARFF file
+    if (fieldNodes.isEmpty()) {
+      logger.info("Skipping generation of ARFF file for template id = " + templateId + " (no attributes available)");
       file.delete();
       return Optional.empty();
     }
-    logger.info("ARFF file created successfully (template id: " + templateId + ")");
-    return Optional.ofNullable(fileName);
+    else {
+      // Generate ARFF attributes
+      for (TemplateNode node : fieldNodes) {
+        if (node.getType().equals(CedarNodeType.FIELD)) {
+          fileWriter.println(toWekaAttributeFormat(node, " string"));
+        }
+      }
+
+      // Array nodes
+      List<TemplateNode> arrayNodes = new ArrayList<>();
+      for (TemplateNode node : nodes) {
+        if (node.isArray()) {
+          arrayNodes.add(node);
+        }
+      }
+
+      // 2. Get template instances in ARFF format
+      fileWriter.println("\n@data");
+      final AtomicInteger instancesCount = new AtomicInteger(0);
+
+      Map<String, Integer> arraysPathsAndIndexes = new LinkedHashMap<>();
+      Integer initialIndex = 0;
+      for (TemplateNode arrayNode : arrayNodes) {
+        arraysPathsAndIndexes.put(arrayNode.generatePathDotNotation(), initialIndex);
+      }
+
+      if (READ_INSTANCES_FROM_CEDAR) { // Read instances from the CEDAR system
+        List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
+
+        for (String tiId : templateInstancesIds) {
+          JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
+          Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
+          // Transform the template instances to a list of ARFF instances
+          List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
+              (arraysPathsAndIndexes.values()), 0, null);
+
+          for (ArffInstance arffInstance : arffInstances) {
+            fileWriter.println(arffInstance.toArffFormat());
+          }
+          instancesCount.getAndAdd(1);
+          if (MAX_INSTANCES_FOR_ARM > 0 && instancesCount.get() == MAX_INSTANCES_FOR_ARM) {
+            break;
+          }
+        }
+      } else { // Read instances from a local folder
+        try (Stream<Path> paths = Files.walk(Paths.get(CEDAR_INSTANCES_PATH))) {
+          paths.filter(Files::isRegularFile).forEach(p -> {
+            try {
+              if (MAX_INSTANCES_FOR_ARM == -1 || instancesCount.get() < MAX_INSTANCES_FOR_ARM) {
+
+                String fileContent = new String(Files.readAllBytes(p));
+                Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(fileContent);
+                // Transform the template instances to a list of ARFF instances
+                List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
+                    (arraysPathsAndIndexes.values()), 0, null);
+
+                for (ArffInstance arffInstance : arffInstances) {
+                  fileWriter.println(arffInstance.toArffFormat());
+                }
+
+                instancesCount.getAndAdd(1);
+                if (instancesCount.get() % 1000 == 0) {
+                  logger.info("No. instances processed: " + instancesCount.get());
+                }
+              }
+            } catch (FileNotFoundException e) {
+              e.printStackTrace();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+          });
+        }
+      }
+
+      fileWriter.close();
+      if (instancesCount.get() == 0) { // No instances have been generated
+        logger.info("No data found for template (template id: " + templateId + ")");
+        file.delete();
+        return Optional.empty();
+      }
+      logger.info("ARFF file created successfully (template id: " + templateId + ")");
+      return Optional.ofNullable(fileName);
+    }
   }
 
   /**
