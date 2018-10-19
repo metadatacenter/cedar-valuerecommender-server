@@ -24,8 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.metadatacenter.constant.ElasticsearchConstants.DOCUMENT_CEDAR_ID;
-import static org.metadatacenter.constant.ElasticsearchConstants.TEMPLATEID_FIELD;
+import static org.metadatacenter.constant.ElasticsearchConstants.*;
 
 public class ElasticsearchQueryService {
 
@@ -52,12 +51,14 @@ public class ElasticsearchQueryService {
   }
 
   // It uses the scroll API to retrieve all results
-  // More info: https://www.elastic.co/guide/en/elasticsearch/reference/5.6/search-request-scroll.html
+  // More info: https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-scroll.html
   // https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/java-search-scrolling.html
   public List<String> getTemplateInstancesIdsByTemplateId(String templateId) {
     List<String> templateInstancesIds = new ArrayList<>();
 
-    QueryBuilder templateIdQuery = QueryBuilders.termQuery(TEMPLATEID_FIELD, templateId);
+    QueryBuilder templateIdQuery = QueryBuilders.termQuery(INFO_IS_BASED_ON, templateId);
+
+    //logger.info("Search query: " + templateIdQuery.toString());
 
     SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
@@ -116,25 +117,8 @@ public class ElasticsearchQueryService {
       }
     }
     else {
-      logger.warn("There are no rules to be indexed");
+      logger.warn("There are no rules to index");
     }
   }
-
-//  public JsonNode getTemplateSummary(String templateId) {
-//
-//    QueryBuilder templateIdQuery = QueryBuilders.termQuery(ES_DOCUMENT_CEDAR_ID, templateId);
-//
-//    SearchResponse response = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
-// .setTypes("content").setQuery(templateIdQuery).get();
-//
-//    if (response.getHits().hits().length == 0) {
-//      throw new InternalError("Summarized content not found for template (templateId=" + templateId + ")");
-//    }
-//    else {
-//      Object summarizedContent = response.getHits().hits()[0].sourceAsMap().get(Constants.SUMMARIZED_CONTENT_FIELD);
-//      JsonNode templateSummary = JsonMapper.MAPPER.convertValue(summarizedContent, JsonNode.class);
-//      return templateSummary;
-//    }
-//  }
 
 }

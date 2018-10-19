@@ -14,6 +14,8 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommender
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -179,10 +181,11 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @POST
 
   public Response generateRules() throws CedarException {
-
     //TODO: Check that the user is admin. We don't want to enable this call for all users
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
+    // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index, not to the rules index
+    c.must(c.user()).have(CedarPermission.SEARCH_INDEX_REINDEX);
 
     JsonNode body = c.request().getRequestBody().asJson();
     ObjectMapper mapper = new ObjectMapper();
@@ -194,7 +197,6 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
         templateIds = mapper.readValue(body.get("templateIds").traverse(),
             mapper.getTypeFactory().constructCollectionType(List.class, String.class));
       }
-
       valueRecommenderServiceArm.generateRules(templateIds);
     } catch (Exception e) {
       throw new CedarProcessingException(e);
