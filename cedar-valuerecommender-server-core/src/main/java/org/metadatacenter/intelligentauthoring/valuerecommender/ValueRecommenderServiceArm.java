@@ -39,13 +39,14 @@ import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Cons
 public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
   private final Logger logger = LoggerFactory.getLogger(ValueRecommenderServiceArm.class);
-  private RulesIndexingService ruleIndexingService;
+  private RulesIndexingService rulesIndexingService;
   private static ElasticsearchQueryService esQueryService;
 
-  public ValueRecommenderServiceArm(CedarConfig config, RulesIndexingService ruleIndexingService) {
+  public ValueRecommenderServiceArm(CedarConfig config, RulesIndexingService rulesIndexingService) {
     // Initialize configuration manager, which will provide access to the Cedar configuration
     ConfigManager.getInstance().initialize(config);
-    ruleIndexingService = ruleIndexingService;
+    this.rulesIndexingService = rulesIndexingService;
+
     // Initialize ElasticsearchQueryService
     try {
       esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
@@ -66,14 +67,18 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     try {
       // Generate rules for all the templates (with instances) in the system
       if (templateIds.isEmpty()) {
+        logger.info("Generating rules for all templates in the system");
         esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
         templateIds = esQueryService.getTemplateIds();
       }
+      else {
+        logger.info("Generating rules for the following templates: " + templateIds.toString());
+      }
       for (String templateId : templateIds) {
+        logger.info("Processing templateId: " + templateId);
         logger.info("Removing all rules for templateId: " + templateId + " from the index");
-        long removedCount = ruleIndexingService.removeRulesFromIndex(templateId);
-        logger.info("Removed " + removedCount + " rules from the index");
-
+        long removedCount = rulesIndexingService.removeRulesFromIndex(templateId);
+        logger.info(removedCount + " rules removed");
         logger.info("Generating rules for templateId: " + templateId);
         long startTime = System.currentTimeMillis();
         List<EsRule> allRules = service.generateRulesForTemplate(templateId);
