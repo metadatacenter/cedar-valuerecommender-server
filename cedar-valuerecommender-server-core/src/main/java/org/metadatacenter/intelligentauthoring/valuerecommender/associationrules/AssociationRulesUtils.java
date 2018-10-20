@@ -8,6 +8,7 @@ import com.jayway.jsonpath.PathNotFoundException;
 import com.mongodb.MongoClient;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.MongoConfig;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.ArffAttributeValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
@@ -577,15 +578,15 @@ public class AssociationRulesUtils {
    */
   public static EsRuleItem buildEsRuleItem(Item item) throws Exception {
     String fieldPath = getEsItemFieldPath(item);
-    String fieldInstanceType = getEsItemFieldInstanceType(item);
-    String fieldNormalizedPath = getEsItemFieldNormalizedPath(fieldPath, fieldInstanceType);
-    List<String> fieldNormalizedPaths = getEsItemFieldNormalizedPaths(fieldNormalizedPath, fieldInstanceType);
-    String fieldValue = getEsItemFieldValue(item);
+    String fieldType = getEsItemFieldType(item);
+    String fieldNormalizedPath = getEsItemFieldNormalizedPath(fieldPath, fieldType);
+    List<String> fieldTypeMappings = getEsItemFieldTypeMappings(fieldNormalizedPath, fieldType);
+    String fieldValueType = getEsItemFieldValueType(item);
     String fieldValueLabel = getEsItemFieldValueLabel(item);
     String fieldNormalizedValue = getEsItemFieldNormalizedValue(item);
-    List<String> fieldNormalizedValues = getEsItemFieldNormalizedValues(fieldNormalizedValue);
-    return new EsRuleItem(fieldPath, fieldInstanceType, fieldNormalizedPath, fieldNormalizedPaths,
-        fieldValue, fieldValueLabel, fieldNormalizedValue, fieldNormalizedValues);
+    List<String> fieldValueMappings = getEsItemFieldValueMappings(fieldNormalizedValue);
+    return new EsRuleItem(fieldPath, fieldType, fieldNormalizedPath, fieldTypeMappings,
+        fieldValueType, fieldValueLabel, fieldNormalizedValue, fieldValueMappings);
   }
 
   /**
@@ -606,9 +607,9 @@ public class AssociationRulesUtils {
 
   /**
    * @param item
-   * @return The field instance type (i.e., @type)
+   * @return The URI of the controlled term that annotates the field
    */
-  public static String getEsItemFieldInstanceType(Item item) {
+  public static String getEsItemFieldType(Item item) {
     String attributeName = item.getAttribute().name();
     String separator = "](";
     // Note that attributeName follows the format: ('[fieldInstanceType](fieldPath)')
@@ -627,15 +628,20 @@ public class AssociationRulesUtils {
     }
   }
 
-  public static String getEsItemFieldNormalizedPath(String fieldPath, String fieldInstanceType) {
-    if (fieldInstanceType == null) {
-      return fieldPath;
-    } else {
+  public static String getEsItemFieldNormalizedPath(String fieldPath, String fieldInstanceType)
+      throws CedarProcessingException {
+    if (fieldInstanceType != null && !fieldInstanceType.isEmpty()) {
       return fieldInstanceType;
+    }
+    else if (fieldPath != null && !fieldPath.isEmpty()) {
+      return CedarTextUtils.normalizePath(fieldPath);
+    }
+    else { // None of them are present
+      throw new CedarProcessingException("Either fieldPath or fieldInstanceType is required");
     }
   }
 
-  public static List<String> getEsItemFieldNormalizedPaths(String fieldNormalizedPath, String fieldInstanceType) {
+  public static List<String> getEsItemFieldTypeMappings(String fieldNormalizedPath, String fieldInstanceType) {
     if (fieldInstanceType == null) {
       return new ArrayList<>();
     }
@@ -658,7 +664,7 @@ public class AssociationRulesUtils {
     }
   }
 
-  public static List<String> getEsItemFieldNormalizedValues(String fieldNormalizedValue) {
+  public static List<String> getEsItemFieldValueMappings(String fieldNormalizedValue) {
     return MappingsService.getMappings(fieldNormalizedValue, false);
   }
 

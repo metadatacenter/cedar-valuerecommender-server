@@ -28,12 +28,12 @@ public class CedarTextUtils {
   }
 
   /**
-   * Normalizes a field path (e.g., study.title)
+   * Normalizes a field path (e.g., study.title to STUDY.TITLE)
    * @param path
    * @return
    */
-//  public static String normalizePath(String path) {
-//    path = path.trim();
-//    return path.toUpperCase();
-//  }
+  public static String normalizePath(String path) {
+    path = path.trim();
+    return path.toUpperCase();
+  }
 }
