@@ -13,6 +13,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.ArffAttributeValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.FieldValueResultUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.mappings.MappingsService;
@@ -33,8 +34,6 @@ import weka.core.Instances;
 import weka.core.SelectedTag;
 import weka.filters.Filter;
 import weka.filters.unsupervised.attribute.StringToNominal;
-
-import javax.management.InstanceNotFoundException;
 import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -578,15 +577,17 @@ public class AssociationRulesUtils {
    */
   public static EsRuleItem buildEsRuleItem(Item item) throws Exception {
     String fieldPath = getEsItemFieldPath(item);
-    String fieldType = getEsItemFieldType(item);
+    String fieldType = getEsItemFieldType(item).orElse(null);
     String fieldNormalizedPath = getEsItemFieldNormalizedPath(fieldPath, fieldType);
     List<String> fieldTypeMappings = getEsItemFieldTypeMappings(fieldNormalizedPath, fieldType);
-    String fieldValueType = getEsItemFieldValueType(item);
+    String fieldValueType = getEsItemFieldValueType(item).orElse(null);
     String fieldValueLabel = getEsItemFieldValueLabel(item);
     String fieldNormalizedValue = getEsItemFieldNormalizedValue(item);
     List<String> fieldValueMappings = getEsItemFieldValueMappings(fieldNormalizedValue);
+    String fieldValueResult = FieldValueResultUtils.toValueResultString(fieldValueType, fieldValueLabel);
+
     return new EsRuleItem(fieldPath, fieldType, fieldNormalizedPath, fieldTypeMappings,
-        fieldValueType, fieldValueLabel, fieldNormalizedValue, fieldValueMappings);
+        fieldValueType, fieldValueLabel, fieldNormalizedValue, fieldValueMappings, fieldValueResult);
   }
 
   /**
@@ -596,7 +597,7 @@ public class AssociationRulesUtils {
   public static String getEsItemFieldPath(Item item) throws Exception {
     String attributeName = item.getAttribute().name();
     String separator = "](";
-    // Note that attributeName follows the format: ('[fieldInstanceType](fieldPath)')
+    // Note that attributeName follows the format: ('[fieldType](fieldPath)')
     int index = attributeName.indexOf(separator);
     if (index == -1) {
       logger.error("Separator not found in: " + attributeName);
@@ -609,44 +610,44 @@ public class AssociationRulesUtils {
    * @param item
    * @return The URI of the controlled term that annotates the field
    */
-  public static String getEsItemFieldType(Item item) {
+  public static Optional<String> getEsItemFieldType(Item item) {
     String attributeName = item.getAttribute().name();
     String separator = "](";
-    // Note that attributeName follows the format: ('[fieldInstanceType](fieldPath)')
+    // Note that attributeName follows the format: ('[fieldType](fieldPath)')
     int index = attributeName.indexOf(separator);
     if (index == -1) {
       logger.error("Separator not found in: " + attributeName);
     }
-    String instanceType = attributeName.substring(1, index);
+    String fieldType = attributeName.substring(1, index);
     // e.g. when attribute is [http://purl.obolibrary.org/obo/UBERON_0001870](FRONTAL CORTEX)
-    if (instanceType.length() > 0) {
-      return instanceType; // e.g. http://purl.obolibrary.org/obo/UBERON_0001870
+    if (fieldType != null && !fieldType.isEmpty()) {
+      return Optional.of(fieldType); // e.g. http://purl.obolibrary.org/obo/UBERON_0001870
     }
     // e.g. when attribute is [](frontal cortex)
     else {
-      return null;
+      return Optional.empty();
     }
   }
 
-  public static String getEsItemFieldNormalizedPath(String fieldPath, String fieldInstanceType)
+  public static String getEsItemFieldNormalizedPath(String fieldPath, String fieldType)
       throws CedarProcessingException {
-    if (fieldInstanceType != null && !fieldInstanceType.isEmpty()) {
-      return fieldInstanceType;
+    if (fieldType != null && fieldType.length() > 0) {
+      return fieldType;
     }
-    else if (fieldPath != null && !fieldPath.isEmpty()) {
+    else if (fieldPath != null && fieldPath.length() > 0) {
       return CedarTextUtils.normalizePath(fieldPath);
     }
     else { // None of them are present
-      throw new CedarProcessingException("Either fieldPath or fieldInstanceType is required");
+      throw new CedarProcessingException("Either fieldPath or fieldType is required");
     }
   }
 
-  public static List<String> getEsItemFieldTypeMappings(String fieldNormalizedPath, String fieldInstanceType) {
-    if (fieldInstanceType == null) {
-      return new ArrayList<>();
+  public static List<String> getEsItemFieldTypeMappings(String fieldNormalizedPath, String fieldType) {
+    if (fieldType != null && fieldType.length() > 0) {
+      return MappingsService.getMappings(fieldNormalizedPath, false);
     }
     else {
-      return MappingsService.getMappings(fieldNormalizedPath, false);
+      return new ArrayList<>();
     }
   }
 
@@ -655,9 +656,9 @@ public class AssociationRulesUtils {
    * @return The field value (i.e., @value or @id)
    */
   public static String getEsItemFieldValue(Item item) {
-    String valueType = getEsItemFieldValueType(item);
-    if (valueType != null) {  // e.g., when attribute value is [http://purl.obolibrary.org/obo/PATO_0000384](MALE)
-      return valueType; // e.g., http://purl.obolibrary.org/obo/PATO_0000384
+    Optional<String> valueType = getEsItemFieldValueType(item);
+    if (valueType.isPresent() && valueType.get().length() > 0) {  // e.g., when attribute value is [http://purl.obolibrary.org/obo/PATO_0000384](MALE)
+      return valueType.get(); // e.g., http://purl.obolibrary.org/obo/PATO_0000384
     }
     else {
       return getEsItemFieldValueLabel(item);
@@ -672,7 +673,7 @@ public class AssociationRulesUtils {
    * @param item
    * @return For ontology terms, the term uri (i.e., @id)
    */
-  public static String getEsItemFieldValueType(Item item) {
+  public static Optional<String> getEsItemFieldValueType(Item item) {
     String attributeFullValue = item.getItemValueAsString();
     String separator = "](";
     // Note that the attribute value follows the format: ('[fieldValueType](fieldValue)')
@@ -681,13 +682,14 @@ public class AssociationRulesUtils {
       logger.error("Separator not found in: " + attributeFullValue);
     }
     String valueType = attributeFullValue.substring(1, index);
+
     // e.g. when attribute value is [http://purl.obolibrary.org/obo/PATO_0000384](MALE)
-    if (valueType.length() > 0) {
-      return valueType; // e.g. http://purl.obolibrary.org/obo/PATO_0000384
+    if (valueType != null && !valueType.isEmpty()) {
+      return Optional.of(valueType); // e.g. http://purl.obolibrary.org/obo/PATO_0000384
     }
-    // e.g. when attribute value is [](male)
+    // e.g. when attribute is [](MALE)
     else {
-      return null;
+      return Optional.empty();
     }
   }
 
@@ -721,9 +723,9 @@ public class AssociationRulesUtils {
    * returns the value after applying a basic normalization
    */
   public static String getEsItemFieldNormalizedValue(Item item) {
-    String valueType = getEsItemFieldValueType(item);
-    if (valueType != null) {
-      return valueType;
+    Optional<String> valueType = getEsItemFieldValueType(item);
+    if (valueType.isPresent() && valueType.get().length() > 0) {
+      return valueType.get();
     } else {
       return CedarTextUtils.normalizeValue(getEsItemFieldValue(item));
     }

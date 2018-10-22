@@ -24,6 +24,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Re
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
+import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,9 +113,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   }
 
   @Override
-  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField, boolean strictMatch) throws
-      IOException {
-
+  public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField,
+                                          boolean strictMatch) {
     // Find the rules that match the condition
     SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch,
         FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT, USE_MAPPINGS);
@@ -154,23 +154,23 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     BoolQueryBuilder mainBoolQuery = QueryBuilders.boolQuery();
 
     if (filterByConfidence) {
-      RangeQueryBuilder minConfidence = QueryBuilders.rangeQuery("confidence").from(MIN_CONFIDENCE_QUERY).includeLower(true);
+      RangeQueryBuilder minConfidence = QueryBuilders.rangeQuery(INDEX_RULE_CONFIDENCE).from(MIN_CONFIDENCE_QUERY).includeLower(true);
       mainBoolQuery = mainBoolQuery.must(minConfidence);
     }
 
     if (filterBySupport) {
-      RangeQueryBuilder minSupport = QueryBuilders.rangeQuery("support").from(MIN_SUPPORT_QUERY).includeLower(true);
+      RangeQueryBuilder minSupport = QueryBuilders.rangeQuery(INDEX_RULE_SUPPORT).from(MIN_SUPPORT_QUERY).includeLower(true);
       mainBoolQuery = mainBoolQuery.must(minSupport);
     }
 
     // If templateId is present, the query will be limited to rules from a particular template
     if (templateId.isPresent()) {
-      MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery("templateId", templateId.get());
+      MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_TEMPLATE_ID, templateId.get());
       mainBoolQuery = mainBoolQuery.must(matchConsequenceField);
     }
 
     // Match number of premises
-    MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery("premiseSize", populatedFields.size());
+    MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery(INDEX_PREMISE_SIZE, populatedFields.size());
     if (strictMatch) {
       mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
     }
@@ -179,17 +179,19 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     }
 
     // Match number of consequences (i.e., 1)
-    MatchQueryBuilder matchConsequenceSize = QueryBuilders.matchQuery("consequenceSize", 1);
+    MatchQueryBuilder matchConsequenceSize = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_SIZE, CONSEQUENCE_SIZE);
     mainBoolQuery = mainBoolQuery.must(matchConsequenceSize);
 
     // Match fields and values in premises
     for (Field field : populatedFields) {
 
-      // Match field (by id) (Note that we compare the path to the normalized path)
-      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery("premise.fieldNormalizedPath", field.getFieldPath());
+      // Match field path
+      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery(INDEX_PREMISE_NORMALIZED_PATH,
+          CedarTextUtils.normalizePath(field.getFieldPath()));
 
       // Match field with other uris
-      MatchQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.matchQuery("premise.fieldNormalizedPaths", field.getFieldPath());
+      MatchQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.matchQuery(INDEX_PREMISE_TYPE_MAPPINGS,
+          field.getFieldPath());
 
       // Match field bool query
       BoolQueryBuilder premiseFieldBoolQuery = QueryBuilders.boolQuery();
@@ -199,19 +201,19 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       }
       premiseFieldBoolQuery = premiseFieldBoolQuery.minimumShouldMatch(1); // Logical OR
 
+      // Normalize value
       String fieldValue = field.getFieldValue();
-      if (!CedarUtils.isUri(fieldValue)) { // Ontology term uris will not be normalized
+      if (!CedarUtils.isUri(fieldValue)) { // Ontology term URIs will not be normalized
         fieldValue = CedarTextUtils.normalizeValue(fieldValue);
       }
 
       // Match field normalized value
       MatchQueryBuilder matchPremiseFieldNormalizedValue =
-          QueryBuilders.matchQuery("premise.fieldNormalizedValue", fieldValue);
+          QueryBuilders.matchQuery(INDEX_PREMISE_NORMALIZED_VALUE, fieldValue);
 
       // Match field normalized value with other uris
       MatchQueryBuilder matchPremiseFieldNormalizedValues =
-          QueryBuilders.matchQuery("premise.fieldNormalizedValues", fieldValue);
-
+          QueryBuilders.matchQuery(INDEX_PREMISE_VALUE_MAPPINGS, fieldValue);
 
       // Match field value bool query
       BoolQueryBuilder premiseFieldValueBoolQuery = QueryBuilders.boolQuery();
@@ -226,7 +228,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       premiseBoolQuery = premiseBoolQuery.must(premiseFieldBoolQuery);
       premiseBoolQuery = premiseBoolQuery.must(premiseFieldValueBoolQuery);
 
-      NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery("premise", premiseBoolQuery, ScoreMode.Avg);
+      NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery(INDEX_RULE_PREMISE, premiseBoolQuery, ScoreMode.Avg);
 
       // Add the premise query to the main query
       if (strictMatch) {
@@ -237,10 +239,10 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       }
     }
 
-    // Match target field (Note that we compare the path to the normalized path)
-    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery("consequence.fieldNormalizedPath", targetField
-        .getFieldPath());
-    MatchQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.matchQuery("consequence.fieldNormalizedPaths",
+    // Match target field
+    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_NORMALIZED_PATH,
+        CedarTextUtils.normalizePath(targetField.getFieldPath()));
+    MatchQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_TYPE_MAPPINGS,
         targetField.getFieldPath());
 
     // Match target field bool query
@@ -251,39 +253,35 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     }
     consequenceFieldBoolQuery = consequenceFieldBoolQuery.minimumShouldMatch(1); // Logical OR
 
-
-    NestedQueryBuilder consequenceNestedQuery = QueryBuilders.nestedQuery("consequence", consequenceFieldBoolQuery,
-        ScoreMode.Avg);
+    NestedQueryBuilder consequenceNestedQuery = QueryBuilders.nestedQuery(INDEX_RULE_CONSEQUENCE,
+        consequenceFieldBoolQuery, ScoreMode.Avg);
 
     // Add the consequence query to the main query
     mainBoolQuery = mainBoolQuery.must(consequenceNestedQuery);
 
     /** Aggregations definition **/
     List<BucketOrder> aggOrders = new ArrayList();
-    aggOrders.add(BucketOrder.aggregation("metrics_info>max_score", false));
-    aggOrders.add(BucketOrder.aggregation("metrics_info>max_confidence", false));
-    aggOrders.add(BucketOrder.aggregation("metrics_info>max_support", false));
-
+    aggOrders.add(BucketOrder.aggregation(METRIC_MAX_SCORE_PATH, false));
+    aggOrders.add(BucketOrder.aggregation(METRIC_MAX_CONFIDENCE_PATH, false));
+    aggOrders.add(BucketOrder.aggregation(METRIC_SUPPORT_PATH, false));
 
     // The following aggregations are used to group the values of the target fields by number of occurrences and sort
     // them by confidence.
     NestedAggregationBuilder mainAgg = AggregationBuilders
-        .nested("by_nested_object", "consequence").subAggregation(
-            AggregationBuilders.terms("by_target_field_value").field("consequence.fieldValue").size(MAX_RESULTS).
+        .nested(AGG_BY_NESTED_OBJECT, INDEX_RULE_CONSEQUENCE).subAggregation(
+            AggregationBuilders.terms(AGG_BY_TARGET_FIELD_VALUE_RESULT).field(INDEX_CONSEQUENCE_VALUE_RESULT).size(MAX_RESULTS).
                 order(aggOrders).subAggregation(
-                AggregationBuilders.reverseNested("metrics_info").subAggregation(
-                    AggregationBuilders.max("max_score").script(new Script("_score"))).subAggregation(
-                    AggregationBuilders.max("max_support").field("support")).subAggregation(
-                    AggregationBuilders.max("max_confidence").field("confidence"))));
+                AggregationBuilders.reverseNested(AGG_METRICS_INFO).subAggregation(
+                    AggregationBuilders.max(METRIC_MAX_SCORE).script(new Script("_score"))).subAggregation(
+                    AggregationBuilders.max(METRIC_SUPPORT).field(INDEX_RULE_SUPPORT)).subAggregation(
+                    AggregationBuilders.max(METRIC_MAX_CONFIDENCE).field(INDEX_RULE_CONFIDENCE))));
 
     /**  Execute query and return search results **/
-
     Client client = esQueryService.getClient();
     String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
-    String type = "rulesDoc";
-    SearchRequestBuilder search = client.prepareSearch(indexName).setTypes(type).setQuery(mainBoolQuery)
-        .addAggregation(mainAgg);
-    //logger.info("Search query in Query DSL:\n" + search);
+    SearchRequestBuilder search = client.prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
+        .setQuery(mainBoolQuery).addAggregation(mainAgg);
+    logger.info("Search query in Query DSL:\n" + search);
     SearchResponse response = search.execute().actionGet();
 
     return response;
@@ -292,16 +290,16 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   private List<RecommendedValue> readValuesFromBuckets(SearchResponse response) {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
 
-    Nested aggNestedObject = response.getAggregations().get("by_nested_object");
-    Terms aggTargetFieldValue = aggNestedObject.getAggregations().get("by_target_field_value");
-    List<? extends Terms.Bucket> buckets = aggTargetFieldValue.getBuckets();
+    Nested aggNestedObject = response.getAggregations().get(AGG_BY_NESTED_OBJECT);
+    Terms aggTargetFieldValueResult = aggNestedObject.getAggregations().get(AGG_BY_TARGET_FIELD_VALUE_RESULT);
+    List<? extends Terms.Bucket> buckets = aggTargetFieldValueResult.getBuckets();
     for (Terms.Bucket bucket : buckets) {
       String value = bucket.getKeyAsString();
-      ReverseNested aggReverseNested = bucket.getAggregations().get("metrics_info");
+      ReverseNested aggReverseNested = bucket.getAggregations().get(AGG_METRICS_INFO);
       // Final score calculation
-      Max maxScore = aggReverseNested.getAggregations().get("max_score");
-      Max maxSupport = aggReverseNested.getAggregations().get("max_support");
-      Max maxConfidence = aggReverseNested.getAggregations().get("max_confidence");
+      Max maxScore = aggReverseNested.getAggregations().get(METRIC_MAX_SCORE);
+      Max maxSupport = aggReverseNested.getAggregations().get(METRIC_SUPPORT);
+      Max maxConfidence = aggReverseNested.getAggregations().get(METRIC_MAX_CONFIDENCE);
       Double score = maxScore.getValue() * maxConfidence.getValue() * maxSupport.getValue();
       recommendedValues.add(new RecommendedValue(value, null, score,
           maxConfidence.getValue(), maxSupport.getValue(), null));
@@ -309,26 +307,5 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     return recommendedValues;
   }
 
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

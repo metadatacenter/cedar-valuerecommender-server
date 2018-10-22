@@ -100,11 +100,11 @@ public class CedarUtils {
    */
   public static Optional<ArffAttributeValue> getValueOfField(Map node) throws IOException {
     if (containsValidValue(node, VALUE_FIELD_NAME)) {
-      return Optional.of(new ArffAttributeValue(node.get(VALUE_FIELD_NAME).toString(), Optional.empty()));
+      return Optional.of(new ArffAttributeValue(node.get(VALUE_FIELD_NAME).toString()));
     } else if (containsValidValue(node, ID_FIELD_NAME)) {
       if (containsValidValue(node, LABEL_FIELD_NAME)) {
         ArffAttributeValue value = new ArffAttributeValue(node.get(ID_FIELD_NAME).toString(),
-            Optional.of(node.get(LABEL_FIELD_NAME).toString()));
+            node.get(LABEL_FIELD_NAME).toString());
         return Optional.of(value);
       }
       else {

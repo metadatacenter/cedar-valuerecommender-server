@@ -90,16 +90,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return recommendation;
   }
 
-  public Recommendation getRecommendationArm(String templateId, List<Field> populatedFields, Field targetField) throws
-      IOException {
-//    List<RecommendedValue> recommendedValues = null;
-//    ArmRecommender recommender = new ArmRecommender();
-//    recommendedValues = recommender.getRecommendation(templateId, populatedFields, targetField);
-//    Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
-//    return recommendation;
-    return null;
-  }
-
   private List<RecommendedValue> getRecommendedValues(String templateId, List<Field> populatedFields, Field
       targetField) throws IOException {
 

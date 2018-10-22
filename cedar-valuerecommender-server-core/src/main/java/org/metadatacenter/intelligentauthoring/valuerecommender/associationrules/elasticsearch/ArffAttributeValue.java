@@ -7,28 +7,32 @@ import java.util.Optional;
  */
 public class ArffAttributeValue {
 
-  private String value;
-  private Optional<String> label; // used when the value is an ontology term uri
+  private final String valueType; // an ontology term URI
+  private final String valueLabel; // the term label
 
-  public ArffAttributeValue(String value, Optional<String> label) {
-    this.value = value;
-    this.label = label;
+  public ArffAttributeValue(String valueType, String valueLabel) {
+    this.valueType = valueType;
+    this.valueLabel = valueLabel;
   }
 
-  public String getValue() {
-    return value;
+  public ArffAttributeValue(String valueLabel) {
+    this(null, valueLabel);
   }
 
-  public Optional<String> getLabel() {
-    return label;
+  public String getValueType() {
+    return valueType;
+  }
+
+  public String getValueLabel() {
+    return valueLabel;
   }
 
   public String getArffValueString() {
     String valueString = null;
-    if (label.isPresent()) { // It is an ontology term
-      valueString = "[" + value + "](" + label.get() + ")";
-    } else { // Not an ontology term
-      valueString = "[](" + value + ")";
+    if (valueType != null) { // ontology term
+      valueString = "[" + valueType + "](" + valueLabel + ")";
+    } else { // free text
+      valueString = "[](" + valueLabel + ")";
     }
     return "'" + valueString.replace("'", "\\'").trim() + "'";
   }

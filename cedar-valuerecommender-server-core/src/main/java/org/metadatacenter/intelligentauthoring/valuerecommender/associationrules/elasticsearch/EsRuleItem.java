@@ -1,5 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch;
 
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.FieldValueResultUtils;
+
 import java.util.List;
 
 /**
@@ -7,14 +9,15 @@ import java.util.List;
  */
 public class EsRuleItem {
 
-  private String fieldPath;
-  private String fieldType;
-  private String fieldNormalizedPath;
-  private List<String> fieldTypeMappings;
-  private String fieldValueType;
-  private String fieldValueLabel;
-  private String fieldNormalizedValue;
-  private List<String> fieldValueMappings;
+  private final String fieldPath;
+  private final String fieldType;
+  private final String fieldNormalizedPath;
+  private final List<String> fieldTypeMappings;
+  private final String fieldValueType;
+  private final String fieldValueLabel;
+  private final String fieldNormalizedValue;
+  private final List<String> fieldValueMappings;
+  private final String fieldValueResult;
 
   /**
    * Attributes used to match the field requirements to the association rules: fieldNormalizedPath, fieldNormalizedValue
@@ -53,10 +56,15 @@ public class EsRuleItem {
    *                              - fieldValueLabel = colorectal cancer
    *                              - fieldNormalizedValue = http://purl.obolibrary.org/obo/DOID_9256
    * @param fieldValueMappings    List of URIs equivalent to the fieldValueType (only for annotated instances)
+   * @param fieldValueResult      This field contains the information needed to generate a recommendation result. Its
+   *                              String representation is used to perform the aggregation of results in Elasticsearch.
+   *                              - For free-text values, fieldValueResult = [](fieldValueLabel)
+   *                              - For controlled terms, fieldValueResult = [fieldValueType](fieldValueLabel)
    */
   public EsRuleItem(String fieldPath, String fieldType, String fieldNormalizedPath,
                     List<String> fieldTypeMappings, String fieldValueType,
-                    String fieldValueLabel, String fieldNormalizedValue, List<String> fieldValueMappings) {
+                    String fieldValueLabel, String fieldNormalizedValue, List<String> fieldValueMappings,
+                    String fieldValueResult) {
     this.fieldPath = fieldPath;
     this.fieldType = fieldType;
     this.fieldNormalizedPath = fieldNormalizedPath;
@@ -65,6 +73,7 @@ public class EsRuleItem {
     this.fieldValueLabel = fieldValueLabel;
     this.fieldNormalizedValue = fieldNormalizedValue;
     this.fieldValueMappings = fieldValueMappings;
+    this.fieldValueResult = fieldValueResult;
   }
 
   public String getFieldPath() {
@@ -97,6 +106,10 @@ public class EsRuleItem {
 
   public List<String> getFieldValueMappings() {
     return fieldValueMappings;
+  }
+
+  public String getFieldValueResult() {
+    return fieldValueResult;
   }
 
   public String toPrettyString() {

@@ -2,28 +2,28 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects;
 
 public class RecommendedValue {
   public enum RecommendationType {CONTEXT_INDEPENDENT, CONTEXT_DEPENDENT};
-  private String value;
-  private String valueUri;
-  private Double score;
-  private Double confidence;
-  private Double support;
-  private RecommendationType type;
+  private final String valueLabel;
+  private final String valueId;
+  private final Double score;
+  private final Double confidence;
+  private final Double support;
+  private final RecommendationType type;
 
-  public RecommendedValue(String value, String valueUri, Double score, Double confidence, Double support, RecommendationType type) {
-    this.value = value;
-    this.valueUri = valueUri;
+  public RecommendedValue(String valueLabel, String valueId, Double score, Double confidence, Double support, RecommendationType type) {
+    this.valueLabel = valueLabel;
+    this.valueId = valueId;
     this.score = score;
     this.confidence = confidence;
     this.support = support;
     this.type = type;
   }
 
-  public String getValue() {
-    return value;
+  public String getValueLabel() {
+    return valueLabel;
   }
 
-  public String getValueUri() {
-    return valueUri;
+  public String getValueId() {
+    return valueId;
   }
 
   public Double getScore() {
@@ -41,13 +41,12 @@ public class RecommendedValue {
   @Override
   public String toString() {
     return "RecommendedValue{" +
-        "value='" + value + '\'' +
-        ", valueUri='" + valueUri + '\'' +
+        "valueLabel='" + valueLabel + '\'' +
+        ", valueId='" + valueId + '\'' +
         ", score=" + score +
         ", confidence=" + confidence +
         ", support=" + support +
         ", type=" + type +
         '}';
   }
-
 }
