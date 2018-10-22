@@ -7,14 +7,16 @@ import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHe
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
 import org.metadatacenter.model.ServerName;
 import org.metadatacenter.search.IndexedDocumentType;
+import org.metadatacenter.server.search.elasticsearch.service.ElasticsearchServiceFactory;
+import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 
 public class ValueRecommenderServerApplication extends
     CedarMicroserviceApplication<ValueRecommenderServerConfiguration> {
-
-  protected static ValueRecommenderService valueRecommenderService;
 
   public static void main(String[] args) throws Exception {
     new ValueRecommenderServerApplication().run(args);
@@ -26,23 +28,31 @@ public class ValueRecommenderServerApplication extends
   }
 
   @Override
-  protected void initializeWithBootstrap(Bootstrap<ValueRecommenderServerConfiguration> bootstrap, CedarConfig
-      cedarConfig) {
+  protected void initializeWithBootstrap(Bootstrap<ValueRecommenderServerConfiguration> bootstrap,
+                                         CedarConfig cedarConfig) {
   }
 
   @Override
   public void initializeApp() {
-    //TODO: Value recommender is disabled here
-    //ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
-    /*valueRecommenderService = new ValueRecommenderService(
+
+    ElasticsearchServiceFactory esServiceFactory = ElasticsearchServiceFactory.getInstance(cedarConfig);
+
+    ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
+    ValueRecommenderService valueRecommenderService = new ValueRecommenderService(
         esc.getClusterName(),
         esc.getHost(),
-        esc.getIndexName(),
-        esc.getType(IndexedDocumentType.DOC),
+        esc.getIndexes().getSearchIndex().getName(),
+        IndexedDocumentType.DOC.getValue(),
         esc.getTransportPort(),
-        esc.getSize());*/
+        esc.getSize());
 
-    //ValueRecommenderResource.injectValueRecommenderService(valueRecommenderService);
+    RulesIndexingService rulesIndexingService = esServiceFactory.rulesIndexingService();
+
+    ValueRecommenderServiceArm valueRecommenderServiceArm =
+        new ValueRecommenderServiceArm(cedarConfig, rulesIndexingService);
+
+    ValueRecommenderResource.injectServices(valueRecommenderService, valueRecommenderServiceArm);
+
   }
 
   @Override

@@ -90,8 +90,19 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return recommendation;
   }
 
+  public Recommendation getRecommendationArm(String templateId, List<Field> populatedFields, Field targetField) throws
+      IOException {
+//    List<RecommendedValue> recommendedValues = null;
+//    ArmRecommender recommender = new ArmRecommender();
+//    recommendedValues = recommender.getRecommendation(templateId, populatedFields, targetField);
+//    Recommendation recommendation = new Recommendation(targetField.getFieldPath(), recommendedValues);
+//    return recommendation;
+    return null;
+  }
+
   private List<RecommendedValue> getRecommendedValues(String templateId, List<Field> populatedFields, Field
       targetField) throws IOException {
+
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     RecommendedValue.RecommendationType recommendationType;
     if (templateId != null) {
@@ -129,9 +140,11 @@ public class ValueRecommenderService implements IValueRecommenderService {
               TermQueryBuilder fieldFilter = QueryBuilders.termQuery(esFieldValuePath, f.getFieldValue());
               nestedFields = nestedFields.must(fieldFilter);
             }
-            NestedQueryBuilder nestedFieldQuery = QueryBuilders.nestedQuery(nestedObjectPath, nestedFields, ScoreMode.Avg);
+            NestedQueryBuilder nestedFieldQuery = QueryBuilders.nestedQuery(nestedObjectPath, nestedFields, ScoreMode
+                .Avg);
             mainQuery = mainQuery.must(nestedFieldQuery);
-          } else { // Populated fields at the same nesting level than the target field must be used in the aggregation to avoid 'mixed' results
+          } else { // Populated fields at the same nesting level than the target field must be used in the
+            // aggregation to avoid 'mixed' results
             for (Field f : fields) {
               String esFieldValuePath = getElasticSearchFieldValuePath(templateId, f.getFieldPath());
               TermQueryBuilder fieldFilter = QueryBuilders.termQuery(esFieldValuePath, f.getFieldValue());
@@ -163,8 +176,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
       if (populatedFieldsAggIsEmpty) {
         nestedAggTargetField.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
-      }
-      else {
+      } else {
         populatedFieldsAgg.subAggregation(targetFieldValueAgg).subAggregation(targetFieldValueAndStAgg);
         nestedAggTargetField.subAggregation(populatedFieldsAgg);
       }
@@ -207,7 +219,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
     return recommendedValues;
   }
-  
+
   // Sample field: characteristic.name
   // Expected output: resourceSummarizedContent.characteristic.name_field.fieldValue_string
   private String getElasticSearchFieldValuePath(String templateId, String fieldPath) throws IOException {
@@ -322,7 +334,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
   }
 
   private List<RecommendedValue> getRecommendedValuesFromTermAggregations(Terms valueAgg, Terms valueAndStAgg,
-                                                                          RecommendedValue.RecommendationType recommendationType) {
+                                                                          RecommendedValue.RecommendationType
+                                                                              recommendationType) {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
     List<? extends Terms.Bucket> buckets = null;
     if (valueAndStAgg.getBuckets().size() > 0) {
@@ -355,16 +368,17 @@ public class ValueRecommenderService implements IValueRecommenderService {
       // total number of samples for all values
       double score = b.getDocCount() / totalDocs;
       // Then, the score is weighted depending on the recommendation type and on the number of populated fields
-//      if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT) && (numberPopulatedFields > 0)) {
+//      if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT) &&
+// (numberPopulatedFields > 0)) {
 //        score = score / (numberPopulatedFields + 1);
 //      }
       // Regular value
       String delimiter = "[[ST]]";
       if (value.contains(delimiter)) {
         String[] v = value.split("\\[\\[ST\\]\\]");
-        recommendedValues.add(new RecommendedValue(v[0], v[1], score, recommendationType));
+        recommendedValues.add(new RecommendedValue(v[0], v[1], score, null, null, recommendationType));
       } else {
-        recommendedValues.add(new RecommendedValue(value, null, score, recommendationType));
+        recommendedValues.add(new RecommendedValue(value, null, score, null, null, recommendationType));
       }
     }
     return recommendedValues;
