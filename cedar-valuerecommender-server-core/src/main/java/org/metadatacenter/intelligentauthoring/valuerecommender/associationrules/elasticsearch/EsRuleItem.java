@@ -9,15 +9,15 @@ import java.util.List;
  */
 public class EsRuleItem {
 
-  private final String fieldPath;
-  private final String fieldType;
-  private final String fieldNormalizedPath;
-  private final List<String> fieldTypeMappings;
-  private final String fieldValueType;
-  private final String fieldValueLabel;
-  private final String fieldNormalizedValue;
-  private final List<String> fieldValueMappings;
-  private final String fieldValueResult;
+  private String fieldPath;
+  private String fieldType;
+  private String fieldNormalizedPath;
+  private List<String> fieldTypeMappings;
+  private String fieldValueType;
+  private String fieldValueLabel;
+  private String fieldNormalizedValue;
+  private List<String> fieldValueMappings;
+  private String fieldValueResult;
 
   /**
    * Attributes used to match the field requirements to the association rules: fieldNormalizedPath, fieldNormalizedValue
@@ -75,6 +75,8 @@ public class EsRuleItem {
     this.fieldValueMappings = fieldValueMappings;
     this.fieldValueResult = fieldValueResult;
   }
+
+  public EsRuleItem() {}
 
   public String getFieldPath() {
     return fieldPath;

@@ -11,16 +11,20 @@
       "items": {
         "type": "object",
         "properties": {
-          "path": {
+          "fieldPath": {
             "type": "string"
           },
-          "value": {
+          "fieldValueLabel": {
             "type": "string"
+          },
+          "fieldValueType": {
+            "type": "string",
+            "format": "uri"
           }
         },
         "required": [
-          "path",
-          "value"
+          "fieldPath",
+          "fieldValueLabel"
         ]
       }
     },
@@ -32,10 +36,13 @@
         }
       },
       "required": [
-        "path"
+        "fieldPath"
       ]
     },
     "strictMatch": {
+      "type": "boolean"
+    },
+    "includeDetails": {
       "type": "boolean"
     }
   },

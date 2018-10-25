@@ -1,29 +1,25 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.*;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.max.Max;
+import org.elasticsearch.search.SearchHit;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendationDetails;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarFieldUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 import org.slf4j.Logger;
@@ -32,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -71,8 +68,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
         logger.info("Generating rules for all templates in the system");
         esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
         templateIds = esQueryService.getTemplateIds();
-      }
-      else {
+      } else {
         logger.info("Generating rules for the following templates: " + templateIds.toString());
       }
       for (String templateId : templateIds) {
@@ -114,52 +110,67 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
   @Override
   public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField,
-                                          boolean strictMatch) {
-    // Find the rules that match the condition
-    SearchResponse response = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch,
+                                          boolean strictMatch, boolean includeDetails) {
+
+    // Perform query to find the rules that match the condition
+    SearchResponse rulesSearchResponse = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch,
         FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT, USE_MAPPINGS);
 
-    // Extract the recommendedValues from the search results
-    List<RecommendedValue> recommendedValues = readValuesFromBuckets(response);
+    // Translate query result to EsRule objects
+    List<EsRule> relevantRules = new ArrayList<>();
+    for (SearchHit hit : rulesSearchResponse.getHits()) {
+      try {
+        EsRule rule = new ObjectMapper().readValue(hit.getSourceAsString(), EsRule.class);
+        relevantRules.add(rule);
+      } catch (IOException e) {
+        logger.error("Error transforming SearchHit to EsRule");
+        e.printStackTrace();
+      }
+    }
+
+    // Calculate the recommendation score for each rule and generate a ranked list of recommended values
+    List<RecommendedValue> recommendedValues = generateRecommendations(populatedFields, relevantRules, includeDetails);
 
     return new Recommendation(targetField.getFieldPath(), recommendedValues);
   }
 
   /**
    * This method creates and executes an Elasticsearch query that:
-   * 1) Finds all association rules that contain the populated fields as premises and the target field as consequence.
-   * 2) Aggregates all target field values in those rules and ranks them by (1) Elasticsearch max score, (2) max
-   *    confidence and (3) max support.
+   * - Finds all association rules that contain the populated fields as premises and the target field as consequence.
+   * - The rules are ranked by how they close the query.
    *
-   * @param templateId      Template identifier (optional). If it is provided, the query is limited to the rules of
-   *                        a particular template. Otherwise, all the rules in the system are queried.
-   * @param populatedFields Populated fields and their values.
-   * @param targetField     Target field.
-   * @param strictMatch     It performs a strict search in the sense that it will only return the rules that contain
-   *                        premises that exactly match the populated fields and just one consequence, which corresponds
-   *                        to the target field. If set to false, the search will be more flexible (using an
-   *                        Elasticsearch SHOULD clause for the premises), so that it will match any rules whose
-   *                        consequence matches the target field.
+   * @param templateId         Template identifier (optional). If it is provided, the query is limited to the rules of
+   *                           a particular template. Otherwise, all the rules in the system are queried.
+   * @param populatedFields    Populated fields and their values.
+   * @param targetField        Target field.
+   * @param strictMatch        It performs a strict search in the sense that it will only return the rules that contain
+   *                           premises that exactly match the populated fields and just one consequence, which
+   *                           corresponds
+   *                           to the target field. If set to false, the search will be more flexible (using an
+   *                           Elasticsearch SHOULD clause for the premises), so that it will match any rules whose
+   *                           consequence matches the target field.
    * @param filterByConfidence Sets a minimum confidence threshold
-   * @param filterBySupport Sets a minimum support threshold
-   * @param useMappings For ontology uris, tries to match the uri with other equivalent uris
+   * @param filterBySupport    Sets a minimum support threshold
+   * @param useMappings        For ontology uris, tries to match the uri with other equivalent uris
    * @return An Elasticsearch response.
    */
   private SearchResponse esQueryRules(Optional<String> templateId, List<Field> populatedFields, Field targetField,
-                                      boolean strictMatch, boolean filterByConfidence, boolean filterBySupport,
-                                      boolean useMappings) {
+                                        boolean strictMatch, boolean filterByConfidence, boolean filterBySupport,
+                                        boolean useMappings) {
 
     /** Query definition **/
 
     BoolQueryBuilder mainBoolQuery = QueryBuilders.boolQuery();
 
     if (filterByConfidence) {
-      RangeQueryBuilder minConfidence = QueryBuilders.rangeQuery(INDEX_RULE_CONFIDENCE).from(MIN_CONFIDENCE_QUERY).includeLower(true);
+      RangeQueryBuilder minConfidence =
+          QueryBuilders.rangeQuery(INDEX_RULE_CONFIDENCE).from(MIN_CONFIDENCE_QUERY).includeLower(true);
       mainBoolQuery = mainBoolQuery.must(minConfidence);
     }
 
     if (filterBySupport) {
-      RangeQueryBuilder minSupport = QueryBuilders.rangeQuery(INDEX_RULE_SUPPORT).from(MIN_SUPPORT_QUERY).includeLower(true);
+      RangeQueryBuilder minSupport =
+          QueryBuilders.rangeQuery(INDEX_RULE_SUPPORT).from(MIN_SUPPORT_QUERY).includeLower(true);
       mainBoolQuery = mainBoolQuery.must(minSupport);
     }
 
@@ -173,8 +184,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery(INDEX_PREMISE_SIZE, populatedFields.size());
     if (strictMatch) {
       mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
-    }
-    else {
+    } else {
       mainBoolQuery = mainBoolQuery.should(matchPremiseSize);
     }
 
@@ -186,11 +196,11 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     for (Field field : populatedFields) {
 
       // Match field path
-      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery(INDEX_PREMISE_NORMALIZED_PATH,
+      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_NORMALIZED_PATH,
           CedarTextUtils.normalizePath(field.getFieldPath()));
 
       // Match field with other uris
-      MatchQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.matchQuery(INDEX_PREMISE_TYPE_MAPPINGS,
+      MatchQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_TYPE_MAPPINGS,
           field.getFieldPath());
 
       // Match field bool query
@@ -201,24 +211,22 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       }
       premiseFieldBoolQuery = premiseFieldBoolQuery.minimumShouldMatch(1); // Logical OR
 
-      // Normalize value
-      String fieldValue = field.getFieldValue();
-      if (!CedarUtils.isUri(fieldValue)) { // Ontology term URIs will not be normalized
-        fieldValue = CedarTextUtils.normalizeValue(fieldValue);
-      }
+      // Get normalized value
+      String fieldNormalizedValue = CedarFieldUtils.normalizeFieldValue(field);
 
       // Match field normalized value
       MatchQueryBuilder matchPremiseFieldNormalizedValue =
-          QueryBuilders.matchQuery(INDEX_PREMISE_NORMALIZED_VALUE, fieldValue);
-
-      // Match field normalized value with other uris
-      MatchQueryBuilder matchPremiseFieldNormalizedValues =
-          QueryBuilders.matchQuery(INDEX_PREMISE_VALUE_MAPPINGS, fieldValue);
+          QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_NORMALIZED_VALUE, fieldNormalizedValue);
 
       // Match field value bool query
       BoolQueryBuilder premiseFieldValueBoolQuery = QueryBuilders.boolQuery();
       premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValue);
       if (useMappings) {
+
+        // Match field normalized value with other uris
+        MatchQueryBuilder matchPremiseFieldNormalizedValues =
+            QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_VALUE_MAPPINGS, fieldNormalizedValue);
+
         premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValues);
       }
       premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.minimumShouldMatch(1); // Logical OR
@@ -228,21 +236,21 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
       premiseBoolQuery = premiseBoolQuery.must(premiseFieldBoolQuery);
       premiseBoolQuery = premiseBoolQuery.must(premiseFieldValueBoolQuery);
 
-      NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery(INDEX_RULE_PREMISE, premiseBoolQuery, ScoreMode.Avg);
+      NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery(INDEX_RULE_PREMISE, premiseBoolQuery,
+          ScoreMode.Avg);
 
       // Add the premise query to the main query
       if (strictMatch) {
         mainBoolQuery = mainBoolQuery.must(premiseNestedQuery);
-      }
-      else {
+      } else {
         mainBoolQuery = mainBoolQuery.should(premiseNestedQuery);
       }
     }
 
     // Match target field
-    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_NORMALIZED_PATH,
+    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_FIELD_NORMALIZED_PATH,
         CedarTextUtils.normalizePath(targetField.getFieldPath()));
-    MatchQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_TYPE_MAPPINGS,
+    MatchQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_FIELD_TYPE_MAPPINGS,
         targetField.getFieldPath());
 
     // Match target field bool query
@@ -259,53 +267,288 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     // Add the consequence query to the main query
     mainBoolQuery = mainBoolQuery.must(consequenceNestedQuery);
 
-    /** Aggregations definition **/
-    List<BucketOrder> aggOrders = new ArrayList();
-    aggOrders.add(BucketOrder.aggregation(METRIC_MAX_SCORE_PATH, false));
-    aggOrders.add(BucketOrder.aggregation(METRIC_MAX_CONFIDENCE_PATH, false));
-    aggOrders.add(BucketOrder.aggregation(METRIC_SUPPORT_PATH, false));
-
-    // The following aggregations are used to group the values of the target fields by number of occurrences and sort
-    // them by confidence.
-    NestedAggregationBuilder mainAgg = AggregationBuilders
-        .nested(AGG_BY_NESTED_OBJECT, INDEX_RULE_CONSEQUENCE).subAggregation(
-            AggregationBuilders.terms(AGG_BY_TARGET_FIELD_VALUE_RESULT).field(INDEX_CONSEQUENCE_VALUE_RESULT).size(MAX_RESULTS).
-                order(aggOrders).subAggregation(
-                AggregationBuilders.reverseNested(AGG_METRICS_INFO).subAggregation(
-                    AggregationBuilders.max(METRIC_MAX_SCORE).script(new Script("_score"))).subAggregation(
-                    AggregationBuilders.max(METRIC_SUPPORT).field(INDEX_RULE_SUPPORT)).subAggregation(
-                    AggregationBuilders.max(METRIC_MAX_CONFIDENCE).field(INDEX_RULE_CONFIDENCE))));
-
     /**  Execute query and return search results **/
     Client client = esQueryService.getClient();
     String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
     SearchRequestBuilder search = client.prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
-        .setQuery(mainBoolQuery).addAggregation(mainAgg);
-    logger.info("Search query in Query DSL:\n" + search);
+        .setQuery(mainBoolQuery);
+    //logger.info("Search query in Query DSL:\n" + search);
     SearchResponse response = search.execute().actionGet();
 
     return response;
   }
 
-  private List<RecommendedValue> readValuesFromBuckets(SearchResponse response) {
+  /**
+   * This method calculates the recommendation score for each value (extracted from the consequent of a rule) and
+   * generates a ranked list of recommended values.
+   * The recommendation score for a value is calculated according to the following expression:
+   *
+   * recommendation_score(v) = context_matching_score(r,C) * confidence(r)
+   * context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
+   *
+   * where:
+   * - C is the context
+   * - v is the value extracted from the consequent of the rule r
+   *
+   * @param populatedFields
+   * @param rules
+   * @return
+   */
+  private List<RecommendedValue> generateRecommendations(List<Field> populatedFields, List<EsRule> rules,
+                                                         boolean includeDetails) {
+
     List<RecommendedValue> recommendedValues = new ArrayList<>();
 
-    Nested aggNestedObject = response.getAggregations().get(AGG_BY_NESTED_OBJECT);
-    Terms aggTargetFieldValueResult = aggNestedObject.getAggregations().get(AGG_BY_TARGET_FIELD_VALUE_RESULT);
-    List<? extends Terms.Bucket> buckets = aggTargetFieldValueResult.getBuckets();
-    for (Terms.Bucket bucket : buckets) {
-      String value = bucket.getKeyAsString();
-      ReverseNested aggReverseNested = bucket.getAggregations().get(AGG_METRICS_INFO);
-      // Final score calculation
-      Max maxScore = aggReverseNested.getAggregations().get(METRIC_MAX_SCORE);
-      Max maxSupport = aggReverseNested.getAggregations().get(METRIC_SUPPORT);
-      Max maxConfidence = aggReverseNested.getAggregations().get(METRIC_MAX_CONFIDENCE);
-      Double score = maxScore.getValue() * maxConfidence.getValue() * maxSupport.getValue();
-      recommendedValues.add(new RecommendedValue(value, null, score,
-          maxConfidence.getValue(), maxSupport.getValue(), null));
+    for (EsRule rule : rules) {
+      double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise()) * rule.getConfidence();
+      RecommendedValue.RecommendationType recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
+      if (contextMatchingScore > 0) {
+        recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
+      }
+      double recommendationScore = contextMatchingScore * rule.getConfidence();
+
+      RecommendedValue value = null;
+      if (includeDetails) {
+        RecommendationDetails details = new RecommendationDetails(contextMatchingScore, rule.getConfidence(),
+            rule.getSupport(),
+            recommendationType);
+        value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
+            rule.getConsequence().get(0).getFieldValueType(), recommendationScore, details);
+      } else {
+        value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
+            rule.getConsequence().get(0).getFieldValueType(), recommendationScore);
+      }
+
+      if (!recommendedValues.contains(value)) { // avoid generation of duplicated values
+        recommendedValues.add(value);
+      }
     }
+
+    // Sort by score
+    Collections.sort(recommendedValues);
+
     return recommendedValues;
   }
+
+  /**
+   * Context matching score:
+   * context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
+   */
+  private double getContextMatchingScore(List<Field> populatedFields, List<EsRuleItem> rulePremise) {
+    if (populatedFields.size()==0 || rulePremise.size() ==0) {
+      return 0;
+    }
+    else {
+      int intersectionCount = 0;
+      for (EsRuleItem ruleItem : rulePremise) {
+        for (Field field : populatedFields) {
+          if (ruleItemMatchesPopulatedField(ruleItem, field)) {
+            intersectionCount++;
+          }
+        }
+      }
+      int unionCount = populatedFields.size() + rulePremise.size() - intersectionCount;
+      return (double) intersectionCount / (double) unionCount;
+    }
+  }
+
+  private boolean ruleItemMatchesPopulatedField(EsRuleItem ruleItem, Field populatedField) {
+    String populatedFieldNormalizedPath = CedarTextUtils.normalizePath(populatedField.getFieldPath());
+    String populatedFieldNormalizedValue = CedarFieldUtils.normalizeFieldValue(populatedField);
+
+    if (populatedFieldNormalizedPath.equals(ruleItem.getFieldNormalizedPath()) &&
+        populatedFieldNormalizedValue.equals(ruleItem.getFieldNormalizedValue())) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  /**
+   * This method creates and executes an Elasticsearch query that:
+   * 1) Finds all association rules that contain the populated fields as premises and the target field as consequence.
+   * 2) Aggregates all target field values in those rules and ranks them by (1) Elasticsearch max score, (2) max
+   * confidence and (3) max support.
+   *
+   * @param templateId         Template identifier (optional). If it is provided, the query is limited to the rules of
+   *                           a particular template. Otherwise, all the rules in the system are queried.
+   * @param populatedFields    Populated fields and their values.
+   * @param targetField        Target field.
+   * @param strictMatch        It performs a strict search in the sense that it will only return the rules that contain
+   *                           premises that exactly match the populated fields and just one consequence, which
+   *                           corresponds
+   *                           to the target field. If set to false, the search will be more flexible (using an
+   *                           Elasticsearch SHOULD clause for the premises), so that it will match any rules whose
+   *                           consequence matches the target field.
+   * @param filterByConfidence Sets a minimum confidence threshold
+   * @param filterBySupport    Sets a minimum support threshold
+   * @param useMappings        For ontology uris, tries to match the uri with other equivalent uris
+   * @return An Elasticsearch response.
+   */
+//  private SearchResponse esQueryRulesWithAggregationOfResults(Optional<String> templateId, List<Field> populatedFields, Field targetField,
+//                                      boolean strictMatch, boolean filterByConfidence, boolean filterBySupport,
+//                                      boolean useMappings) {
+//
+//    /** Query definition **/
+//
+//    BoolQueryBuilder mainBoolQuery = QueryBuilders.boolQuery();
+//
+//    if (filterByConfidence) {
+//      RangeQueryBuilder minConfidence =
+//          QueryBuilders.rangeQuery(INDEX_RULE_CONFIDENCE).from(MIN_CONFIDENCE_QUERY).includeLower(true);
+//      mainBoolQuery = mainBoolQuery.must(minConfidence);
+//    }
+//
+//    if (filterBySupport) {
+//      RangeQueryBuilder minSupport =
+//          QueryBuilders.rangeQuery(INDEX_RULE_SUPPORT).from(MIN_SUPPORT_QUERY).includeLower(true);
+//      mainBoolQuery = mainBoolQuery.must(minSupport);
+//    }
+//
+//    // If templateId is present, the query will be limited to rules from a particular template
+//    if (templateId.isPresent()) {
+//      MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_TEMPLATE_ID, templateId.get());
+//      mainBoolQuery = mainBoolQuery.must(matchConsequenceField);
+//    }
+//
+//    // Match number of premises
+//    MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery(INDEX_PREMISE_SIZE, populatedFields.size());
+//    if (strictMatch) {
+//      mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
+//    } else {
+//      mainBoolQuery = mainBoolQuery.should(matchPremiseSize);
+//    }
+//
+//    // Match number of consequences (i.e., 1)
+//    MatchQueryBuilder matchConsequenceSize = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_SIZE, CONSEQUENCE_SIZE);
+//    mainBoolQuery = mainBoolQuery.must(matchConsequenceSize);
+//
+//    // Match fields and values in premises
+//    for (Field field : populatedFields) {
+//
+//      // Match field path
+//      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery(INDEX_PREMISE_NORMALIZED_PATH,
+//          CedarTextUtils.normalizePath(field.getFieldPath()));
+//
+//      // Match field with other uris
+//      MatchQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.matchQuery(INDEX_PREMISE_TYPE_MAPPINGS,
+//          field.getFieldPath());
+//
+//      // Match field bool query
+//      BoolQueryBuilder premiseFieldBoolQuery = QueryBuilders.boolQuery();
+//      premiseFieldBoolQuery = premiseFieldBoolQuery.should(matchPremiseField);
+//      if (useMappings) {
+//        premiseFieldBoolQuery = premiseFieldBoolQuery.should(matchPremiseFieldOtherUris);
+//      }
+//      premiseFieldBoolQuery = premiseFieldBoolQuery.minimumShouldMatch(1); // Logical OR
+//
+//      // Normalize value
+//      String fieldValue = field.getFieldValue();
+//      if (!CedarUtils.isUri(fieldValue)) { // Ontology term URIs will not be normalized
+//        fieldValue = CedarTextUtils.normalizeValue(fieldValue);
+//      }
+//
+//      // Match field normalized value
+//      MatchQueryBuilder matchPremiseFieldNormalizedValue =
+//          QueryBuilders.matchQuery(INDEX_PREMISE_NORMALIZED_VALUE, fieldValue);
+//
+//      // Match field normalized value with other uris
+//      MatchQueryBuilder matchPremiseFieldNormalizedValues =
+//          QueryBuilders.matchQuery(INDEX_PREMISE_VALUE_MAPPINGS, fieldValue);
+//
+//      // Match field value bool query
+//      BoolQueryBuilder premiseFieldValueBoolQuery = QueryBuilders.boolQuery();
+//      premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValue);
+//      if (useMappings) {
+//        premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValues);
+//      }
+//      premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.minimumShouldMatch(1); // Logical OR
+//
+//      // Premise bool query
+//      BoolQueryBuilder premiseBoolQuery = QueryBuilders.boolQuery();
+//      premiseBoolQuery = premiseBoolQuery.must(premiseFieldBoolQuery);
+//      premiseBoolQuery = premiseBoolQuery.must(premiseFieldValueBoolQuery);
+//
+//      NestedQueryBuilder premiseNestedQuery = QueryBuilders.nestedQuery(INDEX_RULE_PREMISE, premiseBoolQuery,
+//          ScoreMode.Avg);
+//
+//      // Add the premise query to the main query
+//      if (strictMatch) {
+//        mainBoolQuery = mainBoolQuery.must(premiseNestedQuery);
+//      } else {
+//        mainBoolQuery = mainBoolQuery.should(premiseNestedQuery);
+//      }
+//    }
+//
+//    // Match target field
+//    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_NORMALIZED_PATH,
+//        CedarTextUtils.normalizePath(targetField.getFieldPath()));
+//    MatchQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_TYPE_MAPPINGS,
+//        targetField.getFieldPath());
+//
+//    // Match target field bool query
+//    BoolQueryBuilder consequenceFieldBoolQuery = QueryBuilders.boolQuery();
+//    consequenceFieldBoolQuery = consequenceFieldBoolQuery.should(matchConsequenceField);
+//    if (useMappings) {
+//      consequenceFieldBoolQuery = consequenceFieldBoolQuery.should(matchConsequenceFieldOtherUris);
+//    }
+//    consequenceFieldBoolQuery = consequenceFieldBoolQuery.minimumShouldMatch(1); // Logical OR
+//
+//    NestedQueryBuilder consequenceNestedQuery = QueryBuilders.nestedQuery(INDEX_RULE_CONSEQUENCE,
+//        consequenceFieldBoolQuery, ScoreMode.Avg);
+//
+//    // Add the consequence query to the main query
+//    mainBoolQuery = mainBoolQuery.must(consequenceNestedQuery);
+//
+//    /** Aggregations definition **/
+//    List<BucketOrder> aggOrders = new ArrayList();
+//    aggOrders.add(BucketOrder.aggregation(METRIC_MAX_SCORE_PATH, false));
+//    aggOrders.add(BucketOrder.aggregation(METRIC_MAX_CONFIDENCE_PATH, false));
+//    aggOrders.add(BucketOrder.aggregation(METRIC_SUPPORT_PATH, false));
+//
+//    // The following aggregations are used to group the values of the target fields by number of occurrences and sort
+//    // them by confidence.
+//    NestedAggregationBuilder mainAgg = AggregationBuilders
+//        .nested(AGG_BY_NESTED_OBJECT, INDEX_RULE_CONSEQUENCE).subAggregation(
+//            AggregationBuilders.terms(AGG_BY_TARGET_FIELD_VALUE_RESULT).field(INDEX_CONSEQUENCE_VALUE_RESULT).size(MAX_RESULTS).
+//                order(aggOrders).subAggregation(
+//                AggregationBuilders.reverseNested(AGG_METRICS_INFO).subAggregation(
+//                    AggregationBuilders.max(METRIC_MAX_SCORE).script(new Script("_score"))).subAggregation(
+//                    AggregationBuilders.max(METRIC_SUPPORT).field(INDEX_RULE_SUPPORT)).subAggregation(
+//                    AggregationBuilders.max(METRIC_MAX_CONFIDENCE).field(INDEX_RULE_CONFIDENCE))));
+//
+//    /**  Execute query and return search results **/
+//    Client client = esQueryService.getClient();
+//    String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
+//    SearchRequestBuilder search = client.prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
+//        .setQuery(mainBoolQuery).addAggregation(mainAgg);
+//    logger.info("Search query in Query DSL:\n" + search);
+//    SearchResponse response = search.execute().actionGet();
+//
+//    return response;
+//  }
+
+  //  private List<RecommendedValue> readValuesFromBuckets(SearchResponse response) {
+//    List<RecommendedValue> recommendedValues = new ArrayList<>();
+//
+//    Nested aggNestedObject = response.getAggregations().get(AGG_BY_NESTED_OBJECT);
+//    Terms aggTargetFieldValueResult = aggNestedObject.getAggregations().get(AGG_BY_TARGET_FIELD_VALUE_RESULT);
+//    List<? extends Terms.Bucket> buckets = aggTargetFieldValueResult.getBuckets();
+//    for (Terms.Bucket bucket : buckets) {
+//      String value = bucket.getKeyAsString();
+//      ReverseNested aggReverseNested = bucket.getAggregations().get(AGG_METRICS_INFO);
+//      // Final score calculation
+//      Max maxScore = aggReverseNested.getAggregations().get(METRIC_MAX_SCORE);
+//      Max maxSupport = aggReverseNested.getAggregations().get(METRIC_SUPPORT);
+//      Max maxConfidence = aggReverseNested.getAggregations().get(METRIC_MAX_CONFIDENCE);
+//      Double score = maxScore.getValue() * maxConfidence.getValue() * maxSupport.getValue();
+//      recommendedValues.add(new RecommendedValue(value, null, score,
+//          maxConfidence.getValue(), maxSupport.getValue(), null));
+//    }
+//    return recommendedValues;
+//  }
+
 
 }
 

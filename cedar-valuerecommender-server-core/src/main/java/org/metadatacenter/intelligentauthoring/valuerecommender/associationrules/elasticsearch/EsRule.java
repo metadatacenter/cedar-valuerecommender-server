@@ -20,6 +20,9 @@ public class EsRule {
   private int premiseSize; // Used to simplify Elasticsearch queries
   private int consequenceSize; // Used to simplify Elasticsearch queries
 
+  // Needed by Jackson for deserialization
+  public EsRule() {}
+
   public EsRule(String templateId, List<EsRuleItem> premise, List<EsRuleItem> consequence, double support, double confidence, double lift,
                 double leverage, double conviction, int premiseSize, int consequenceSize) {
     this.templateId = templateId;

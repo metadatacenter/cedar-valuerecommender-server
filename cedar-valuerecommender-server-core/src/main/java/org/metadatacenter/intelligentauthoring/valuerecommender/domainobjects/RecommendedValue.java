@@ -1,52 +1,64 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects;
 
-public class RecommendedValue {
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.Objects;
+
+public class RecommendedValue implements Comparable<RecommendedValue> {
+
   public enum RecommendationType {CONTEXT_INDEPENDENT, CONTEXT_DEPENDENT};
   private final String valueLabel;
-  private final String valueId;
-  private final Double score;
-  private final Double confidence;
-  private final Double support;
-  private final RecommendationType type;
+  private final String valueType;
+  private final Double recommendationScore;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private final RecommendationDetails details;
 
-  public RecommendedValue(String valueLabel, String valueId, Double score, Double confidence, Double support, RecommendationType type) {
+  public RecommendedValue(String valueLabel, String valueType, Double recommendationScore,
+                          RecommendationDetails details) {
     this.valueLabel = valueLabel;
-    this.valueId = valueId;
-    this.score = score;
-    this.confidence = confidence;
-    this.support = support;
-    this.type = type;
+    this.valueType = valueType;
+    this.recommendationScore = recommendationScore;
+    this.details = details;
+  }
+
+  public RecommendedValue(String valueLabel, String valueType, Double recommendationScore) {
+    this(valueLabel, valueType, recommendationScore, null);
   }
 
   public String getValueLabel() {
     return valueLabel;
   }
 
-  public String getValueId() {
-    return valueId;
+  public String getValueType() {
+    return valueType;
   }
 
-  public Double getScore() {
-    return score;
+  public Double getRecommendationScore() {
+    return recommendationScore;
   }
 
-  public Double getConfidence() { return confidence; }
+  public RecommendationDetails getDetails() {
+    return details;
+  }
 
-  public Double getSupport() { return support; }
-
-  public RecommendationType getType() {
-    return type;
+  /**
+   * Define equality between values to remove duplicates from the recommendations
+   */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    RecommendedValue value = (RecommendedValue) o;
+    return Objects.equals(getValueLabel(), value.getValueLabel());
   }
 
   @Override
-  public String toString() {
-    return "RecommendedValue{" +
-        "valueLabel='" + valueLabel + '\'' +
-        ", valueId='" + valueId + '\'' +
-        ", score=" + score +
-        ", confidence=" + confidence +
-        ", support=" + support +
-        ", type=" + type +
-        '}';
+  public int compareTo(RecommendedValue value) {
+    return Double.compare(value.getRecommendationScore(), getRecommendationScore());
   }
+
 }
