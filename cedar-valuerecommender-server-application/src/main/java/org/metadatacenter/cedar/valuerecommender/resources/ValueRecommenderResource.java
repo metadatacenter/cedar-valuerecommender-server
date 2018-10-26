@@ -118,9 +118,9 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
 //  }
 
   // Value recommendation using Association Rule Mining (ARM)
-  @Path("/recommend-arm")
+  @Path("/recommend")
   @POST
-  public Response recommendValuesArm() throws CedarException {
+  public Response recommendValues() throws CedarException {
 
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);

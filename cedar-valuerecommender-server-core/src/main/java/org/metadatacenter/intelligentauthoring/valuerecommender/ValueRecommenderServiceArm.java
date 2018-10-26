@@ -300,7 +300,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
 
     for (EsRule rule : rules) {
-      double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise()) * rule.getConfidence();
+      double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise());
       RecommendedValue.RecommendationType recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
       if (contextMatchingScore > 0) {
         recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
