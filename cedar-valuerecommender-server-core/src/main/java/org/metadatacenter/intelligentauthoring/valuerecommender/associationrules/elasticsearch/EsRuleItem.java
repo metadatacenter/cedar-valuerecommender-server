@@ -114,9 +114,21 @@ public class EsRuleItem {
     return fieldValueResult;
   }
 
-  public String toPrettyString() {
-    String stringField = "[" + getFieldType() + "]" + "(" + getFieldPath() + ")";
-    return stringField + "=" + "[" + getFieldValueType() + "]" + "(" + getFieldValueLabel() + ")";
+  public String toPrettyString(boolean showNullTypes) {
+
+    String fieldType = "";
+    if (showNullTypes || getFieldType() != null) {
+      fieldType = "[" + getFieldType() + "]";
+    }
+
+    String fieldValueType = "";
+    if (showNullTypes || getFieldValueType() != null) {
+      fieldValueType = "[" + getFieldValueType() + "]";
+    }
+
+    String stringField = fieldType + "(" + getFieldPath() + ")";
+    return stringField + "=" + fieldValueType + "(" + getFieldValueLabel() + ")";
+
   }
 }
 

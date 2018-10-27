@@ -731,4 +731,17 @@ public class AssociationRulesUtils {
     }
   }
 
+  public static String ruleItemsToString(List<EsRuleItem> ruleItems, boolean showNullTypes) {
+    String result = "";
+    boolean firstPremiseItem = true;
+    for (EsRuleItem ruleItem : ruleItems) {
+      if (!firstPremiseItem) {
+        result += " AND ";
+      }
+      result += ruleItem.toPrettyString(false);
+      firstPremiseItem = false;
+    }
+    return result;
+  }
+
 }

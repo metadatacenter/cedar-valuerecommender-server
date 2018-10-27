@@ -58,16 +58,16 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
    * Generates association rules for the templates specified
    */
   @Override
-  public List<EsRule> generateRules(List<String> templateIds) {
+  public void generateRules(List<String> templateIds) {
     AssociationRulesService service = new AssociationRulesService();
 
-    List<EsRule> rules = null;
     try {
       // Generate rules for all the templates (with instances) in the system
       if (templateIds.isEmpty()) {
         logger.info("Generating rules for all templates in the system");
         esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
         templateIds = esQueryService.getTemplateIds();
+        logger.info("Total number of templates: " + templateIds.size());
       } else {
         logger.info("Generating rules for the following templates: " + templateIds.toString());
       }
@@ -78,20 +78,16 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
         logger.info(removedCount + " rules removed");
         logger.info("Generating rules for templateId: " + templateId);
         long startTime = System.currentTimeMillis();
-        List<EsRule> allRules = service.generateRulesForTemplate(templateId);
+        List<EsRule> rules = service.generateRulesForTemplate(templateId);
 
         logger.info("Filtering rules by number of consequences");
-        rules = AssociationRulesUtils.filterRulesByNumberOfConsequences(allRules, 1);
-        logger.info("No. rules after filtering: " + rules.size());
+        List<EsRule> filteredRules =
+            AssociationRulesUtils.filterRulesByNumberOfConsequences(rules, 1);
+        logger.info("No. rules after filtering: " + filteredRules.size());
 
-        // Store the rules in Elasticsearch
-//        ObjectMapper mapper = new ObjectMapper();
-//        JsonNode rules = mapper.valueToTree(esRules);
-//        vrIndexingService.indexTemplateRules(rules, templateId);
-
-        // Index all the template rules in bulk
+        // Index all the template rules in bulk in Elasticsearch
         logger.info("Indexing rules in Elasticsearch");
-        esQueryService.indexRulesBulk(rules);
+        esQueryService.indexRulesBulk(filteredRules);
         logger.info("Indexing completed");
 
         long endTime = System.currentTimeMillis();
@@ -105,7 +101,6 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    return rules;
   }
 
   @Override
@@ -309,9 +304,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
       RecommendedValue value = null;
       if (includeDetails) {
-        RecommendationDetails details = new RecommendationDetails(contextMatchingScore, rule.getConfidence(),
-            rule.getSupport(),
-            recommendationType);
+        RecommendationDetails details = new RecommendationDetails(rule.toShortString(), contextMatchingScore, rule.getConfidence(),
+            rule.getSupport(), recommendationType);
         value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
             rule.getConsequence().get(0).getFieldValueType(), recommendationScore, details);
       } else {

@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface IValueRecommenderArm {
 
-  List<EsRule> generateRules(List<String> templateIds);
+  void generateRules(List<String> templateIds);
   Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField,
                                    boolean strictMatch, boolean includeDetails) throws IOException;
 
