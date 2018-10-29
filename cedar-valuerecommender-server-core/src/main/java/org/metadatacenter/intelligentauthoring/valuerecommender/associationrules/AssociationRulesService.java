@@ -58,26 +58,26 @@ public class AssociationRulesService implements IAssociationRulesService {
     }
   }
 
-  @Override
-  public List<AssociationRule> filterRules(List<AssociationRule> rules, List<Field> populatedFields, Field
-      targetField) {
-
-    Map<String, String> fieldValues = new HashMap<>();
-    for (Field populatedField : populatedFields) {
-      fieldValues.put(populatedField.getFieldPath(), populatedField.getFieldValue());
-    }
-
-    List<AssociationRule> rulesFound = new ArrayList<>();
-
-    for (AssociationRule rule : rules) {
-      if (AssociationRulesUtils.ruleMatchesRequirements(rule, fieldValues, targetField)) {
-        rulesFound.add(rule);
-      }
-
-    }
-
-    return rulesFound;
-
-  }
+//  @Override
+//  public List<AssociationRule> filterRules(List<AssociationRule> rules, List<Field> populatedFields, Field
+//      targetField) {
+//
+//    Map<String, String> fieldValues = new HashMap<>();
+//    for (Field populatedField : populatedFields) {
+//      fieldValues.put(populatedField.getFieldPath(), populatedField.getFieldValue());
+//    }
+//
+//    List<AssociationRule> rulesFound = new ArrayList<>();
+//
+//    for (AssociationRule rule : rules) {
+//      if (AssociationRulesUtils.ruleMatchesRequirements(rule, fieldValues, targetField)) {
+//        rulesFound.add(rule);
+//      }
+//
+//    }
+//
+//    return rulesFound;
+//
+//  }
 
 }

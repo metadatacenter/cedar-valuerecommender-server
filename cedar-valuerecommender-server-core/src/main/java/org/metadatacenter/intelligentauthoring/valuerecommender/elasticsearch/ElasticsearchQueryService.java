@@ -101,11 +101,11 @@ public class ElasticsearchQueryService {
       BulkRequestBuilder bulkRequest = client.prepareBulk();
       ObjectMapper mapper = new ObjectMapper();
 
-      int count = 0;
       for (EsRule rule : rules) {
         // either use client#prepare, or use Requests# to directly build index/delete requests
-        bulkRequest.add(client.prepareIndex(elasticsearchConfig.getIndexes().getRulesIndex().getName(),
-            IndexedDocumentType.DOC.getValue(), Integer.toString(count++)).setSource(mapper.convertValue(rule, Map.class))
+        bulkRequest.add(client.prepareIndex(
+            elasticsearchConfig.getIndexes().getRulesIndex().getName(),
+            IndexedDocumentType.DOC.getValue()).setSource(mapper.convertValue(rule, Map.class))
         );
       }
 

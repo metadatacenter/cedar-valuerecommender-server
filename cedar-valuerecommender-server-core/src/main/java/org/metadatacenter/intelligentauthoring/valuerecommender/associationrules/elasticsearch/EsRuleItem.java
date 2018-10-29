@@ -1,86 +1,101 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch;
 
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.FieldValueResultUtils;
+
 import java.util.List;
 
 /**
- * A component of the premise/consequence of an association rule
+ * This class represent each item of the premise/consequence of an association rule.
  */
 public class EsRuleItem {
 
   private String fieldPath;
-  private String fieldInstanceType;
+  private String fieldType;
   private String fieldNormalizedPath;
-  private List<String> fieldNormalizedPaths;
-  private String fieldValue;
+  private List<String> fieldTypeMappings;
+  private String fieldValueType;
   private String fieldValueLabel;
   private String fieldNormalizedValue;
-  private List<String> fieldNormalizedValues;
+  private List<String> fieldValueMappings;
+  private String fieldValueResult;
 
   /**
-   * TODO: We are currently using two different fields: fieldPath and fieldInstanceType to identify the field in the
-   * template. Think if it would be a good idea to have just one field to store the path, either for free text (e.g.,
-   * study.title), for ontology terms (e.g., uri1.uri2) or mixed (e.g., uri1.title).
-   * - Current limitation: for ontology terms we are storing the current field uri using the fieldInstanceType field,
-   * but we are not storing the path to the field. We could use a new field, such as "fieldNormalizedPath" to identify
-   * the field in the template. That field would store the path, either using free text, ontology terms, or both.
+   * Attributes used to match the field requirements to the association rules: fieldNormalizedPath, fieldNormalizedValue
+   * Attributes used to generate the recommendations that will be returned to the user: fieldValueType, fieldValueLabel
+   *
+   * @param fieldPath             Path to the field (using dot notation). It makes it possible to identify the field
+   *                              in the template or element. Examples:
+   *                              - For a flat template: "Tissue"
+   *                              - For a nested "Sample" element: "Sample.Tissue"
+   *                              - For a multi-instance field nested in a "Sample" element": "Sample.Tissue" [CONFIRM]
+   * @param fieldType             URI of the ontology term that annotates the field, if any.
+   * @param fieldNormalizedPath   For fields that have not been annotated with an ontology term, it is a normalized
+   *                              string obtained from the fieldPath (e.g., SAMPLE.TISSUE). For fields that have been
+   *                              annotated with an ontology term, it contains the term URI that annotates the field,
+   *                              obtained from the fieldType (e.g., http://purl.obolibrary.org/obo/DOID_4).
+   *                              Limitation: our current version does not deal neither with URI paths (e.g., URI1.URI2)
+   *                              nor with "mixed" paths that contain both field names and URIs
+   *                              (e.g. SAMPLE.http://purl.obolibrary.org/obo/DOID_4).
+   * @param fieldTypeMappings     List of URIs equivalent to the fieldType, obtained from a mappings service.
+   * @param fieldValueType        For ontology terms, this field stored the content of the @id field.
+   * @param fieldValueLabel       For free text values, this field stores the content of the @value field. For
+   *                              ontology terms, it stores the value of the rdfs:label field.
+   * @param fieldNormalizedValue  Normalized value. For free text values, a normalized string. For ontology terms, it
+   *                              contains the term URI.
+   *                              <p>
+   *                              Examples:
+   *                              1) For: {"@value": "colorectal cancer"}
+   *                              - fieldValueType = null
+   *                              - fieldValueLabel = colorectal cancer
+   *                              - fieldNormalizedValue = COLORECTALCANCER
+   *                              2) For {"@id": "http://purl.obolibrary.org/obo/DOID_9256",
+   *                              "rdfs:label": "colorectal cancer",
+   *                              "@type":"http://purl.obolibrary.org/obo/DOID_4"}
+   *                              - fieldType = http://purl.obolibrary.org/obo/DOID_4 ("disease" in DOID)
+   *                              - fieldValueType = http://purl.obolibrary.org/obo/DOID_9256
+   *                              - fieldValueLabel = colorectal cancer
+   *                              - fieldNormalizedValue = http://purl.obolibrary.org/obo/DOID_9256
+   * @param fieldValueMappings    List of URIs equivalent to the fieldValueType (only for annotated instances)
+   * @param fieldValueResult      This field contains the information needed to generate a recommendation result. Its
+   *                              String representation is used to perform the aggregation of results in Elasticsearch.
+   *                              - For free-text values, fieldValueResult = [](fieldValueLabel)
+   *                              - For controlled terms, fieldValueResult = [fieldValueType](fieldValueLabel)
    */
-
-  /**
-   * @param fieldPath
-   * @param fieldInstanceType    Instance type. It is the content of the @type field, if it exists.
-   * @param fieldNormalizedPath  Normalized path. For fields without an instance type, a normalized string (e.g.,
-   *                             STUDY.TITLE). For fields that have been annotated with an instance type, it contains
-   *                             the term URI that annotates the field (e.g., http://purl.obolibrary.org/obo/DOID_4)
-   * @param fieldNormalizedPaths List of URIs equivalent to the fieldNormalizedPath (only for annotated instances)
-   * @param fieldValue           Content of the @value or the @id field
-   * @param fieldValueLabel      When the value is a term uri (from @id), it stores the corresponding label (rdfs:label)
-   * @param fieldNormalizedValue Normalized value. For free text values, a normalized string. For ontology terms, it
-   *                             contains the term URI.
-   *                             <p>
-   *                             Examples:
-   *                             1) For: {"@value": "colorectal cancer"}
-   *                             - fieldInstanceType = null
-   *                             - fieldValue = colorectal cancer
-   *                             - fieldNormalizedValue = COLORECTALCANCER
-   *                             2) For {"@id": "http://purl.obolibrary.org/obo/DOID_9256",
-   *                             "rdfs:label": "colorectal cancer",
-   *                             "@type":"http://purl.obolibrary.org/obo/DOID_4"}
-   *                             - fieldInstanceType = http://purl.obolibrary.org/obo/DOID_4 ("disease" in DOID)
-   *                             - fieldValue = colorectal cancer
-   *                             - fieldNormalizedValue = http://purl.obolibrary.org/obo/DOID_9256
-   * @param fieldNormalizedValues List of URIs equivalent to the fieldNormalizedValue (only for annotated instances)
-   */
-  public EsRuleItem(String fieldPath, String fieldInstanceType, String fieldNormalizedPath,
-                    List<String> fieldNormalizedPaths, String fieldValue,
-                    String fieldValueLabel, String fieldNormalizedValue, List<String> fieldNormalizedValues) {
+  public EsRuleItem(String fieldPath, String fieldType, String fieldNormalizedPath,
+                    List<String> fieldTypeMappings, String fieldValueType,
+                    String fieldValueLabel, String fieldNormalizedValue, List<String> fieldValueMappings,
+                    String fieldValueResult) {
     this.fieldPath = fieldPath;
-    this.fieldInstanceType = fieldInstanceType;
+    this.fieldType = fieldType;
     this.fieldNormalizedPath = fieldNormalizedPath;
-    this.fieldNormalizedPaths = fieldNormalizedPaths;
-    this.fieldValue = fieldValue;
+    this.fieldTypeMappings = fieldTypeMappings;
+    this.fieldValueType = fieldValueType;
     this.fieldValueLabel = fieldValueLabel;
     this.fieldNormalizedValue = fieldNormalizedValue;
-    this.fieldNormalizedValues = fieldNormalizedValues;
+    this.fieldValueMappings = fieldValueMappings;
+    this.fieldValueResult = fieldValueResult;
   }
+
+  public EsRuleItem() {}
 
   public String getFieldPath() {
     return fieldPath;
   }
 
-  public String getFieldInstanceType() {
-    return fieldInstanceType;
+  public String getFieldType() {
+    return fieldType;
   }
 
   public String getFieldNormalizedPath() {
     return fieldNormalizedPath;
   }
 
-  public List<String> getFieldNormalizedPaths() {
-    return fieldNormalizedPaths;
+  public List<String> getFieldTypeMappings() {
+    return fieldTypeMappings;
   }
 
-  public String getFieldValue() {
-    return fieldValue;
+  public String getFieldValueType() {
+    return fieldValueType;
   }
 
   public String getFieldValueLabel() {
@@ -91,13 +106,29 @@ public class EsRuleItem {
     return fieldNormalizedValue;
   }
 
-  public List<String> getFieldNormalizedValues() {
-    return fieldNormalizedValues;
+  public List<String> getFieldValueMappings() {
+    return fieldValueMappings;
   }
 
-  public String toPrettyString() {
-    String stringField = "[" + getFieldInstanceType() + "]" + "(" + getFieldPath() + ")";
-    return stringField + "=" + "[" + getFieldValue() + "]" + "(" + getFieldValueLabel() + ")";
+  public String getFieldValueResult() {
+    return fieldValueResult;
+  }
+
+  public String toPrettyString(boolean showNullTypes) {
+
+    String fieldType = "";
+    if (showNullTypes || getFieldType() != null) {
+      fieldType = "[" + getFieldType() + "]";
+    }
+
+    String fieldValueType = "";
+    if (showNullTypes || getFieldValueType() != null) {
+      fieldValueType = "[" + getFieldValueType() + "]";
+    }
+
+    String stringField = fieldType + "(" + getFieldPath() + ")";
+    return stringField + "=" + fieldValueType + "(" + getFieldValueLabel() + ")";
+
   }
 }
 

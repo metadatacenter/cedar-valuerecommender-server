@@ -1,5 +1,9 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch;
 
+import com.sun.nio.sctp.AssociationChangeNotification;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesUtils;
+import weka.associations.AssociationRule;
+
 import java.util.List;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
@@ -19,6 +23,9 @@ public class EsRule {
   private double conviction;
   private int premiseSize; // Used to simplify Elasticsearch queries
   private int consequenceSize; // Used to simplify Elasticsearch queries
+
+  // Needed by Jackson for deserialization
+  public EsRule() {}
 
   public EsRule(String templateId, List<EsRuleItem> premise, List<EsRuleItem> consequence, double support, double confidence, double lift,
                 double leverage, double conviction, int premiseSize, int consequenceSize) {
@@ -71,15 +78,8 @@ public class EsRule {
   @Override
   public String toString() {
 
-    String premiseString = "";
-    for (EsRuleItem ruleItem : premise) {
-      premiseString += ruleItem.toPrettyString();
-    }
-
-    String consequenceString = "";
-    for (EsRuleItem ruleItem : consequence) {
-      consequenceString += ruleItem.toPrettyString();
-    }
+    String premiseString = AssociationRulesUtils.ruleItemsToString(premise, true);
+    String consequenceString = AssociationRulesUtils.ruleItemsToString(consequence, true);
 
     return "\n" + premiseString + " ==> " + consequenceString + "(" +
         SUPPORT_METRIC_NAME + "=" + support + "," +
@@ -87,6 +87,12 @@ public class EsRule {
         LIFT_METRIC_NAME + "=" + lift + "," +
         LEVERAGE_METRIC_NAME + "=" + leverage + "," +
         CONVICTION_METRIC_NAME + "=" + conviction + ")";
+  }
+
+  public String toShortString() {
+    String premiseString = AssociationRulesUtils.ruleItemsToString(premise, false);
+    String consequenceString = AssociationRulesUtils.ruleItemsToString(consequence, false);
+    return premiseString + " ==> " + consequenceString;
   }
 
 }

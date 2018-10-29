@@ -6,7 +6,6 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
  */
 public class Constants {
 
-  //public static final String SUMMARIZED_CONTENT_FIELD = "resourceSummarizedContent";
   public static final String BIOPORTAL_API_BASE = "http://data.bioontology.org/";
   public static final String BIOPORTAL_API_CLASSES_FRAGMENT = "/classes/";
   public static final String VALUE_FIELD_NAME = "@value";
@@ -48,13 +47,48 @@ public class Constants {
   public static final String CONVICTION_METRIC_NAME = "Conviction";
   public static final boolean VERBOSE_MODE = true;
 
+  // Field names used in the rules index
+  public static final String INDEX_TEMPLATE_ID = "templateId";
+  public static final String INDEX_RULE_CONFIDENCE = "confidence";
+  public static final String INDEX_RULE_SUPPORT = "support";
+  public static final String INDEX_PREMISE_SIZE = "premiseSize";
+  public static final String INDEX_CONSEQUENCE_SIZE = "consequenceSize";
+  public static final String INDEX_RULE_PREMISE = "premise";
+  public static final String INDEX_RULE_CONSEQUENCE = "consequence";
+  public static final String INDEX_FIELD_NORMALIZED_PATH = "fieldNormalizedPath";
+  public static final String INDEX_FIELD_TYPE_MAPPINGS = "fieldTypeMappings";
+  public static final String INDEX_FIELD_NORMALIZED_VALUE = "fieldNormalizedValue";
+  public static final String INDEX_FIELD_VALUE_MAPPINGS = "fieldValueMappings";
+  public static final String INDEX_FIELD_VALUE_RESULT = "fieldValueResult";
+  public static final String INDEX_PREMISE_FIELD_NORMALIZED_PATH = INDEX_RULE_PREMISE + "." + INDEX_FIELD_NORMALIZED_PATH;
+  public static final String INDEX_PREMISE_FIELD_TYPE_MAPPINGS = INDEX_RULE_PREMISE + "." + INDEX_FIELD_TYPE_MAPPINGS;
+  public static final String INDEX_PREMISE_FIELD_NORMALIZED_VALUE = INDEX_RULE_PREMISE + "." + INDEX_FIELD_NORMALIZED_VALUE;
+  public static final String INDEX_PREMISE_FIELD_VALUE_MAPPINGS = INDEX_RULE_PREMISE + "." + INDEX_FIELD_VALUE_MAPPINGS;
+  public static final String INDEX_CONSEQUENCE_FIELD_NORMALIZED_PATH = INDEX_RULE_CONSEQUENCE + "." + INDEX_FIELD_NORMALIZED_PATH;
+  public static final String INDEX_CONSEQUENCE_FIELD_TYPE_MAPPINGS = INDEX_RULE_CONSEQUENCE + "." + INDEX_FIELD_TYPE_MAPPINGS;
+  public static final String INDEX_CONSEQUENCE_FIELD_VALUE_RESULT = INDEX_RULE_CONSEQUENCE + "." + INDEX_FIELD_VALUE_RESULT;
+
+  // Elasticsearch aggregation names and attributes used
+  public static final String AGG_BY_NESTED_OBJECT = "by_nested_object";
+  public static final String AGG_BY_TARGET_FIELD_VALUE_RESULT = "by_target_field_value_result";
+  public static final String AGG_METRICS_INFO = "metrics_info";
+  public static final String AGG_SEPARATOR = ">";
+  public static final String METRIC_MAX_SCORE = "max_score";
+  public static final String METRIC_SUPPORT = "max_support";
+  public static final String METRIC_MAX_CONFIDENCE = "max_confidence";
+  public static final String METRIC_MAX_SCORE_PATH = AGG_METRICS_INFO + AGG_SEPARATOR + METRIC_MAX_SCORE;
+  public static final String METRIC_MAX_CONFIDENCE_PATH = AGG_METRICS_INFO + AGG_SEPARATOR + METRIC_MAX_CONFIDENCE;
+  public static final String METRIC_SUPPORT_PATH = AGG_METRICS_INFO + AGG_SEPARATOR + METRIC_SUPPORT;
+
+
   // Value Recommender configuration
-  public static boolean USE_MAPPINGS = true; // For ontology terms, match using mappings too
+  public static boolean USE_MAPPINGS = false; // For ontology terms, match using mappings too
   public static boolean FILTER_BY_CONFIDENCE = false;
   public static final double MIN_CONFIDENCE_QUERY = 0.9; // Confidence threshold used when querying the rules
   public static boolean FILTER_BY_SUPPORT = false;
-  public static final double MIN_SUPPORT_QUERY = 20; // Confidence threshold used when querying the rules
+  public static final double MIN_SUPPORT_QUERY = 1; // Support threshold used when querying the rules
   public static final int MAX_RESULTS = 10;
+  public static final int CONSEQUENCE_SIZE = 1;
 
   // PRIVATE //
 
