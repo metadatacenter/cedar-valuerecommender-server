@@ -7,7 +7,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 public class Constants {
 
   /** General settings **/
-  public static final boolean USE_ALL_FIELDS = true; // If false, only fields with "valueRecommendationEnabled=true" are considered
+  public static final boolean USE_ALL_FIELDS = false; // If false, only fields with "valueRecommendationEnabled=true" are considered
   public static final boolean READ_INSTANCES_FROM_CEDAR = true; // Read instances from CEDAR vs. from a local folder
   private static final String CEDAR_INSTANCES_BASE_PATH = "/Users/marcosmr/tmp/ARM_resources/EVALUATION/";
   public static final String CEDAR_INSTANCES_PATH = CEDAR_INSTANCES_BASE_PATH +
@@ -54,7 +54,7 @@ public class Constants {
   public static final String LIFT_METRIC_NAME = "Lift";
   public static final String LEVERAGE_METRIC_NAME = "Leverage";
   public static final String CONVICTION_METRIC_NAME = "Conviction";
-  public static final boolean VERBOSE_MODE = true;
+  public static final boolean VERBOSE_MODE = false;
 
   /** rules-index field names **/
   public static final String INDEX_TEMPLATE_ID = "templateId";

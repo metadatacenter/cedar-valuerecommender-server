@@ -86,7 +86,7 @@ public class AssociationRulesUtils {
    */
   public static Optional<String> generateInstancesFile(String templateId) throws Exception {
 
-    logger.info("Generating ARFF file for template id: " + templateId);
+    logger.info("Generating ARFF file");
 
     String fileName = templateId.substring(templateId.lastIndexOf("/") + 1) + ".arff";
     String filePath = System.getProperty("java.io.tmpdir") + "/" + ARFF_FOLDER_NAME + "/" + fileName;
@@ -205,7 +205,7 @@ public class AssociationRulesUtils {
         file.delete();
         return Optional.empty();
       }
-      logger.info("ARFF file created successfully (template id: " + templateId + ")");
+      logger.info("ARFF file created successfully");
       return Optional.ofNullable(fileName);
     }
   }

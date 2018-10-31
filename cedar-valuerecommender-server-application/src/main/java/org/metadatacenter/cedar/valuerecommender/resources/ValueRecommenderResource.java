@@ -11,7 +11,6 @@ import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.util.http.CedarResponse;
@@ -110,7 +109,6 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   @POST
 
   public Response generateRules() throws CedarException {
-    //TODO: Check that the user is admin. We don't want to enable this call for all users
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
     // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index, not to the rules index

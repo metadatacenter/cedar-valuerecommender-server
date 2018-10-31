@@ -37,15 +37,16 @@ public class AssociationRulesService implements IAssociationRulesService {
       logger.info("Applying filter: StringToNominal");
 
       // 4. Run the Apriori algorithm
-      logger.info("Running Apriori");
+      logger.info("Running Apriori...");
+      long startTime = System.currentTimeMillis();
       Apriori aprioriResults = AssociationRulesUtils.runApriori(filteredData, APRIORI_MAX_NUM_RULES, VERBOSE_MODE);
-
-      logger.info("\n******************* APRIORI RESULTS *******************");
+      long aprioriTime = System.currentTimeMillis() - startTime;
       // See info about options at: http://grepcode.com/file/repo1.maven.org/maven2/nz.ac.waikato.cms
       // .weka/weka-stable/3.6.8/weka/associations/Apriori.java
       logger.info("Current options: " + Arrays.asList(aprioriResults.getOptions()).toString());
       logger.info("Numer of rules limit: " + aprioriResults.getNumRules());
       logger.info("Number of rules generated: " + aprioriResults.getAssociationRules().getRules().size());
+      logger.info("Apriori execution time: " + aprioriTime + " ms");
 //      logger.info("Rules:\n");
 //      int ruleCount = 1;
 //      for (AssociationRule rule : aprioriResults.getAssociationRules().getRules()) {

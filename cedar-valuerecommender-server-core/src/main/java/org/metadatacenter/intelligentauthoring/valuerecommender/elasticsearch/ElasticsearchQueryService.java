@@ -10,6 +10,8 @@ import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
@@ -119,6 +121,14 @@ public class ElasticsearchQueryService {
     else {
       logger.warn("There are no rules to index");
     }
+  }
+
+  public void removeAllRules() {
+    BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
+        .filter(QueryBuilders.matchAllQuery())
+        .source(elasticsearchConfig.getIndexes().getRulesIndex().getName()).get();
+    long deleted = response.getDeleted();
+    logger.info("No. rules removed: " + deleted);
   }
 
 }

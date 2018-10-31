@@ -54,7 +54,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
   }
 
   /**
-   * Generates association rules for the templates specified
+   * Generate association rules for the templates specified
+   * @param templateIds
    */
   @Override
   public void generateRules(List<String> templateIds) {
@@ -63,6 +64,9 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     try {
       // Generate rules for all the templates (with instances) in the system
       if (templateIds.isEmpty()) {
+        // If the user did not specify any templateIds, we first will remove all existing rules
+        logger.info("Removing all existing rules");
+        esQueryService.removeAllRules();
         logger.info("Generating rules for all templates in the system");
         esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
         templateIds = esQueryService.getTemplateIds();
@@ -71,7 +75,7 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
         logger.info("Generating rules for the following templates: " + templateIds.toString());
       }
       for (String templateId : templateIds) {
-        logger.info("Processing templateId: " + templateId);
+        logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
         logger.info("Removing all rules for templateId: " + templateId + " from the index");
         long removedCount = rulesIndexingService.removeRulesFromIndex(templateId);
         logger.info(removedCount + " rules removed");
@@ -89,9 +93,9 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
         esQueryService.indexRulesBulk(filteredRules);
         logger.info("Indexing completed");
 
-        long endTime = System.currentTimeMillis();
-        long totalTime = (endTime - startTime) / 1000;
-        logger.info("Rules generation and indexing completed. Execution time: " + totalTime + " seg.");
+        long totalTime = System.currentTimeMillis() - startTime;
+        logger.info("Rules generation and indexing completed. Total execution time: " + totalTime/1000 + " seg (" + totalTime + " ms");
+        logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
       }
     } catch (IOException e) {
       e.printStackTrace();
