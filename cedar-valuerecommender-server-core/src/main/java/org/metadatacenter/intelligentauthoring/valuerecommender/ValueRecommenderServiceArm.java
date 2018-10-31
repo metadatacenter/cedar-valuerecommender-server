@@ -5,7 +5,6 @@ import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.metadatacenter.config.CedarConfig;
@@ -105,11 +104,13 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
   @Override
   public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField,
-                                          boolean strictMatch, boolean includeDetails) {
+                                          boolean strictMatch, boolean filterByRecommendationScore,
+                                          boolean filterByConfidence, boolean filterBySupport, boolean useMappings,
+                                          boolean includeDetails) {
 
     // Perform query to find the rules that match the condition
     SearchResponse rulesSearchResponse = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch,
-        FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT, USE_MAPPINGS);
+        filterByConfidence, filterBySupport, useMappings);
 
     // Translate query result to EsRule objects
     List<EsRule> relevantRules = new ArrayList<>();
@@ -124,7 +125,8 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     }
 
     // Calculate the recommendation score for each rule and generate a ranked list of recommended values
-    List<RecommendedValue> recommendedValues = generateRecommendations(populatedFields, relevantRules, includeDetails);
+    List<RecommendedValue> recommendedValues = generateRecommendations(populatedFields, relevantRules,
+        filterByRecommendationScore, includeDetails);
 
     return new Recommendation(targetField.getFieldPath(), recommendedValues);
   }
@@ -263,10 +265,9 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
     mainBoolQuery = mainBoolQuery.must(consequenceNestedQuery);
 
     /**  Execute query and return search results **/
-    Client client = esQueryService.getClient();
     String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
-    SearchRequestBuilder search = client.prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
-        .setQuery(mainBoolQuery);
+    SearchRequestBuilder search = esQueryService.getClient().prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
+        .setQuery(mainBoolQuery).setSize(MAX_ES_RESULTS);
     //logger.info("Search query in Query DSL:\n" + search);
     SearchResponse response = search.execute().actionGet();
 
@@ -275,51 +276,76 @@ public class ValueRecommenderServiceArm implements IValueRecommenderArm {
 
   /**
    * This method calculates the recommendation score for each value (extracted from the consequent of a rule) and
-   * generates a ranked list of recommended values.
+   * generates a ranked list of recommended values. Note that computing the recommendation scores and the final ranking
+   * in Java is easy and flexible. However, for best performance, we could consider carrying out these computations
+   * at the Elasticsearch level.
+   *
    * The recommendation score for a value is calculated according to the following expression:
    *
-   * recommendation_score(v) = context_matching_score(r,C) * confidence(r)
-   * context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
+   * recommendation_score(v) =
+   *      {
+   *        IF context_matching_score(r,C) > 0    recommendation_score(v) = context_matching_score(r,C) * confidence(r)
+   *        ELSE                                  recommendation_score(v) = confidence(r) / adjustment_factor
+   *      }
+   *
+   * with: context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
    *
    * where:
    * - C is the context
    * - v is the value extracted from the consequent of the rule r
+   * - adjustment_factor is a constant to calculate the value of the recommendation score based on the confidence, when
+   * the recommendation score is 0.
    *
    * @param populatedFields
    * @param rules
+   * @param filterByRecommendationScore
+   * @param includeDetails
    * @return
    */
   private List<RecommendedValue> generateRecommendations(List<Field> populatedFields, List<EsRule> rules,
-                                                         boolean includeDetails) {
-
+                                                         boolean filterByRecommendationScore, boolean includeDetails) {
+    final double ADJUSTMENT_FACTOR = 5;
     List<RecommendedValue> recommendedValues = new ArrayList<>();
 
     for (EsRule rule : rules) {
       double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise());
       RecommendedValue.RecommendationType recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
+
+      double recommendationScore;
       if (contextMatchingScore > 0) {
         recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
+        recommendationScore = contextMatchingScore * rule.getConfidence();
       }
-      double recommendationScore = contextMatchingScore * rule.getConfidence();
-
-      RecommendedValue value = null;
-      if (includeDetails) {
-        RecommendationDetails details = new RecommendationDetails(rule.toShortString(), contextMatchingScore, rule.getConfidence(),
-            rule.getSupport(), recommendationType);
-        value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
-            rule.getConsequence().get(0).getFieldValueType(), recommendationScore, details);
-      } else {
-        value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
-            rule.getConsequence().get(0).getFieldValueType(), recommendationScore);
+      else {
+        recommendationScore = rule.getConfidence() / ADJUSTMENT_FACTOR;
       }
 
-      if (!recommendedValues.contains(value)) { // avoid generation of duplicated values
-        recommendedValues.add(value);
+      if (!filterByRecommendationScore || (filterByRecommendationScore && recommendationScore >= MIN_RECOMMENDATION_SCORE)) {
+
+        RecommendedValue value = null;
+        if (includeDetails) {
+          RecommendationDetails details = new RecommendationDetails(rule.toShortString(), contextMatchingScore, rule.getConfidence(),
+              rule.getSupport(), recommendationType);
+          value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
+              rule.getConsequence().get(0).getFieldValueType(), recommendationScore, details);
+        } else {
+          value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
+              rule.getConsequence().get(0).getFieldValueType(), recommendationScore);
+        }
+
+        if (!recommendedValues.contains(value)) { // avoid generation of duplicated values
+          recommendedValues.add(value);
+        }
       }
     }
 
     // Sort by score
     Collections.sort(recommendedValues);
+
+    // Keep top n elements
+    if ((recommendedValues.size() > MAX_RECOMMENDATIONS) && (MAX_RECOMMENDATIONS > 1)) {
+      recommendedValues = recommendedValues.subList(0, MAX_RECOMMENDATIONS - 1);
+    }
 
     return recommendedValues;
   }

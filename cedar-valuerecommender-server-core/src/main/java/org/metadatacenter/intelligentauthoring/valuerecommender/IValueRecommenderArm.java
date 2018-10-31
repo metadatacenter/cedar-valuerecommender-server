@@ -14,6 +14,8 @@ public interface IValueRecommenderArm {
 
   void generateRules(List<String> templateIds);
   Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField,
-                                   boolean strictMatch, boolean includeDetails) throws IOException;
+                                   boolean strictMatch, boolean filterByRecommendationScore,
+                                   boolean filterByConfidence, boolean filterBySupport, boolean useMappings,
+                                   boolean includeDetails) throws IOException;
 
 }

@@ -11,6 +11,7 @@ import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.util.http.CedarResponse;
@@ -23,6 +24,7 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/")
@@ -81,7 +83,8 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
         includeDetails =  input.get("includeDetails").asBoolean();
       }
       recommendation = valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField,
-          strictMatch, includeDetails);
+          strictMatch, FILTER_BY_RECOMMENDATION_SCORE, FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT, USE_MAPPINGS,
+          includeDetails);
 
       output = mapper.valueToTree(recommendation);
     } catch (IllegalArgumentException e) {
