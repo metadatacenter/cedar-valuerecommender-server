@@ -33,25 +33,13 @@ public class ValueRecommenderServerApplication extends
 
   @Override
   public void initializeApp() {
-
     ElasticsearchServiceFactory esServiceFactory = ElasticsearchServiceFactory.getInstance(cedarConfig);
 
-    ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
-//    ValueRecommenderService valueRecommenderService = new ValueRecommenderService(
-//        esc.getClusterName(),
-//        esc.getHost(),
-//        esc.getIndexes().getSearchIndex().getName(),
-//        IndexedDocumentType.DOC.getValue(),
-//        esc.getTransportPort(),
-//        esc.getSize());
-
     RulesIndexingService rulesIndexingService = esServiceFactory.rulesIndexingService();
-
     ValueRecommenderServiceArm valueRecommenderServiceArm =
         new ValueRecommenderServiceArm(cedarConfig, rulesIndexingService);
 
     ValueRecommenderResource.injectServices(valueRecommenderServiceArm);
-
   }
 
   @Override

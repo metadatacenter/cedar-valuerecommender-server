@@ -24,6 +24,14 @@ public class Constants {
   public static final int MAX_RECOMMENDATIONS = 10; // Maximum number of recommendations returned to the user
   public static final int MAX_ES_RESULTS = 50; // Maximum number of results returned by Elasticsearch
 
+  /** Input parameters **/
+  public static final String INPUT_TEMPLATE_ID = "templateId";
+  public static final String INPUT_TEMPLATE_IDS = "templateIds";
+  public static final String INPUT_POPULATED_FIELDS = "populatedFields";
+  public static final String INPUT_TARGET_FIELD = "targetField";
+  public static final String INPUT_STRICT_MATCH= "strictMatch";
+  public static final String INPUT_INCLUDE_DETAILS = "includeDetails";
+
   /** ARFF generation **/
   public static final String ARFF_FOLDER_NAME = "cedar-valuerecommender-server/arff-files";
   public static final String ARFF_MISSING_VALUE = "?";

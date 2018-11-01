@@ -3,6 +3,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
@@ -16,6 +17,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.search.IndexedDocumentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.metadatacenter.constant.ElasticsearchConstants.*;
+import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.INDEX_TEMPLATE_ID;
 
 public class ElasticsearchQueryService {
 
@@ -58,7 +62,7 @@ public class ElasticsearchQueryService {
   public List<String> getTemplateInstancesIdsByTemplateId(String templateId) {
     List<String> templateInstancesIds = new ArrayList<>();
 
-    QueryBuilder templateIdQuery = QueryBuilders.termQuery(INFO_IS_BASED_ON, templateId);
+    QueryBuilder templateIdQuery = termQuery(INFO_IS_BASED_ON, templateId);
 
     //logger.info("Search query: " + templateIdQuery.toString());
 
@@ -77,7 +81,7 @@ public class ElasticsearchQueryService {
   public List<String> getTemplateIds() {
     List<String> templateIds = new ArrayList<>();
 
-    QueryBuilder templateIdsQuery = QueryBuilders.termQuery("info.nodeType", "template");
+    QueryBuilder templateIdsQuery = termQuery("info.nodeType", "template");
 
     SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdsQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
@@ -117,12 +121,14 @@ public class ElasticsearchQueryService {
         logger.error("Failure when processing bulk request:");
         logger.error(bulkResponse.buildFailureMessage());
       }
-    }
-    else {
+    } else {
       logger.warn("There are no rules to index");
     }
   }
 
+  /**
+   * Remove all indexed rules
+   */
   public void removeAllRules() {
     BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
         .filter(QueryBuilders.matchAllQuery())
@@ -130,5 +136,28 @@ public class ElasticsearchQueryService {
     long deleted = response.getDeleted();
     logger.info("No. rules removed: " + deleted);
   }
+
+  /**
+   * Count the number of rules in the index. If templateId is provided, it counts the rules for a given template.
+   * Otherwise, it counts the total number of rules in the index.
+   *
+   * @param templateId
+   * @return
+   */
+  public long getNumberOfRules(String templateId) {
+
+    SearchRequestBuilder requestBuilder =
+        client.prepareSearch(elasticsearchConfig.getIndexes().getRulesIndex().getName())
+        .setTypes(IndexedDocumentType.DOC.getValue());
+
+    if (templateId != null && !templateId.isEmpty()) {
+      requestBuilder.setQuery(QueryBuilders.termQuery(INDEX_TEMPLATE_ID, templateId));
+    } else {
+      requestBuilder.setQuery(QueryBuilders.matchAllQuery()); // return all rules in the index
+    }
+    requestBuilder.setSize(0); // Don't return any documents, we don't need them.
+    return requestBuilder.get().getHits().getTotalHits(); // Execute query and count results
+  }
+
 
 }
