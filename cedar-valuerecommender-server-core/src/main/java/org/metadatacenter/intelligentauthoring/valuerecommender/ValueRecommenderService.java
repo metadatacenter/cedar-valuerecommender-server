@@ -8,6 +8,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.RulesGenerationStatusManager;
@@ -104,7 +105,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
   }
 
   @Override
-  public RulesGenerationStatus getRulesGenerationStatus(String templateId) {
+  public RulesGenerationStatus getRulesGenerationStatus(String templateId) throws CedarProcessingException {
     return RulesGenerationStatusManager.getStatus(templateId);
   }
 

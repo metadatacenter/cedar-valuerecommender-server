@@ -30,8 +30,13 @@ public class RulesGenerationStatusManager {
     }
   }
 
-  public static RulesGenerationStatus getStatus(String templateId) {
-    return statusMap.get(templateId);
+  public static RulesGenerationStatus getStatus(String templateId) throws CedarProcessingException {
+    if (statusMap.containsKey(templateId)) {
+      return statusMap.get(templateId);
+    }
+    else {
+      throw new CedarProcessingException("Template not found: " + templateId);
+    }
   }
 
   public static List<RulesGenerationStatus> getStatus() {

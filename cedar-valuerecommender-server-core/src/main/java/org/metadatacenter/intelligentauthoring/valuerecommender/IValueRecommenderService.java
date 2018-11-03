@@ -1,5 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.io.*;
@@ -23,6 +24,6 @@ public interface IValueRecommenderService {
 
   List<RulesGenerationStatus> getRulesGenerationStatus();
 
-  RulesGenerationStatus getRulesGenerationStatus(String templateId);
+  RulesGenerationStatus getRulesGenerationStatus(String templateId) throws CedarProcessingException;
 
 }
