@@ -26,7 +26,6 @@ public class Constants {
 
   /** Input parameters **/
   public static final String INPUT_TEMPLATE_ID = "templateId";
-  public static final String INPUT_TEMPLATE_IDS = "templateIds";
   public static final String INPUT_POPULATED_FIELDS = "populatedFields";
   public static final String INPUT_TARGET_FIELD = "targetField";
   public static final String INPUT_STRICT_MATCH= "strictMatch";

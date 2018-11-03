@@ -8,7 +8,7 @@ import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.ElasticsearchConfig;
-import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.model.ServerName;
 import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.ElasticsearchServiceFactory;
@@ -36,10 +36,10 @@ public class ValueRecommenderServerApplication extends
     ElasticsearchServiceFactory esServiceFactory = ElasticsearchServiceFactory.getInstance(cedarConfig);
 
     RulesIndexingService rulesIndexingService = esServiceFactory.rulesIndexingService();
-    ValueRecommenderServiceArm valueRecommenderServiceArm =
-        new ValueRecommenderServiceArm(cedarConfig, rulesIndexingService);
+    ValueRecommenderService valueRecommenderService =
+        new ValueRecommenderService(cedarConfig, rulesIndexingService);
 
-    ValueRecommenderResource.injectServices(valueRecommenderServiceArm);
+    ValueRecommenderResource.injectServices(valueRecommenderService);
   }
 
   @Override

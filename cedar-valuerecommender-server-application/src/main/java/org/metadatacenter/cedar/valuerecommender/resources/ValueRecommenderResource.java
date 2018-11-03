@@ -8,14 +8,16 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
-import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommenderStatus;
+import org.metadatacenter.intelligentauthoring.valuerecommender.io.CanGenerateRecommendationsStatus;
+import org.metadatacenter.intelligentauthoring.valuerecommender.io.RulesGenerationStatus;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.util.http.CedarResponse;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -31,22 +33,24 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 @Produces(MediaType.APPLICATION_JSON)
 public class ValueRecommenderResource extends AbstractValuerecommenderServerResource {
 
-  private static ValueRecommenderServiceArm valueRecommenderServiceArm;
+  private static ValueRecommenderService valueRecommenderService;
 
   public ValueRecommenderResource(CedarConfig cedarConfig) {
     super(cedarConfig);
   }
 
-  public static void injectServices(ValueRecommenderServiceArm valueRecommenderServiceArm) {
-    ValueRecommenderResource.valueRecommenderServiceArm = valueRecommenderServiceArm;
+  public static void injectServices(ValueRecommenderService valueRecommenderService) {
+    ValueRecommenderResource.valueRecommenderService = valueRecommenderService;
   }
 
   /**
-   * Value recommendation using Association Rule Mining (ARM)
+   * Recommend values for a target field
    * @throws CedarException
    */
-  @Path("/recommend")
+  @Path("/command/recommend")
   @POST
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
   public Response recommendValues() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -85,7 +89,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
       if (input.get(INPUT_INCLUDE_DETAILS) != null) {
         includeDetails =  input.get(INPUT_INCLUDE_DETAILS).asBoolean();
       }
-      recommendation = valueRecommenderServiceArm.getRecommendation(templateId, populatedFields, targetField,
+      recommendation = valueRecommenderService.getRecommendation(templateId, populatedFields, targetField,
           strictMatch, FILTER_BY_RECOMMENDATION_SCORE, FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT, USE_MAPPINGS,
           includeDetails);
 
@@ -112,8 +116,9 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
    * @return
    * @throws CedarException
    */
-  @Path("/generate-rules")
+  @Path("/command/generate-rules")
   @POST
+  @Consumes(MediaType.APPLICATION_JSON)
   public Response generateRules() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -121,19 +126,16 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
     c.must(c.user()).have(CedarPermission.SEARCH_INDEX_REINDEX);
 
     JsonNode input = c.request().getRequestBody().asJson();
-    ObjectMapper mapper = new ObjectMapper();
-
     try {
       List<String> templateIds = new ArrayList<>();
-      if (input.get(INPUT_TEMPLATE_IDS) != null) {
-        templateIds = mapper.readValue(input.get(INPUT_TEMPLATE_IDS).traverse(),
-            mapper.getTypeFactory().constructCollectionType(List.class, String.class));
+      if (input.get(INPUT_TEMPLATE_ID) != null && !input.get(INPUT_TEMPLATE_ID).asText().isEmpty()) {
+        templateIds.add(input.get(INPUT_TEMPLATE_ID).asText());
       }
-      valueRecommenderServiceArm.generateRules(templateIds);
+      valueRecommenderService.generateRules(templateIds);
     } catch (Exception e) {
       throw new CedarProcessingException(e);
     }
-    return Response.noContent().build();
+    return Response.ok().build();
   }
 
   /**
@@ -147,8 +149,10 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
    * @return
    * @throws CedarException
    */
-  @Path("/can-generate-recommendations")
+  @Path("/command/can-generate-recommendations")
   @POST
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
   public Response areRecommendationsEnabled() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -159,8 +163,39 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
       if (input.get(INPUT_TEMPLATE_ID) != null) {
         templateId = input.get(INPUT_TEMPLATE_ID).asText();
       }
-      RecommenderStatus status = valueRecommenderServiceArm.canGenerateRecommendations(templateId);
+      CanGenerateRecommendationsStatus status = valueRecommenderService.canGenerateRecommendations(templateId);
       return Response.ok().entity(status).build();
+    } catch (Exception e) {
+      throw new CedarProcessingException(e);
+    }
+  }
+
+  /**
+   * Returns status information about the rule generation process
+   * @return
+   * @throws CedarException
+   */
+  @Path("/command/generate-rules/status")
+  @POST
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getRulesGenerationStatus() throws CedarException {
+    CedarRequestContext c = buildRequestContext();
+    c.must(c.user()).be(LoggedIn);
+    // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index, not to the rules index
+    c.must(c.user()).have(CedarPermission.SEARCH_INDEX_REINDEX);
+
+    JsonNode input = c.request().getRequestBody().asJson();
+    try {
+      if (input.get(INPUT_TEMPLATE_ID) != null && !input.get(INPUT_TEMPLATE_ID).asText().isEmpty()) {
+        String templateId = input.get(INPUT_TEMPLATE_ID).asText();
+        RulesGenerationStatus status = valueRecommenderService.getRulesGenerationStatus(templateId);
+        return Response.ok().entity(status).build();
+      }
+      else {
+        List<RulesGenerationStatus> status = valueRecommenderService.getRulesGenerationStatus();
+        return Response.ok().entity(status).build();
+      }
     } catch (Exception e) {
       throw new CedarProcessingException(e);
     }
