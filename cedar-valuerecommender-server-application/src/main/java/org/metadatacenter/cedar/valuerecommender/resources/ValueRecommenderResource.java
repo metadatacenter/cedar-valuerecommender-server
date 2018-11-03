@@ -25,6 +25,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
@@ -44,8 +46,8 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   }
 
   /**
-   * Recommend values for a target field
-   * @throws CedarException
+   * Recommend values for a target field <br/>
+   * Input parameters: described at "recommendValues-schema.json"
    */
   @Path("/command/recommend")
   @POST
@@ -87,7 +89,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
 
       boolean includeDetails = false;
       if (input.get(INPUT_INCLUDE_DETAILS) != null) {
-        includeDetails =  input.get(INPUT_INCLUDE_DETAILS).asBoolean();
+        includeDetails = input.get(INPUT_INCLUDE_DETAILS).asBoolean();
       }
       recommendation = valueRecommenderService.getRecommendation(templateId, populatedFields, targetField,
           strictMatch, FILTER_BY_RECOMMENDATION_SCORE, FILTER_BY_CONFIDENCE, FILTER_BY_SUPPORT, USE_MAPPINGS,
@@ -108,13 +110,10 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   /**
    * Generates the mining rules that the value recommender will use to generate the recommendations.
    * TODO: Think about the best strategy to invoke the rules generation process (e.g., use a cron job?,
-   * generate the rules and index them in Elasticsearch when a new instance is created/updated/deleted?
+   * generate the rules and index them in Elasticsearch when a new instance is created/updated/deleted?<br/>
    *
-   * Input parameters:
-   * - templateIds (optional): list of templates used to generate the rules
-   *
-   * @return
-   * @throws CedarException
+   * <ul>Input parameters:
+   * <li>templateId (optional): template used to generate the rules</li></ul>
    */
   @Path("/command/generate-rules")
   @POST
@@ -122,7 +121,8 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   public Response generateRules() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
-    // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index, not to the rules index
+    // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index,
+    // not to the rules index
     c.must(c.user()).have(CedarPermission.SEARCH_INDEX_REINDEX);
 
     JsonNode input = c.request().getRequestBody().asJson();
@@ -131,7 +131,10 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
       if (input.get(INPUT_TEMPLATE_ID) != null && !input.get(INPUT_TEMPLATE_ID).asText().isEmpty()) {
         templateIds.add(input.get(INPUT_TEMPLATE_ID).asText());
       }
-      valueRecommenderService.generateRules(templateIds);
+      // Run the rules generation process in a new thread
+      Executors.newSingleThreadExecutor().submit(() -> {
+        valueRecommenderService.generateRules(templateIds);
+      });
     } catch (Exception e) {
       throw new CedarProcessingException(e);
     }
@@ -145,9 +148,6 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
    * If templateId is provided, it checks if there are rules for that template. Otherwise, it checks if there are any
    * rules in the system and returns "true" unless the rules-index is empty. This case is useful for cross-template
    * recommendations.
-   *
-   * @return
-   * @throws CedarException
    */
   @Path("/command/can-generate-recommendations")
   @POST
@@ -172,8 +172,6 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
 
   /**
    * Returns status information about the rule generation process
-   * @return
-   * @throws CedarException
    */
   @Path("/command/generate-rules/status")
   @POST
@@ -182,7 +180,8 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
   public Response getRulesGenerationStatus() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
-    // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index, not to the rules index
+    // TODO: define more specific permission. The SEARCH_INDEX_REINDEX is a permission related to the search index,
+    // not to the rules index
     c.must(c.user()).have(CedarPermission.SEARCH_INDEX_REINDEX);
 
     JsonNode input = c.request().getRequestBody().asJson();
@@ -191,8 +190,7 @@ public class ValueRecommenderResource extends AbstractValuerecommenderServerReso
         String templateId = input.get(INPUT_TEMPLATE_ID).asText();
         RulesGenerationStatus status = valueRecommenderService.getRulesGenerationStatus(templateId);
         return Response.ok().entity(status).build();
-      }
-      else {
+      } else {
         List<RulesGenerationStatus> status = valueRecommenderService.getRulesGenerationStatus();
         return Response.ok().entity(status).build();
       }

@@ -7,12 +7,13 @@ import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHe
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.config.ElasticsearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.model.ServerName;
-import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.ElasticsearchServiceFactory;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ValueRecommenderServerApplication extends
     CedarMicroserviceApplication<ValueRecommenderServerConfiguration> {
