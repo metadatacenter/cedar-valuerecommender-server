@@ -5,12 +5,10 @@ import io.dropwizard.setup.Environment;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
-import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
+import org.metadatacenter.cedar.valuerecommender.resources.CommandResource;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.config.ElasticsearchConfig;
-import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderServiceArm;
+import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.model.ServerName;
-import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.ElasticsearchServiceFactory;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 
@@ -33,25 +31,13 @@ public class ValueRecommenderServerApplication extends
 
   @Override
   public void initializeApp() {
-
     ElasticsearchServiceFactory esServiceFactory = ElasticsearchServiceFactory.getInstance(cedarConfig);
 
-    ElasticsearchConfig esc = cedarConfig.getElasticsearchConfig();
-//    ValueRecommenderService valueRecommenderService = new ValueRecommenderService(
-//        esc.getClusterName(),
-//        esc.getHost(),
-//        esc.getIndexes().getSearchIndex().getName(),
-//        IndexedDocumentType.DOC.getValue(),
-//        esc.getTransportPort(),
-//        esc.getSize());
-
     RulesIndexingService rulesIndexingService = esServiceFactory.rulesIndexingService();
+    ValueRecommenderService valueRecommenderService =
+        new ValueRecommenderService(cedarConfig, rulesIndexingService);
 
-    ValueRecommenderServiceArm valueRecommenderServiceArm =
-        new ValueRecommenderServiceArm(cedarConfig, rulesIndexingService);
-
-    ValueRecommenderResource.injectServices(valueRecommenderServiceArm);
-
+    CommandResource.injectServices(valueRecommenderService);
   }
 
   @Override
@@ -59,7 +45,7 @@ public class ValueRecommenderServerApplication extends
     final IndexResource index = new IndexResource(cedarConfig);
     environment.jersey().register(index);
 
-    environment.jersey().register(new ValueRecommenderResource(cedarConfig));
+    environment.jersey().register(new CommandResource(cedarConfig));
 
     final ValueRecommenderServerHealthCheck healthCheck = new ValueRecommenderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
