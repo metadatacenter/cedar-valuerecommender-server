@@ -12,14 +12,14 @@
   <artifactId>cedar-valuerecommender-server</artifactId>
   <name>CEDAR Value Recommender Server</name>
   <description>CEDAR service that provides intelligent value suggestions for metadata template fields</description>
-  <version>2.1.11</version>
+  <version>2.1.12-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <scm>
     <connection>scm:git:git@github.com:metadatacenter/cedar-valuerecommender-server.git</connection>
     <developerConnection>scm:git:git@github.com:metadatacenter/cedar-valuerecommender-server.git</developerConnection>
     <url>https://github.com/metadatacenter/cedar-valuerecommender-server</url>
-    <tag>release-2.1.11</tag>
+    <tag>release-2.1.6</tag>
   </scm>
 
   <modules>
