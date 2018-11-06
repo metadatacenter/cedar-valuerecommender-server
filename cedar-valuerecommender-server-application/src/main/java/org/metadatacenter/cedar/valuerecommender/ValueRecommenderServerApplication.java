@@ -5,15 +5,12 @@ import io.dropwizard.setup.Environment;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
-import org.metadatacenter.cedar.valuerecommender.resources.ValueRecommenderResource;
+import org.metadatacenter.cedar.valuerecommender.resources.CommandResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
 import org.metadatacenter.model.ServerName;
 import org.metadatacenter.server.search.elasticsearch.service.ElasticsearchServiceFactory;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class ValueRecommenderServerApplication extends
     CedarMicroserviceApplication<ValueRecommenderServerConfiguration> {
@@ -40,7 +37,7 @@ public class ValueRecommenderServerApplication extends
     ValueRecommenderService valueRecommenderService =
         new ValueRecommenderService(cedarConfig, rulesIndexingService);
 
-    ValueRecommenderResource.injectServices(valueRecommenderService);
+    CommandResource.injectServices(valueRecommenderService);
   }
 
   @Override
@@ -48,7 +45,7 @@ public class ValueRecommenderServerApplication extends
     final IndexResource index = new IndexResource(cedarConfig);
     environment.jersey().register(index);
 
-    environment.jersey().register(new ValueRecommenderResource(cedarConfig));
+    environment.jersey().register(new CommandResource(cedarConfig));
 
     final ValueRecommenderServerHealthCheck healthCheck = new ValueRecommenderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
