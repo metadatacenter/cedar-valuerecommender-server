@@ -13,9 +13,9 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommender
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
 import org.metadatacenter.intelligentauthoring.valuerecommender.io.CanGenerateRecommendationsStatus;
-import org.metadatacenter.intelligentauthoring.valuerecommender.io.RulesGenerationStatus;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
+import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
 import org.metadatacenter.util.http.CedarResponse;
 
 import javax.ws.rs.*;

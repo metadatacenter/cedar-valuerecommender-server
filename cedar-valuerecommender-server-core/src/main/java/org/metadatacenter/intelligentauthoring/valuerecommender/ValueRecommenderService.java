@@ -21,6 +21,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUt
 import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.io.*;
+import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +90,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
         logger.info("Indexing rules in Elasticsearch");
         esQueryService.indexRulesBulk(filteredRules);
         logger.info("Indexing completed");
+
+        //logger.info("Sleep for 10 seconds, simulate slow execution");
+        //Thread.sleep(10 * 1000);
 
         long totalTime = System.currentTimeMillis() - startTime;
         logger.info("Rules generation and indexing completed. Total execution time: " + totalTime/1000 + " seg (" + totalTime + " ms)");

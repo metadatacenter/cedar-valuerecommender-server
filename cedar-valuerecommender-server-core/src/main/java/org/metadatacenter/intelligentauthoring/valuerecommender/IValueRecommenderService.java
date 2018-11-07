@@ -3,7 +3,8 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
-import org.metadatacenter.intelligentauthoring.valuerecommender.io.*;
+import org.metadatacenter.intelligentauthoring.valuerecommender.io.CanGenerateRecommendationsStatus;
+import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
 
 import java.io.IOException;
 import java.util.List;
