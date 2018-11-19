@@ -198,7 +198,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
    */
   private List<RecommendedValue> generateRecommendations(List<Field> populatedFields, List<EsRule> rules,
                                                          boolean filterByRecommendationScore, boolean includeDetails) {
-    final double ADJUSTMENT_FACTOR = 5;
+
     List<RecommendedValue> recommendedValues = new ArrayList<>();
 
     for (EsRule rule : rules) {
@@ -390,10 +390,12 @@ public class ValueRecommenderService implements IValueRecommenderService {
   /**
    * Context matching score:
    * context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
+   *
+   * If there is no context, context_matching_score(r,C) = 0.25
    */
   private double getContextMatchingScore(List<Field> populatedFields, List<EsRuleItem> rulePremise) {
     if (populatedFields.size()==0 || rulePremise.size() ==0) {
-      return 0;
+      return 0.25;
     }
     else {
       int intersectionCount = 0;
