@@ -23,8 +23,8 @@ public class Constants {
   public static final int CONSEQUENCE_SIZE = 1;
   public static final int MAX_RECOMMENDATIONS = 10; // Maximum number of recommendations returned to the user
   public static final int MAX_ES_RESULTS = 50; // Maximum number of results returned by Elasticsearch
-  public static final double ADJUSTMENT_FACTOR = 5; // Constant to calculate the value of the recommendation score
-                                                    // based on the confidence, when the recommendation score is 0
+  public static final double NO_MATCHING_FACTOR = 0.2; // When the context matching score is 0
+  public static final double NO_CONTEXT_FACTOR = 0.4; // Where there is no context (no populated fields)
 
   /** Input parameters **/
   public static final String INPUT_TEMPLATE_ID = "templateId";
