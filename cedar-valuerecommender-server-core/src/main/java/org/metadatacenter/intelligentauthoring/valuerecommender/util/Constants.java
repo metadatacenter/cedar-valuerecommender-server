@@ -15,7 +15,7 @@ public class Constants {
   public static final String MAPPINGS_FILE_PATH = "mappings/mappings_merged.json";
   public static boolean USE_MAPPINGS = false; // For ontology terms, match using mappings
   public static boolean FILTER_BY_RECOMMENDATION_SCORE = true;
-  public static final double MIN_RECOMMENDATION_SCORE = 0.1; // Recommendation score threshold
+  public static final double MIN_RECOMMENDATION_SCORE = 0.01; // Recommendation score threshold
   public static boolean FILTER_BY_CONFIDENCE = false;
   public static final double MIN_CONFIDENCE_QUERY = 0.9; // Confidence threshold
   public static boolean FILTER_BY_SUPPORT = false;
@@ -23,6 +23,8 @@ public class Constants {
   public static final int CONSEQUENCE_SIZE = 1;
   public static final int MAX_RECOMMENDATIONS = 10; // Maximum number of recommendations returned to the user
   public static final int MAX_ES_RESULTS = 50; // Maximum number of results returned by Elasticsearch
+  public static final double NO_MATCHING_FACTOR = 0.2; // When the context matching score is 0
+  public static final double NO_CONTEXT_FACTOR = 0.4; // Where there is no context (no populated fields)
 
   /** Input parameters **/
   public static final String INPUT_TEMPLATE_ID = "templateId";
@@ -50,7 +52,6 @@ public class Constants {
 
   /** Apriori settings **/
   public static final int APRIORI_MAX_NUM_RULES = 1000000;
-  public static int MIN_SUPPORTING_INSTANCES = 1/*5*/; // The support will be dynamically calculated based on this value
   public static final int METRIC_TYPE_ID = 0; // 0 = Confidence | 1 = Lift | 2 = Leverage | 3 = Conviction
   public static final double MIN_CONFIDENCE = 0.3;
   public static final double MIN_LIFT = 1.2;

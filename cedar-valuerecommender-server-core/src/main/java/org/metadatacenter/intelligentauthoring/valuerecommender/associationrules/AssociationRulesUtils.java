@@ -434,8 +434,8 @@ public class AssociationRulesUtils {
 
     aprioriObj.setVerbose(verboseMode);
 
-    // Set minimum support
-    double support = (double) MIN_SUPPORTING_INSTANCES / (double) data.numInstances();
+    // Calculate minimum support
+    double support = getSupport(data.numInstances());
     logger.info("Support that will be used: " + support);
     aprioriObj.setLowerBoundMinSupport(support);
 
@@ -455,6 +455,38 @@ public class AssociationRulesUtils {
     aprioriObj.setNumRules(numRules);
     aprioriObj.buildAssociations(data);
     return aprioriObj;
+  }
+
+  /**
+   * Dynamically computes the support based on the number of instances. The goal is to find a balance between the
+   * performance of Apriori and the minimum support used to generate the rules. First, it calculates the minimum number
+   * of supporting instances for a given number of instances, and then calculates the support.
+   *
+   * @param numberOfInstances
+   * @return
+   */
+  public static double getSupport(int numberOfInstances) {
+    int minSupportingInstances;
+    if (numberOfInstances < 500) {
+      minSupportingInstances = 1;
+    }
+    else if (numberOfInstances < 2000) {
+      minSupportingInstances = 2;
+    }
+    else if (numberOfInstances < 5000) {
+      minSupportingInstances = 3;
+    }
+    else if (numberOfInstances < 10000) {
+      minSupportingInstances = 4;
+    }
+    else if (numberOfInstances < 100000) {
+      minSupportingInstances = 5;
+    }
+    else {
+      minSupportingInstances = (int) (numberOfInstances * 0.00005);
+    }
+    double support = minSupportingInstances / (double) numberOfInstances;
+    return support;
   }
 
   public static boolean ruleMatchesRequirements(AssociationRule rule, Map<String, String> fieldValues, Field
