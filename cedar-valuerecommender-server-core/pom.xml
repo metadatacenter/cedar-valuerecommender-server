@@ -127,7 +127,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${assembly.targetDir}/classes</outputDirectory>
+              <outputDirectory>target/classes</outputDirectory>
               <resources>
                 <resource>
                   <directory>src/main/resources</directory>
