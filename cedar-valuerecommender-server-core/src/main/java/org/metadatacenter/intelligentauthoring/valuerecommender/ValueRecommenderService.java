@@ -21,6 +21,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUt
 import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.io.*;
+import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +90,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
         logger.info("Indexing rules in Elasticsearch");
         esQueryService.indexRulesBulk(filteredRules);
         logger.info("Indexing completed");
+
+        //logger.info("Sleep for 10 seconds, simulate slow execution");
+        //Thread.sleep(10 * 1000);
 
         long totalTime = System.currentTimeMillis() - startTime;
         logger.info("Rules generation and indexing completed. Total execution time: " + totalTime/1000 + " seg (" + totalTime + " ms)");
@@ -175,7 +179,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
    * recommendation_score(v) =
    *      {
    *        IF context_matching_score(r,C) > 0    recommendation_score(v) = context_matching_score(r,C) * confidence(r)
-   *        ELSE                                  recommendation_score(v) = confidence(r) / adjustment_factor
+   *        ELSE                                  recommendation_score(v) = confidence(r) * adjustment_factor
    *      }
    *
    * with: context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
@@ -184,7 +188,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
    * - C is the context
    * - v is the value extracted from the consequent of the rule r
    * - adjustment_factor is a constant to calculate the value of the recommendation score based on the confidence, when
-   * the recommendation score is 0.
+   * the context matching score is 0.
    *
    * @param populatedFields
    * @param rules
@@ -194,7 +198,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
    */
   private List<RecommendedValue> generateRecommendations(List<Field> populatedFields, List<EsRule> rules,
                                                          boolean filterByRecommendationScore, boolean includeDetails) {
-    final double ADJUSTMENT_FACTOR = 5;
+
     List<RecommendedValue> recommendedValues = new ArrayList<>();
 
     for (EsRule rule : rules) {
@@ -207,7 +211,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
         recommendationScore = contextMatchingScore * rule.getConfidence();
       }
       else {
-        recommendationScore = rule.getConfidence() / ADJUSTMENT_FACTOR;
+        recommendationScore = rule.getConfidence() * NO_MATCHING_FACTOR;
       }
 
       if (!filterByRecommendationScore || (filterByRecommendationScore && recommendationScore >= MIN_RECOMMENDATION_SCORE)) {
@@ -238,6 +242,30 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
 
     return recommendedValues;
+  }
+
+  /**
+   * Context matching score:
+   * context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
+   *
+   * If there is no context, it returns a predefined value (NO_CONTEXT_FACTOR)
+   */
+  private double getContextMatchingScore(List<Field> populatedFields, List<EsRuleItem> rulePremise) {
+    if (populatedFields.size()==0) {
+      return NO_CONTEXT_FACTOR;
+    }
+    else {
+      int intersectionCount = 0;
+      for (EsRuleItem ruleItem : rulePremise) {
+        for (Field field : populatedFields) {
+          if (ruleItemMatchesPopulatedField(ruleItem, field)) {
+            intersectionCount++;
+          }
+        }
+      }
+      int unionCount = populatedFields.size() + rulePremise.size() - intersectionCount;
+      return (double) intersectionCount / (double) unionCount;
+    }
   }
 
   /**
@@ -381,28 +409,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
     SearchResponse response = search.execute().actionGet();
 
     return response;
-  }
-
-  /**
-   * Context matching score:
-   * context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
-   */
-  private double getContextMatchingScore(List<Field> populatedFields, List<EsRuleItem> rulePremise) {
-    if (populatedFields.size()==0 || rulePremise.size() ==0) {
-      return 0;
-    }
-    else {
-      int intersectionCount = 0;
-      for (EsRuleItem ruleItem : rulePremise) {
-        for (Field field : populatedFields) {
-          if (ruleItemMatchesPopulatedField(ruleItem, field)) {
-            intersectionCount++;
-          }
-        }
-      }
-      int unionCount = populatedFields.size() + rulePremise.size() - intersectionCount;
-      return (double) intersectionCount / (double) unionCount;
-    }
   }
 
   private boolean ruleItemMatchesPopulatedField(EsRuleItem ruleItem, Field populatedField) {
