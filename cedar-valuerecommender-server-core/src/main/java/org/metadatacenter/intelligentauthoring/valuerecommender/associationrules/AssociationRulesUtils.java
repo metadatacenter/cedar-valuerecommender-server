@@ -153,20 +153,22 @@ public class AssociationRulesUtils {
 
       if (READ_INSTANCES_FROM_CEDAR) { // Read instances from the CEDAR system
         List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
-
+        logger.info("Number of template instances that will be used to generate rules: " + templateInstancesIds.size());
         for (String tiId : templateInstancesIds) {
           JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
-          Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
-          // Transform the template instances to a list of ARFF instances
-          List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
-              (arraysPathsAndIndexes.values()), 0, null);
+          if (ti !=  null) {
+            Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
+            // Transform the template instances to a list of ARFF instances
+            List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
+                (arraysPathsAndIndexes.values()), 0, null);
 
-          for (ArffInstance arffInstance : arffInstances) {
-            fileWriter.println(arffInstance.toArffFormat());
-          }
-          instancesCount.getAndAdd(1);
-          if (MAX_INSTANCES_FOR_ARM > 0 && instancesCount.get() == MAX_INSTANCES_FOR_ARM) {
-            break;
+            for (ArffInstance arffInstance : arffInstances) {
+              fileWriter.println(arffInstance.toArffFormat());
+            }
+            instancesCount.getAndAdd(1);
+            if (MAX_INSTANCES_FOR_ARM > 0 && instancesCount.get() == MAX_INSTANCES_FOR_ARM) {
+              break;
+            }
           }
         }
       } else { // Read instances from a local folder
