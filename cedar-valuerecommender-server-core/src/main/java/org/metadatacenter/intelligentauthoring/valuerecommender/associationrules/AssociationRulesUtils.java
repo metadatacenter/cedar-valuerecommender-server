@@ -479,14 +479,17 @@ public class AssociationRulesUtils {
       minSupportingInstances = 3;
     }
     else if (numberOfInstances < 10000) {
-      minSupportingInstances = 4;
-    }
-    else if (numberOfInstances < 100000) {
       minSupportingInstances = 5;
     }
-    else {
-      minSupportingInstances = (int) (numberOfInstances * 0.00005);
+    else if (numberOfInstances < 100000) {
+      minSupportingInstances = 10;
     }
+    else {
+      minSupportingInstances = 20;
+    }
+//    else {
+//      minSupportingInstances = (int) (numberOfInstances * 0.001);
+//    }
     double support = minSupportingInstances / (double) numberOfInstances;
     return support;
   }
@@ -539,11 +542,27 @@ public class AssociationRulesUtils {
   public static List<EsRule> filterRulesByNumberOfConsequences(List<EsRule> rules, int maxNumberOfConsequences) {
     List<EsRule> outputRules = new ArrayList<>();
     for (EsRule rule : rules) {
-      if (rule.getConsequenceSize() <= maxNumberOfConsequences) {
+      if (keepRuleBasedOnNumberOfConsequences(rule, maxNumberOfConsequences)) {
         outputRules.add(rule);
       }
     }
     return outputRules;
+  }
+
+  /**
+   * Determines if a rule should be kept based on the number of consequences
+   *
+   * @param rule
+   * @param maxNumberOfConsequences
+   * @return
+   */
+  public static boolean keepRuleBasedOnNumberOfConsequences(EsRule rule, int maxNumberOfConsequences) {
+    if (rule.getConsequenceSize() <= maxNumberOfConsequences) {
+      return true;
+    }
+    else {
+      return false;
+    }
   }
 
   /**
@@ -596,9 +615,14 @@ public class AssociationRulesUtils {
           rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME),
           esPremise.size(), esConsequence.size());
 
-      esRules.add(esRule);
-    }
+      // Filter by number of consequences (keep only those rules with 1 consequence). Note that we do the filtering
+      // here instead of doing if after storing all the rules in the array to optimize memory usage
+      if (AssociationRulesUtils.keepRuleBasedOnNumberOfConsequences(esRule, 1)) {
+        esRules.add(esRule);
+      }
 
+    }
+    logger.info("No. rules kept after filtering by number of consequences: " + esRules.size());
     return esRules;
   }
 
