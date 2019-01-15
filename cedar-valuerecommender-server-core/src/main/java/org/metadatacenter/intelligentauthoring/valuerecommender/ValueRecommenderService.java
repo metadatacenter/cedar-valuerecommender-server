@@ -81,14 +81,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
         long startTime = System.currentTimeMillis();
         List<EsRule> rules = service.generateRulesForTemplate(templateId);
 
-        logger.info("Filtering rules by number of consequences");
-        List<EsRule> filteredRules =
-            AssociationRulesUtils.filterRulesByNumberOfConsequences(rules, 1);
-        logger.info("No. rules after filtering: " + filteredRules.size());
-
         // Index all the template rules in bulk in Elasticsearch
         logger.info("Indexing rules in Elasticsearch");
-        esQueryService.indexRulesBulk(filteredRules);
+        esQueryService.indexRulesBulk(rules);
         logger.info("Indexing completed");
 
         //logger.info("Sleep for 10 seconds, simulate slow execution");
@@ -97,7 +92,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
         long totalTime = System.currentTimeMillis() - startTime;
         logger.info("Rules generation and indexing completed. Total execution time: " + totalTime/1000 + " seg (" + totalTime + " ms)");
         logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
-        RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, filteredRules.size());
+        RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, rules.size());
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -202,17 +197,14 @@ public class ValueRecommenderService implements IValueRecommenderService {
     List<RecommendedValue> recommendedValues = new ArrayList<>();
 
     for (EsRule rule : rules) {
-      double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise());
-      RecommendedValue.RecommendationType recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
 
-      double recommendationScore;
-      if (contextMatchingScore > 0) {
+      RecommendedValue.RecommendationType recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
+      if (populatedFields.size() > 0) {
         recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
-        recommendationScore = contextMatchingScore * rule.getConfidence();
       }
-      else {
-        recommendationScore = rule.getConfidence() * NO_MATCHING_FACTOR;
-      }
+
+      double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise());
+      double recommendationScore = contextMatchingScore * rule.getConfidence();
 
       if (!filterByRecommendationScore || (filterByRecommendationScore && recommendationScore >= MIN_RECOMMENDATION_SCORE)) {
 
