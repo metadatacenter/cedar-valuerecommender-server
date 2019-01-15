@@ -53,6 +53,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
   /**
    * Generate association rules for the templates specified
+   *
    * @param templateIds
    */
   @Override
@@ -90,7 +91,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
         //Thread.sleep(10 * 1000);
 
         long totalTime = System.currentTimeMillis() - startTime;
-        logger.info("Rules generation and indexing completed. Total execution time: " + totalTime/1000 + " seg (" + totalTime + " ms)");
+        logger.info("Rules generation and indexing completed. Total execution time: " + totalTime / 1000 + " seg (" + totalTime + " ms)");
         logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
         RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, rules.size());
       }
@@ -141,7 +142,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
                                           boolean includeDetails) {
 
     // Perform query to find the rules that match the condition
-    SearchResponse rulesSearchResponse = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField, strictMatch,
+    SearchResponse rulesSearchResponse = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField,
+        strictMatch,
         filterByConfidence, filterBySupport, useMappings);
 
     // Translate query result to EsRule objects
@@ -165,25 +167,27 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
   /**
    * This method calculates the recommendation score for each value (extracted from the consequent of a rule) and
-   * generates a ranked list of recommended values. Note that computing the recommendation scores and the final ranking
-   * in Java is easy and flexible. However, for best performance, we could consider carrying out these computations
+   * generates a ranked list of recommended values. Computing the recommendation scores and the final ranking
+   * in Java is easy and flexible. For best performance, we could consider performing these computations
    * at the Elasticsearch level.
-   *
+   * <p>
    * The recommendation score for a value is calculated according to the following expression:
-   *
-   * recommendation_score(v) =
-   *      {
-   *        IF context_matching_score(r,C) > 0    recommendation_score(v) = context_matching_score(r,C) * confidence(r)
-   *        ELSE                                  recommendation_score(v) = confidence(r) * adjustment_factor
-   *      }
-   *
+   * <p>
+   * recommendation_score(v) = context_matching_score(r,C) * confidence(r)
+   * <p>
    * with: context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
-   *
+   * <p>
    * where:
    * - C is the context
    * - v is the value extracted from the consequent of the rule r
    * - adjustment_factor is a constant to calculate the value of the recommendation score based on the confidence, when
    * the context matching score is 0.
+   * <p>
+   * Note that when populatedFields is 0 (there is no context), the recommendation score is calculated slightly
+   * different. In this case, we aggregate the support for all the different value labels and calculate the
+   * recommendation score as a percentage of the total support. The resulting recommendation score will be an
+   * approximation for the percentage of values with a particular label for the target field. For example, if the
+   * target field has only one value for all the instances, the recommendation score will be 100%.
    *
    * @param populatedFields
    * @param rules
@@ -195,32 +199,61 @@ public class ValueRecommenderService implements IValueRecommenderService {
                                                          boolean filterByRecommendationScore, boolean includeDetails) {
 
     List<RecommendedValue> recommendedValues = new ArrayList<>();
+    RecommendedValue.RecommendationType recommendationType;
 
-    for (EsRule rule : rules) {
+    if (populatedFields.size() > 0) {
 
-      RecommendedValue.RecommendationType recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
-      if (populatedFields.size() > 0) {
-        recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
+      recommendationType = RecommendedValue.RecommendationType.CONTEXT_DEPENDENT;
+
+      for (EsRule rule : rules) {
+
+        double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise());
+        double recommendationScore = contextMatchingScore * rule.getConfidence();
+
+        if (!filterByRecommendationScore || (filterByRecommendationScore && recommendationScore >= MIN_RECOMMENDATION_SCORE)) {
+
+          RecommendedValue value = getRecommendedValueFromRule(rule, contextMatchingScore, recommendationScore,
+              includeDetails, recommendationType);
+
+          if (!recommendedValues.contains(value)) { // avoid generation of duplicated values
+            recommendedValues.add(value);
+          }
+        }
       }
 
-      double contextMatchingScore = getContextMatchingScore(populatedFields, rule.getPremise());
-      double recommendationScore = contextMatchingScore * rule.getConfidence();
+    }
+    else { // If there are no populated fields
 
-      if (!filterByRecommendationScore || (filterByRecommendationScore && recommendationScore >= MIN_RECOMMENDATION_SCORE)) {
+      recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
 
-        RecommendedValue value = null;
-        if (includeDetails) {
-          RecommendationDetails details = new RecommendationDetails(rule.toShortString(), contextMatchingScore, rule.getConfidence(),
-              rule.getSupport(), recommendationType);
-          value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
-              rule.getConsequence().get(0).getFieldValueType(), recommendationScore, details);
-        } else {
-          value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
-              rule.getConsequence().get(0).getFieldValueType(), recommendationScore);
+      HashMap<String, Double> labelSupportMap = new HashMap<>();
+      int totalSupport = 0;
+
+      for (EsRule rule : rules) {
+        String valueLabel = rule.getConsequence().get(0).getFieldValueLabel();
+        if (!labelSupportMap.containsKey(valueLabel)) {
+          labelSupportMap.put(valueLabel, rule.getSupport());
         }
+        else { // update support
+          double newSupport = labelSupportMap.get(valueLabel) + rule.getSupport();
+          labelSupportMap.put(valueLabel, newSupport);
+        }
+        totalSupport += rule.getSupport();
+      }
 
-        if (!recommendedValues.contains(value)) { // avoid generation of duplicated values
-          recommendedValues.add(value);
+      // Calculate the recommendation score for each value based on the support
+      for (EsRule rule : rules) {
+        String valueLabel = rule.getConsequence().get(0).getFieldValueLabel();
+        double recommendationScore = labelSupportMap.get(valueLabel) / totalSupport;
+
+        if (!filterByRecommendationScore || (filterByRecommendationScore && recommendationScore >= MIN_RECOMMENDATION_SCORE)) {
+
+          RecommendedValue value = getRecommendedValueFromRule(rule, 0, recommendationScore, includeDetails,
+              recommendationType);
+
+          if (!recommendedValues.contains(value)) { // avoid generation of duplicated values
+            recommendedValues.add(value);
+          }
         }
       }
     }
@@ -236,28 +269,46 @@ public class ValueRecommenderService implements IValueRecommenderService {
     return recommendedValues;
   }
 
+  private RecommendedValue getRecommendedValueFromRule(EsRule rule, double contextMatchingScore,
+                                                       double recommendationScore,
+                                                       boolean includeDetails,
+                                                       RecommendedValue.RecommendationType recommendationType) {
+    RecommendedValue value = null;
+    if (includeDetails) {
+      RecommendationDetails details = new RecommendationDetails(rule.toShortString(), contextMatchingScore,
+          rule.getConfidence(),
+          rule.getSupport(), recommendationType);
+      value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
+          rule.getConsequence().get(0).getFieldValueType(), recommendationScore, details);
+    } else {
+      value = new RecommendedValue(rule.getConsequence().get(0).getFieldValueLabel(),
+          rule.getConsequence().get(0).getFieldValueType(), recommendationScore);
+    }
+    return value;
+  }
+
   /**
    * Context matching score:
    * context_matching_score(r,C) = |antecedent(r) ∩ C| / |antecedent(r) ∪ C|
-   *
+   * <p>
    * If there is no context, it returns a predefined value (NO_CONTEXT_FACTOR)
    */
   private double getContextMatchingScore(List<Field> populatedFields, List<EsRuleItem> rulePremise) {
-    if (populatedFields.size()==0) {
-      return NO_CONTEXT_FACTOR;
-    }
-    else {
-      int intersectionCount = 0;
-      for (EsRuleItem ruleItem : rulePremise) {
-        for (Field field : populatedFields) {
-          if (ruleItemMatchesPopulatedField(ruleItem, field)) {
-            intersectionCount++;
-          }
+//    if (populatedFields.size()==0) {
+//      return NO_CONTEXT_FACTOR;
+//    }
+//    else {
+    int intersectionCount = 0;
+    for (EsRuleItem ruleItem : rulePremise) {
+      for (Field field : populatedFields) {
+        if (ruleItemMatchesPopulatedField(ruleItem, field)) {
+          intersectionCount++;
         }
       }
-      int unionCount = populatedFields.size() + rulePremise.size() - intersectionCount;
-      return (double) intersectionCount / (double) unionCount;
     }
+    int unionCount = populatedFields.size() + rulePremise.size() - intersectionCount;
+    return (double) intersectionCount / (double) unionCount;
+    //}
   }
 
   /**
@@ -281,8 +332,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
    * @return An Elasticsearch response.
    */
   private SearchResponse esQueryRules(Optional<String> templateId, List<Field> populatedFields, Field targetField,
-                                        boolean strictMatch, boolean filterByConfidence, boolean filterBySupport,
-                                        boolean useMappings) {
+                                      boolean strictMatch, boolean filterByConfidence, boolean filterBySupport,
+                                      boolean useMappings) {
 
     /** Query definition **/
 
@@ -395,8 +446,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
     /**  Execute query and return search results **/
     String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
-    SearchRequestBuilder search = esQueryService.getClient().prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
-        .setQuery(mainBoolQuery).setSize(MAX_ES_RESULTS);
+    SearchRequestBuilder search =
+        esQueryService.getClient().prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
+            .setQuery(mainBoolQuery).setSize(MAX_ES_RESULTS);
     //logger.info("Search query in Query DSL:\n" + search);
     SearchResponse response = search.execute().actionGet();
 
@@ -410,8 +462,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     if (populatedFieldNormalizedPath.equals(ruleItem.getFieldNormalizedPath()) &&
         populatedFieldNormalizedValue.equals(ruleItem.getFieldNormalizedValue())) {
       return true;
-    }
-    else {
+    } else {
       return false;
     }
   }
