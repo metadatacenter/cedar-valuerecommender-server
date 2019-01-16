@@ -84,7 +84,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
         // Index all the template rules in bulk in Elasticsearch
         logger.info("Indexing rules in Elasticsearch");
-        esQueryService.indexRulesBulk(rules);
+        esQueryService.indexRulesBulkProcessor(rules);
         logger.info("Indexing completed");
 
         //logger.info("Sleep for 10 seconds, simulate slow execution");
