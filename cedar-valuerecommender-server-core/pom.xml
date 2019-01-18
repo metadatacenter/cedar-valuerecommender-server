@@ -11,8 +11,9 @@
 
   <groupId>org.metadatacenter</groupId>
   <artifactId>cedar-valuerecommender-server-core</artifactId>
-  <name>CEDAR Value Recommender Server Core</name>
   <packaging>jar</packaging>
+
+  <name>CEDAR Value Recommender Server Core</name>
 
   <dependencies>
 
