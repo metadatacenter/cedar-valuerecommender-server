@@ -62,33 +62,30 @@ public class ValueRecommenderService implements IValueRecommenderService {
     try {
       // Generate rules for all the templates (with instances) in the system
       if (templateIds.isEmpty()) {
-        // If the user did not specify any templateIds, we first will remove all existing rules
-        logger.info("Removing all existing rules");
-        esQueryService.removeAllRules();
         logger.info("Generating rules for all templates in the system");
         esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
         templateIds = esQueryService.getTemplateIds();
         logger.info("Total number of templates: " + templateIds.size());
-      } else {
-        logger.info("Generating rules for the following templates: " + templateIds.toString());
       }
+
+      logger.info("Generating rules for the following templates: " + templateIds.toString());
+
       for (String templateId : templateIds) {
         RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.PROCESSING);
+        // Generate rules for the template
         logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
-        logger.info("Removing all rules for templateId: " + templateId + " from the index");
-        long removedCount = rulesIndexingService.removeRulesFromIndex(templateId);
-        logger.info(removedCount + " rules removed");
-        logger.info("Generating rules for templateId: " + templateId);
         long startTime = System.currentTimeMillis();
         List<EsRule> rules = service.generateRulesForTemplate(templateId);
 
-        // Index all the template rules in bulk in Elasticsearch
+        // Remove previous rules for the template
+        logger.info("Removing existing rules for templateId: " + templateId + " from the index");
+        long removedCount = rulesIndexingService.removeRulesFromIndex(templateId);
+        logger.info(removedCount + " rules removed");
+
+        // Index the new rules in bulk in Elasticsearch
         logger.info("Indexing rules in Elasticsearch");
         esQueryService.indexRulesBulkProcessor(rules);
         logger.info("Indexing completed");
-
-        //logger.info("Sleep for 10 seconds, simulate slow execution");
-        //Thread.sleep(10 * 1000);
 
         long totalTime = System.currentTimeMillis() - startTime;
         logger.info("Rules generation and indexing completed. Total execution time: " + totalTime / 1000 + " seg (" + totalTime + " ms)");
