@@ -49,7 +49,7 @@ public class Constants {
   public static final String RECOMMENDATION_ENABLED_FIELD_NAME = "valueRecommendationEnabled";
 
   /** Apriori settings **/
-  public static final int APRIORI_MAX_NUM_RULES = 1000000;
+  public static final int APRIORI_MAX_NUM_RULES = 5000000;
   public static final int METRIC_TYPE_ID = 0; // 0 = Confidence | 1 = Lift | 2 = Leverage | 3 = Conviction
   public static final double MIN_CONFIDENCE = 0.3;
   public static final double MIN_LIFT = 1.2;
