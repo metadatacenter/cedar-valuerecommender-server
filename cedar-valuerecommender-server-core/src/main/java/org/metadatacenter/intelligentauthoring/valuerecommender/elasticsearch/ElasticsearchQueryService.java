@@ -170,7 +170,7 @@ public class ElasticsearchQueryService {
           }
         })
         .setBulkActions(10000)
-        .setBulkSize(new ByteSizeValue(15, ByteSizeUnit.MB))
+        .setBulkSize(new ByteSizeValue(5, ByteSizeUnit.MB))
         .setFlushInterval(TimeValue.timeValueSeconds(5))
         .setConcurrentRequests(1)
         .setBackoffPolicy(BackoffPolicy.exponentialBackoff(TimeValue.timeValueMillis(500), 3))
