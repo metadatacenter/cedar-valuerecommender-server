@@ -22,9 +22,7 @@ public class Constants {
   public static final double MIN_SUPPORT_QUERY = 1; // Support threshold
   public static final int CONSEQUENCE_SIZE = 1;
   public static final int MAX_RECOMMENDATIONS = 10; // Maximum number of recommendations returned to the user
-  public static final int MAX_ES_RESULTS = 50; // Maximum number of results returned by Elasticsearch
-  public static final double NO_MATCHING_FACTOR = 0.2; // When the context matching score is 0
-  public static final double NO_CONTEXT_FACTOR = 0.4; // Where there is no context (no populated fields)
+  public static final int MAX_ES_RESULTS = 200; // Maximum number of results returned by Elasticsearch
 
   /** Input parameters **/
   public static final String INPUT_TEMPLATE_ID = "templateId";
@@ -51,7 +49,7 @@ public class Constants {
   public static final String RECOMMENDATION_ENABLED_FIELD_NAME = "valueRecommendationEnabled";
 
   /** Apriori settings **/
-  public static final int APRIORI_MAX_NUM_RULES = 1000000;
+  public static final int APRIORI_MAX_NUM_RULES = 5000000;
   public static final int METRIC_TYPE_ID = 0; // 0 = Confidence | 1 = Lift | 2 = Leverage | 3 = Conviction
   public static final double MIN_CONFIDENCE = 0.3;
   public static final double MIN_LIFT = 1.2;

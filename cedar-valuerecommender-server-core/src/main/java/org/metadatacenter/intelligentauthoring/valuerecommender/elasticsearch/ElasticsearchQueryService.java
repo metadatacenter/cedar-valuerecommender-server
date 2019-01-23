@@ -1,24 +1,32 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.bulk.*;
+import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.common.unit.ByteSizeUnit;
+import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.search.IndexedDocumentType;
+import org.metadatacenter.server.search.IndexedDocumentId;
+import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +35,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.metadatacenter.constant.ElasticsearchConstants.*;
@@ -96,7 +105,9 @@ public class ElasticsearchQueryService {
   }
 
   /**
-   * Index all rules in a single API call
+   * Index all rules in a single API call. This method fails when trying to index a large number of rules (> 50,000)
+   * because it's sending all of them in a single request. For better performance use the "indexRulesBulkProcessor"
+   * method.
    *
    * @param rules
    */
@@ -127,6 +138,59 @@ public class ElasticsearchQueryService {
   }
 
   /**
+   * Index all rules using Bulk Processor
+   * Documentation: https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/java-docs-bulk-processor.html
+   *
+   * @param rules
+   */
+  public void indexRulesBulkProcessor(List<EsRule> rules) {
+    ObjectMapper mapper = new ObjectMapper();
+
+    // Create bulk processor
+    BulkProcessor bulkProcessor = BulkProcessor.builder(client,
+        new BulkProcessor.Listener() {
+          @Override
+          public void beforeBulk(long executionId,
+                                 BulkRequest request) {
+            logger.info("Before bulk. Number of rules indexed: " + request.numberOfActions());
+          }
+
+          @Override
+          public void afterBulk(long executionId,
+                                BulkRequest request,
+                                BulkResponse response) {
+            logger.info("After bulk. Any failures? " + response.hasFailures());
+          }
+
+          @Override
+          public void afterBulk(long executionId,
+                                BulkRequest request,
+                                Throwable failure) {
+            logger.error("Bulk failed. Message: " + failure.getMessage());
+          }
+        })
+        .setBulkActions(10000)
+        .setBulkSize(new ByteSizeValue(5, ByteSizeUnit.MB))
+        .setFlushInterval(TimeValue.timeValueSeconds(5))
+        .setConcurrentRequests(1)
+        .setBackoffPolicy(BackoffPolicy.exponentialBackoff(TimeValue.timeValueMillis(500), 3))
+        .build();
+
+    for (EsRule rule : rules) {
+      IndexRequestBuilder indexRequestBuilder =
+          client.prepareIndex(elasticsearchConfig.getIndexes().getRulesIndex().getName(),
+              IndexedDocumentType.DOC.getValue()).setSource(mapper.convertValue(rule, Map.class));
+      bulkProcessor.add(indexRequestBuilder.request());
+    }
+
+    try {
+      bulkProcessor.awaitClose(10, TimeUnit.MINUTES);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /**
    * Remove all indexed rules
    */
   public void removeAllRules() {
@@ -148,7 +212,7 @@ public class ElasticsearchQueryService {
 
     SearchRequestBuilder requestBuilder =
         client.prepareSearch(elasticsearchConfig.getIndexes().getRulesIndex().getName())
-        .setTypes(IndexedDocumentType.DOC.getValue());
+            .setTypes(IndexedDocumentType.DOC.getValue());
 
     if (templateId != null && !templateId.isEmpty()) {
       requestBuilder.setQuery(QueryBuilders.termQuery(INDEX_TEMPLATE_ID, templateId));

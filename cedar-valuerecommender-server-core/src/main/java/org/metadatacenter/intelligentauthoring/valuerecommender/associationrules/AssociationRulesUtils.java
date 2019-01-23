@@ -153,20 +153,22 @@ public class AssociationRulesUtils {
 
       if (READ_INSTANCES_FROM_CEDAR) { // Read instances from the CEDAR system
         List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
-
+        logger.info("Number of template instances that will be used to generate rules: " + templateInstancesIds.size());
         for (String tiId : templateInstancesIds) {
           JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
-          Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
-          // Transform the template instances to a list of ARFF instances
-          List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
-              (arraysPathsAndIndexes.values()), 0, null);
+          if (ti !=  null) {
+            Object tiDocument = Configuration.defaultConfiguration().jsonProvider().parse(ti.toString());
+            // Transform the template instances to a list of ARFF instances
+            List<ArffInstance> arffInstances = generateArffInstances(tiDocument, fieldNodes, arrayNodes, new ArrayList
+                (arraysPathsAndIndexes.values()), 0, null);
 
-          for (ArffInstance arffInstance : arffInstances) {
-            fileWriter.println(arffInstance.toArffFormat());
-          }
-          instancesCount.getAndAdd(1);
-          if (MAX_INSTANCES_FOR_ARM > 0 && instancesCount.get() == MAX_INSTANCES_FOR_ARM) {
-            break;
+            for (ArffInstance arffInstance : arffInstances) {
+              fileWriter.println(arffInstance.toArffFormat());
+            }
+            instancesCount.getAndAdd(1);
+            if (MAX_INSTANCES_FOR_ARM > 0 && instancesCount.get() == MAX_INSTANCES_FOR_ARM) {
+              break;
+            }
           }
         }
       } else { // Read instances from a local folder
@@ -477,14 +479,17 @@ public class AssociationRulesUtils {
       minSupportingInstances = 3;
     }
     else if (numberOfInstances < 10000) {
-      minSupportingInstances = 4;
-    }
-    else if (numberOfInstances < 100000) {
       minSupportingInstances = 5;
     }
-    else {
-      minSupportingInstances = (int) (numberOfInstances * 0.00005);
+    else if (numberOfInstances < 100000) {
+      minSupportingInstances = 10;
     }
+    else {
+      minSupportingInstances = 20;
+    }
+//    else {
+//      minSupportingInstances = (int) (numberOfInstances * 0.001);
+//    }
     double support = minSupportingInstances / (double) numberOfInstances;
     return support;
   }
@@ -537,11 +542,27 @@ public class AssociationRulesUtils {
   public static List<EsRule> filterRulesByNumberOfConsequences(List<EsRule> rules, int maxNumberOfConsequences) {
     List<EsRule> outputRules = new ArrayList<>();
     for (EsRule rule : rules) {
-      if (rule.getConsequenceSize() <= maxNumberOfConsequences) {
+      if (keepRuleBasedOnNumberOfConsequences(rule, maxNumberOfConsequences)) {
         outputRules.add(rule);
       }
     }
     return outputRules;
+  }
+
+  /**
+   * Determines if a rule should be kept based on the number of consequences
+   *
+   * @param rule
+   * @param maxNumberOfConsequences
+   * @return
+   */
+  public static boolean keepRuleBasedOnNumberOfConsequences(EsRule rule, int maxNumberOfConsequences) {
+    if (rule.getConsequenceSize() <= maxNumberOfConsequences) {
+      return true;
+    }
+    else {
+      return false;
+    }
   }
 
   /**
@@ -594,9 +615,14 @@ public class AssociationRulesUtils {
           rule.getNamedMetricValue(CONFIDENCE_METRIC_NAME),
           esPremise.size(), esConsequence.size());
 
-      esRules.add(esRule);
-    }
+      // Filter by number of consequences (keep only those rules with 1 consequence). Note that we do the filtering
+      // here instead of doing if after storing all the rules in the array to optimize memory usage
+      if (AssociationRulesUtils.keepRuleBasedOnNumberOfConsequences(esRule, 1)) {
+        esRules.add(esRule);
+      }
 
+    }
+    logger.info("No. rules kept after filtering by number of consequences: " + esRules.size());
     return esRules;
   }
 
