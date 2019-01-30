@@ -21,8 +21,8 @@ public class Constants {
   public static boolean FILTER_BY_SUPPORT = false;
   public static final double MIN_SUPPORT_QUERY = 1; // Support threshold
   public static final int CONSEQUENCE_SIZE = 1;
-  public static final int MAX_RECOMMENDATIONS = 10; // Maximum number of recommendations returned to the user
-  public static final int MAX_ES_RESULTS = 200; // Maximum number of results returned by Elasticsearch
+  public static final int MAX_RECOMMENDATIONS = 30; // Maximum number of recommendations returned to the user
+  public static final int MAX_ES_RESULTS = 300; // Maximum number of results returned by Elasticsearch
 
   /** Input parameters **/
   public static final String INPUT_TEMPLATE_ID = "templateId";
@@ -51,7 +51,7 @@ public class Constants {
   /** Apriori settings **/
   public static final int APRIORI_MAX_NUM_RULES = 5000000;
   public static final int METRIC_TYPE_ID = 0; // 0 = Confidence | 1 = Lift | 2 = Leverage | 3 = Conviction
-  public static final double MIN_CONFIDENCE = 0.3;
+  public static final double MIN_CONFIDENCE = 0.1;
   public static final double MIN_LIFT = 1.2;
   public static final double MIN_LEVERAGE = 1.1;
   public static final double MIN_CONVICTION = 1.1;
