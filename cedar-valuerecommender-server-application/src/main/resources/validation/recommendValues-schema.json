@@ -25,19 +25,21 @@
         "required": [
           "fieldPath",
           "fieldValueLabel"
-        ]
+        ],
+        "additionalProperties": false
       }
     },
     "targetField": {
       "type": "object",
       "properties": {
-        "path": {
+        "fieldPath": {
           "type": "string"
         }
       },
       "required": [
         "fieldPath"
-      ]
+      ],
+      "additionalProperties": false
     },
     "strictMatch": {
       "type": "boolean"

@@ -9,7 +9,7 @@ info:
 # host: valuerecommender.metadatacenter.orgx
 # host: valuerecommender.staging.metadatacenter.org
 # host: valuerecommender.metadatacenter.org
-#basePath: /bioportal
+basePath: /command
 schemes:
   - https
 consumes:
@@ -41,32 +41,11 @@ responses:
 #                              Paths                                           #
 ################################################################################
 paths:
-  /has-instances:
-    get:
-      summary: Has instances
-      description: Checks if there are any template instances indexed for a particular template.
-      parameters:
-        - name: template_id
-          in: query
-          description: Template identifier. Example&#58; https://repo.metadatacenter.org/templates/8bc64ab5-df6b-48c8-8c61-6c016245918e
-          required: true
-          type: string
-      responses:
-        200:
-          $ref: '#/responses/ok'
-        400:
-          $ref: '#/responses/bad_request'
-        401:
-          $ref: '#/responses/unauthorized'
-        500:
-          $ref: '#/responses/internal_error'
-      security:
-        - api_key: []
   /recommend:
     post:
       summary: Get recommendation
       description:
-        Get value recommendations for metadata template fields.
+        Get metadata recommendations for a target field.
       parameters:
         - name: Input
           in: body
@@ -77,23 +56,38 @@ paths:
               templateId:
                 type: string
                 description: Example&#58; https://repo.metadatacenter.org/templates/8bc64av5-df6b-48c8-8c61-6c016245918e
+                required: false
               populatedFields:
                 type: array
                 items:
                   type: object
                   properties:
-                    path:
+                    fieldPath:
                       type: string
-                      description: Example&#58; study.organism
-                    value:
+                      description: Example&#58; disease
+                      required: true
+                    fieldValueLabel:
                       type: string
-                      description: Example&#58; mouse
+                      description: Example&#58; atopic dermatitis
+                      required: true
+                    fieldValueType:
+                      type: string
+                      description: Example&#58; atopic dermatitis
+                      required: false
               targetField:
                 type: object
                 properties:
-                  path:
+                  fieldPath:
                     type: string
-                    description: Example&#58; study.disease
+                    description: Example&#58; tissue
+              strictMatch:
+                type: boolean
+                required: false
+              includeDetails:
+                type: boolean
+                description: If set to true, it returns details about how the recommendations were generated
+                required: false
+
       responses:
         200:
           $ref: '#/responses/ok'
