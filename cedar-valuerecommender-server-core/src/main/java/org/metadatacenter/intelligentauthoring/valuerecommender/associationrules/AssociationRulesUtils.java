@@ -154,6 +154,7 @@ public class AssociationRulesUtils {
       if (READ_INSTANCES_FROM_CEDAR) { // Read instances from the CEDAR system
         List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
         logger.info("Number of template instances that will be used to generate rules: " + templateInstancesIds.size());
+        logger.info("Translating instances to ARFF format");
         for (String tiId : templateInstancesIds) {
           JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
           if (ti !=  null) {
