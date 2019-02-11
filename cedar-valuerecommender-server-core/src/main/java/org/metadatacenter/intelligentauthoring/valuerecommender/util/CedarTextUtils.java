@@ -34,6 +34,11 @@ public class CedarTextUtils {
    */
   public static String normalizePath(String path) {
     path = path.trim();
-    return path.toUpperCase();
+    if  (path.startsWith("http")) { // If it's a term URI
+      return path;
+    }
+    else {
+      return path.toUpperCase();
+    }
   }
 }

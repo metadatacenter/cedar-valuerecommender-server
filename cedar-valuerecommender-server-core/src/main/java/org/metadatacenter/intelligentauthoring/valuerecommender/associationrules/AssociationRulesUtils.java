@@ -154,6 +154,7 @@ public class AssociationRulesUtils {
       if (READ_INSTANCES_FROM_CEDAR) { // Read instances from the CEDAR system
         List<String> templateInstancesIds = esQueryService.getTemplateInstancesIdsByTemplateId(templateId);
         logger.info("Number of template instances that will be used to generate rules: " + templateInstancesIds.size());
+        logger.info("Translating instances to ARFF format");
         for (String tiId : templateInstancesIds) {
           JsonNode ti = templateInstanceService.findTemplateInstance(tiId);
           if (ti !=  null) {
@@ -435,10 +436,11 @@ public class AssociationRulesUtils {
     Apriori aprioriObj = new Apriori();
 
     aprioriObj.setVerbose(verboseMode);
+    logger.info("Min. confidence: " + MIN_CONFIDENCE);
 
     // Calculate minimum support
     double support = getSupport(data.numInstances());
-    logger.info("Support that will be used: " + support);
+    logger.info("Min. support: " + support);
     aprioriObj.setLowerBoundMinSupport(support);
 
     // Set the threshold for the other metric
@@ -478,18 +480,15 @@ public class AssociationRulesUtils {
     else if (numberOfInstances < 5000) {
       minSupportingInstances = 3;
     }
-    else if (numberOfInstances < 10000) {
+    else if (numberOfInstances < 250000) {
       minSupportingInstances = 5;
     }
-    else if (numberOfInstances < 100000) {
+    else if (numberOfInstances < 1000000) {
       minSupportingInstances = 10;
     }
     else {
       minSupportingInstances = 20;
     }
-//    else {
-//      minSupportingInstances = (int) (numberOfInstances * 0.001);
-//    }
     double support = minSupportingInstances / (double) numberOfInstances;
     return support;
   }
