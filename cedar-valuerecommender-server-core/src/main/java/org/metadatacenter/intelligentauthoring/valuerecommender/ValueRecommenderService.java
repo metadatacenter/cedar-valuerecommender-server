@@ -216,8 +216,13 @@ public class ValueRecommenderService implements IValueRecommenderService {
             recommendedValues.add(value);
           }
         }
-      }
 
+        // If we did not get any context-dependent recommendations, try context-dependent (recursive call)
+        if (recommendedValues.size() == 0) {
+          return generateRecommendations(new ArrayList<>(), rules, filterByRecommendationScore, includeDetails);
+        }
+
+      }
     }
     else { // If there are no populated fields
 
@@ -291,10 +296,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
    * If there is no context, it returns a predefined value (NO_CONTEXT_FACTOR)
    */
   private double getContextMatchingScore(List<Field> populatedFields, List<EsRuleItem> rulePremise) {
-//    if (populatedFields.size()==0) {
-//      return NO_CONTEXT_FACTOR;
-//    }
-//    else {
     int intersectionCount = 0;
     for (EsRuleItem ruleItem : rulePremise) {
       for (Field field : populatedFields) {
@@ -305,7 +306,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
     int unionCount = populatedFields.size() + rulePremise.size() - intersectionCount;
     return (double) intersectionCount / (double) unionCount;
-    //}
   }
 
   /**
