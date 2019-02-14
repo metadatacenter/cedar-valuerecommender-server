@@ -355,11 +355,13 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
 
     // Match number of premises
-    MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery(INDEX_PREMISE_SIZE, populatedFields.size());
-    if (strictMatch) {
-      mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
-    } else {
-      mainBoolQuery = mainBoolQuery.should(matchPremiseSize);
+    if (populatedFields.size() > 0) {
+      MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery(INDEX_PREMISE_SIZE, populatedFields.size());
+      if (strictMatch) {
+        mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
+      } else {
+        mainBoolQuery = mainBoolQuery.should(matchPremiseSize);
+      }
     }
 
     // Match number of consequences (i.e., 1)
