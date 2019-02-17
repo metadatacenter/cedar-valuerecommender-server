@@ -58,7 +58,13 @@ public class RecommendedValue implements Comparable<RecommendedValue> {
 
   @Override
   public int compareTo(RecommendedValue value) {
-    return Double.compare(value.getRecommendationScore(), getRecommendationScore());
+    Double value1 = value.getRecommendationScore();
+    Double value2 = getRecommendationScore();
+    if (Math.abs(value1 - value2) < 0.001) {
+      return Double.compare(value1, value2);
+    } else { // If the recommendation scores are close enough, return the value with higher support
+      return Double.compare(value.getDetails().getRuleSupport(), getDetails().getRuleSupport());
+    }
   }
 
 }
