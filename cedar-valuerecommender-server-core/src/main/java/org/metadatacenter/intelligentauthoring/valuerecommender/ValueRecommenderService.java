@@ -18,6 +18,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.*;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarFieldUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
+import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.io.*;
@@ -216,8 +217,13 @@ public class ValueRecommenderService implements IValueRecommenderService {
             recommendedValues.add(value);
           }
         }
-      }
 
+        // If we did not get any context-dependent recommendations, try context-dependent (recursive call)
+        if (recommendedValues.size() == 0) {
+          return generateRecommendations(new ArrayList<>(), rules, filterByRecommendationScore, includeDetails);
+        }
+
+      }
     }
     else { // If there are no populated fields
 
@@ -291,10 +297,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
    * If there is no context, it returns a predefined value (NO_CONTEXT_FACTOR)
    */
   private double getContextMatchingScore(List<Field> populatedFields, List<EsRuleItem> rulePremise) {
-//    if (populatedFields.size()==0) {
-//      return NO_CONTEXT_FACTOR;
-//    }
-//    else {
     int intersectionCount = 0;
     for (EsRuleItem ruleItem : rulePremise) {
       for (Field field : populatedFields) {
@@ -305,7 +307,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
     int unionCount = populatedFields.size() + rulePremise.size() - intersectionCount;
     return (double) intersectionCount / (double) unionCount;
-    //}
   }
 
   /**
@@ -350,31 +351,33 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
     // If templateId is present, the query will be limited to rules from a particular template
     if (templateId.isPresent()) {
-      MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_TEMPLATE_ID, templateId.get());
+      TermQueryBuilder matchConsequenceField = QueryBuilders.termQuery(INDEX_TEMPLATE_ID, templateId.get());
       mainBoolQuery = mainBoolQuery.must(matchConsequenceField);
     }
 
     // Match number of premises
-    MatchQueryBuilder matchPremiseSize = QueryBuilders.matchQuery(INDEX_PREMISE_SIZE, populatedFields.size());
-    if (strictMatch) {
-      mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
-    } else {
-      mainBoolQuery = mainBoolQuery.should(matchPremiseSize);
+    if (populatedFields.size() > 0) {
+      TermQueryBuilder matchPremiseSize = QueryBuilders.termQuery(INDEX_PREMISE_SIZE, populatedFields.size());
+      if (strictMatch) {
+        mainBoolQuery = mainBoolQuery.must(matchPremiseSize);
+      } else {
+        mainBoolQuery = mainBoolQuery.should(matchPremiseSize);
+      }
     }
 
     // Match number of consequences (i.e., 1)
-    MatchQueryBuilder matchConsequenceSize = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_SIZE, CONSEQUENCE_SIZE);
+    TermQueryBuilder matchConsequenceSize = QueryBuilders.termQuery(INDEX_CONSEQUENCE_SIZE, CONSEQUENCE_SIZE);
     mainBoolQuery = mainBoolQuery.must(matchConsequenceSize);
 
     // Match fields and values in premises
     for (Field field : populatedFields) {
 
       // Match field path
-      MatchQueryBuilder matchPremiseField = QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_NORMALIZED_PATH,
+      TermQueryBuilder matchPremiseField = QueryBuilders.termQuery(INDEX_PREMISE_FIELD_NORMALIZED_PATH,
           CedarTextUtils.normalizePath(field.getFieldPath()));
 
       // Match field with other uris
-      MatchQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_TYPE_MAPPINGS,
+      TermQueryBuilder matchPremiseFieldOtherUris = QueryBuilders.termQuery(INDEX_PREMISE_FIELD_TYPE_MAPPINGS,
           field.getFieldPath());
 
       // Match field bool query
@@ -389,20 +392,29 @@ public class ValueRecommenderService implements IValueRecommenderService {
       String fieldNormalizedValue = CedarFieldUtils.normalizeFieldValue(field);
 
       // Match field normalized value
-      MatchQueryBuilder matchPremiseFieldNormalizedValue =
-          QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_NORMALIZED_VALUE, fieldNormalizedValue);
+      QueryBuilder matchPremiseFieldNormalizedValue = null;
+      if (CedarUtils.isUri(fieldNormalizedValue)) {
+        matchPremiseFieldNormalizedValue =
+            QueryBuilders.termQuery(INDEX_PREMISE_FIELD_NORMALIZED_VALUE, fieldNormalizedValue);
+      }
+      else {
+        matchPremiseFieldNormalizedValue =
+            QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_NORMALIZED_VALUE, fieldNormalizedValue);
+      }
 
       // Match field value bool query
       BoolQueryBuilder premiseFieldValueBoolQuery = QueryBuilders.boolQuery();
       premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValue);
+
       if (useMappings) {
 
         // Match field normalized value with other uris
-        MatchQueryBuilder matchPremiseFieldNormalizedValues =
-            QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_VALUE_MAPPINGS, fieldNormalizedValue);
+        TermQueryBuilder matchPremiseFieldNormalizedValues =
+            QueryBuilders.termQuery(INDEX_PREMISE_FIELD_VALUE_MAPPINGS, fieldNormalizedValue);
 
         premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.should(matchPremiseFieldNormalizedValues);
       }
+
       premiseFieldValueBoolQuery = premiseFieldValueBoolQuery.minimumShouldMatch(1); // Logical OR
 
       // Premise bool query
@@ -422,9 +434,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
     }
 
     // Match target field
-    MatchQueryBuilder matchConsequenceField = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_FIELD_NORMALIZED_PATH,
+    TermQueryBuilder matchConsequenceField = QueryBuilders.termQuery(INDEX_CONSEQUENCE_FIELD_NORMALIZED_PATH,
         CedarTextUtils.normalizePath(targetField.getFieldPath()));
-    MatchQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.matchQuery(INDEX_CONSEQUENCE_FIELD_TYPE_MAPPINGS,
+    TermQueryBuilder matchConsequenceFieldOtherUris = QueryBuilders.termQuery(INDEX_CONSEQUENCE_FIELD_TYPE_MAPPINGS,
         targetField.getFieldPath());
 
     // Match target field bool query
