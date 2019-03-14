@@ -21,7 +21,8 @@ public class Constants {
   public static boolean FILTER_BY_SUPPORT = false;
   public static final double MIN_SUPPORT_QUERY = 1; // Support threshold
   public static final int CONSEQUENCE_SIZE = 1;
-  public static final int MAX_RECOMMENDATIONS = 30; // Maximum number of recommendations returned to the user
+  public static final int MAX_RECOMMENDATIONS_CI = 30; // Maximum number of recommendations returned to the user when generating context-INDEPENDENT recommendations
+  public static final int MAX_RECOMMENDATIONS_CD = 5; // Maximum number of recommendations returned to the user when generating context-DEPENDENT recommendations
   public static final int MAX_ES_RESULTS = 300; // Maximum number of results returned by Elasticsearch
 
   /** Input parameters **/
