@@ -219,9 +219,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
         }
 
         // If we did not get any context-dependent recommendations, try context-dependent (recursive call)
-        if (recommendedValues.size() == 0) {
-          return generateRecommendations(new ArrayList<>(), rules, filterByRecommendationScore, includeDetails);
-        }
+//        if (recommendedValues.size() == 0) {
+//          return generateRecommendations(new ArrayList<>(), rules, filterByRecommendationScore, includeDetails);
+//        }
 
       }
     }
@@ -261,12 +261,20 @@ public class ValueRecommenderService implements IValueRecommenderService {
       }
     }
 
+    int maxRecommendations;
+    if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT)) {
+      maxRecommendations = MAX_RECOMMENDATIONS_CI;
+    }
+    else {
+      maxRecommendations = MAX_RECOMMENDATIONS_CD;
+    }
+
     // Sort by score
     Collections.sort(recommendedValues);
 
     // Keep top n elements
-    if ((recommendedValues.size() > MAX_RECOMMENDATIONS) && (MAX_RECOMMENDATIONS > 1)) {
-      recommendedValues = recommendedValues.subList(0, MAX_RECOMMENDATIONS - 1);
+    if ((recommendedValues.size() > maxRecommendations) && (maxRecommendations > 1)) {
+      recommendedValues = recommendedValues.subList(0, maxRecommendations - 1);
     }
 
     return recommendedValues;
