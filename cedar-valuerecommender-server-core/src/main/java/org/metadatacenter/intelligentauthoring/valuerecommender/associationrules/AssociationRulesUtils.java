@@ -61,15 +61,15 @@ public class AssociationRulesUtils {
       esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
       // Initialize template and template instance services
       CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig()
-          .getTemplateServerConfig().getMongoConnection());
+          .getArtifactServerConfig().getMongoConnection());
       MongoClient mongoClientForDocuments = CedarDataServices.getMongoClientFactoryForDocuments().getClient();
-      MongoConfig templateServerConfig = ConfigManager.getCedarConfig().getTemplateServerConfig();
+      MongoConfig artifactServerConfig = ConfigManager.getCedarConfig().getArtifactServerConfig();
       templateService = new TemplateServiceMongoDB(mongoClientForDocuments,
-          templateServerConfig.getDatabaseName(),
-          templateServerConfig.getMongoCollectionName(CedarNodeType.TEMPLATE));
+          artifactServerConfig.getDatabaseName(),
+          artifactServerConfig.getMongoCollectionName(CedarNodeType.TEMPLATE));
       templateInstanceService = new TemplateInstanceServiceMongoDB(mongoClientForDocuments,
-          templateServerConfig.getDatabaseName(),
-          templateServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
+          artifactServerConfig.getDatabaseName(),
+          artifactServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
     } catch (UnknownHostException e) {
       logger.error(e.getMessage());
       e.printStackTrace();
