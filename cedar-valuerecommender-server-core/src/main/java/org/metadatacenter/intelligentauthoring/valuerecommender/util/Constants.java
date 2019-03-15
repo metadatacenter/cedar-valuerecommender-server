@@ -1,5 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 
+import java.util.List;
+
 /**
  * Constants of general utility.
  * All member of this class are immutable.
@@ -15,13 +17,13 @@ public class Constants {
   public static final String MAPPINGS_FILE_PATH = "mappings/mappings_merged.json";
   public static boolean USE_MAPPINGS = false; // For ontology terms, match using mappings
   public static boolean FILTER_BY_RECOMMENDATION_SCORE = true;
-  public static final double MIN_RECOMMENDATION_SCORE = 0.01; // Recommendation score threshold
+  public static final double MIN_RECOMMENDATION_SCORE = 0.02; // Recommendation score threshold
   public static boolean FILTER_BY_CONFIDENCE = false;
   public static final double MIN_CONFIDENCE_QUERY = 0.9; // Confidence threshold
   public static boolean FILTER_BY_SUPPORT = false;
   public static final double MIN_SUPPORT_QUERY = 1; // Support threshold
   public static final int CONSEQUENCE_SIZE = 1;
-  public static final int MAX_RECOMMENDATIONS_CI = 30; // Maximum number of recommendations returned to the user when generating context-INDEPENDENT recommendations
+  public static final int MAX_RECOMMENDATIONS_CI = 15; // Maximum number of recommendations returned to the user when generating context-INDEPENDENT recommendations
   public static final int MAX_RECOMMENDATIONS_CD = 5; // Maximum number of recommendations returned to the user when generating context-DEPENDENT recommendations
   public static final int MAX_ES_RESULTS = 300; // Maximum number of results returned by Elasticsearch
 
@@ -86,6 +88,12 @@ public class Constants {
   /** BioPortal **/
   public static final String BIOPORTAL_API_BASE = "http://data.bioontology.org/";
   public static final String BIOPORTAL_API_CLASSES_FRAGMENT = "/classes/";
+
+  /** Ignored Templates **/
+  public static final String[] IGNORED_TEMPLATES = {
+      "https://repo.metadatacenter.org/templates/6d9f4a83-a7ba-42be-a6af-f3cad7b2f7e3", // BioSample demo (production)
+      "https://repo.metadatacenter.orgx/templates/4006096d-e4d8-4e53-9363-f91d63ae5383" // test (local)
+  };
 
   // Elasticsearch aggregation names and attributes used
 //  public static final String AGG_BY_NESTED_OBJECT = "by_nested_object";
