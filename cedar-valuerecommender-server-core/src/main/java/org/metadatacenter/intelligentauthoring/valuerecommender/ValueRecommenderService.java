@@ -72,16 +72,15 @@ public class ValueRecommenderService implements IValueRecommenderService {
       logger.info("Generating rules for the following templates: " + templateIds.toString());
 
       for (String templateId : templateIds) {
-        RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.PROCESSING);
-        // Generate rules for the template
-        logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
-        long startTime = System.currentTimeMillis();
-        List<EsRule> rules = new ArrayList<>();
         if (Arrays.asList(IGNORED_TEMPLATES).contains(templateId)) {
           logger.info("The template is in the list of ignored templates. Rule generation has been skipped");
         }
         else {
-          rules = service.generateRulesForTemplate(templateId);
+          RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.PROCESSING);
+          // Generate rules for the template
+          logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
+          long startTime = System.currentTimeMillis();
+          List<EsRule> rules = service.generateRulesForTemplate(templateId);
 
           // Remove previous rules for the template
           logger.info("Removing existing rules for templateId: " + templateId + " from the index");
@@ -95,9 +94,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
           long totalTime = System.currentTimeMillis() - startTime;
           logger.info("Rules generation and indexing completed. Total execution time: " + totalTime / 1000 + " seg (" + totalTime + " ms)");
+          logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
+          RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, rules.size());
         }
-        logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
-        RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, rules.size());
       }
     } catch (IOException e) {
       e.printStackTrace();
