@@ -91,7 +91,8 @@ public class Constants {
 
   /** Ignored Templates **/
   public static final String[] IGNORED_TEMPLATES = {
-      "https://repo.metadatacenter.org/templates/6d9f4a83-a7ba-42be-a6af-f3cad7b2f7e3", // BioSample demo (production)
+      "https://repo.metadatacenter.org/templates/6d9f4a83-a7ba-42be-a6af-f3cad7b2f7e3", // BioSample demo 120K instances (production)
+      "https://repo.metadatacenter.org/templates/4595e3d3-b0c5-467b-a967-fec870801624", // BioSample demo-user (production)
       "https://repo.metadatacenter.orgx/templates/4006096d-e4d8-4e53-9363-f91d63ae5383" // test (local)
   };
 
