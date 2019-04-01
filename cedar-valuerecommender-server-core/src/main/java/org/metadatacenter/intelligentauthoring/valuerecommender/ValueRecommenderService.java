@@ -72,26 +72,31 @@ public class ValueRecommenderService implements IValueRecommenderService {
       logger.info("Generating rules for the following templates: " + templateIds.toString());
 
       for (String templateId : templateIds) {
-        RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.PROCESSING);
-        // Generate rules for the template
-        logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
-        long startTime = System.currentTimeMillis();
-        List<EsRule> rules = service.generateRulesForTemplate(templateId);
+        if (Arrays.asList(IGNORED_TEMPLATES).contains(templateId)) {
+          logger.info("The template is in the list of ignored templates. Rule generation has been skipped");
+        }
+        else {
+          RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.PROCESSING);
+          // Generate rules for the template
+          logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
+          long startTime = System.currentTimeMillis();
+          List<EsRule> rules = service.generateRulesForTemplate(templateId);
 
-        // Remove previous rules for the template
-        logger.info("Removing existing rules for templateId: " + templateId + " from the index");
-        long removedCount = rulesIndexingService.removeRulesFromIndex(templateId);
-        logger.info(removedCount + " rules removed");
+          // Remove previous rules for the template
+          logger.info("Removing existing rules for templateId: " + templateId + " from the index");
+          long removedCount = rulesIndexingService.removeRulesFromIndex(templateId);
+          logger.info(removedCount + " rules removed");
 
-        // Index the new rules in bulk in Elasticsearch
-        logger.info("Indexing rules in Elasticsearch");
-        esQueryService.indexRulesBulkProcessor(rules);
-        logger.info("Indexing completed");
+          // Index the new rules in bulk in Elasticsearch
+          logger.info("Indexing rules in Elasticsearch");
+          esQueryService.indexRulesBulkProcessor(rules);
+          logger.info("Indexing completed");
 
-        long totalTime = System.currentTimeMillis() - startTime;
-        logger.info("Rules generation and indexing completed. Total execution time: " + totalTime / 1000 + " seg (" + totalTime + " ms)");
-        logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
-        RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, rules.size());
+          long totalTime = System.currentTimeMillis() - startTime;
+          logger.info("Rules generation and indexing completed. Total execution time: " + totalTime / 1000 + " seg (" + totalTime + " ms)");
+          logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
+          RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, rules.size());
+        }
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -224,8 +229,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
 //        }
 
       }
-    }
-    else { // If there are no populated fields
+    } else { // If there are no populated fields
 
       recommendationType = RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT;
 
@@ -236,8 +240,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
         String valueLabel = rule.getConsequence().get(0).getFieldValueLabel();
         if (!labelSupportMap.containsKey(valueLabel)) {
           labelSupportMap.put(valueLabel, rule.getSupport());
-        }
-        else { // update support
+        } else { // update support
           double newSupport = labelSupportMap.get(valueLabel) + rule.getSupport();
           labelSupportMap.put(valueLabel, newSupport);
         }
@@ -264,8 +267,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     int maxRecommendations;
     if (recommendationType.equals(RecommendedValue.RecommendationType.CONTEXT_INDEPENDENT)) {
       maxRecommendations = MAX_RECOMMENDATIONS_CI;
-    }
-    else {
+    } else {
       maxRecommendations = MAX_RECOMMENDATIONS_CD;
     }
 
@@ -404,8 +406,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
       if (CedarUtils.isUri(fieldNormalizedValue)) {
         matchPremiseFieldNormalizedValue =
             QueryBuilders.termQuery(INDEX_PREMISE_FIELD_NORMALIZED_VALUE, fieldNormalizedValue);
-      }
-      else {
+      } else {
         matchPremiseFieldNormalizedValue =
             QueryBuilders.matchQuery(INDEX_PREMISE_FIELD_NORMALIZED_VALUE, fieldNormalizedValue);
       }
