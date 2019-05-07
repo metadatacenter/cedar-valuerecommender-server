@@ -2,7 +2,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.ArffAttributeValue;
-import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.CedarResourceType;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -73,12 +73,12 @@ public class CedarUtils {
                 isValueRecommendationEnabled = true;
               }
             }
-            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarNodeType.FIELD, instanceType, isArray,
+            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarResourceType.FIELD, instanceType, isArray,
                 isValueRecommendationEnabled));
           }
           // Element
           else if (isTemplateElementNode(jsonFieldNode)) {
-            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarNodeType.ELEMENT, Optional.empty(),
+            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarResourceType.ELEMENT, Optional.empty(),
                 isArray, null));
             getTemplateNodes(jsonFieldNode, jsonFieldPath, results);
           }
@@ -122,7 +122,7 @@ public class CedarUtils {
    * @return
    */
   public static boolean isTemplateFieldNode(JsonNode node) {
-    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType.FIELD.getAtType
+    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarResourceType.FIELD.getAtType
         ())) {
       return true;
     } else {
@@ -137,7 +137,7 @@ public class CedarUtils {
    * @return
    */
   public static boolean isTemplateElementNode(JsonNode node) {
-    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType.ELEMENT
+    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarResourceType.ELEMENT
         .getAtType())) {
       return true;
     } else {
