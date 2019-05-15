@@ -10,9 +10,9 @@ import java.util.Optional;
  */
 public class TemplateNode {
 
-  private String id; // resource identifier (i.e., @id field)
+  private String id; // artifact identifier (i.e., @id field)
   private String key; // json key
-  private List<String> path; // List of json keys from the root (it includes the key of the current node)
+  private List<String> path; // List of json keys from the root (it includes the key of the current resource)
   private CedarResourceType type; // Node type (e.g. field)
   private Optional<String> instanceType; // Instance type. It is the type of the field defined using an ontology term
   private boolean isArray;

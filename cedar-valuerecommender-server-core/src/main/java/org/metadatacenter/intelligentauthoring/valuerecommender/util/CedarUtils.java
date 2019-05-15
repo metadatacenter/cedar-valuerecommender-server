@@ -17,7 +17,7 @@ public class CedarUtils {
    * Returns basic information of all template nodes (only for elements and fields)
    *
    * @param template
-   * @param currentPath Used internally to store the current node path
+   * @param currentPath Used internally to store the current resource path
    * @param results     Used internally to store the results
    * @return A list all template elements and fields represented using the TemplateNode class
    */
@@ -36,12 +36,12 @@ public class CedarUtils {
       if (jsonField.getValue().isContainerNode()) {
         JsonNode jsonFieldNode;
         boolean isArray;
-        // Single-instance node
+        // Single-instance resource
         if (!jsonField.getValue().has(ITEMS_FIELD_NAME)) {
           jsonFieldNode = jsonField.getValue();
           isArray = false;
         }
-        // Multi-instance node
+        // Multi-instance resource
         else {
           jsonFieldNode = jsonField.getValue().get(ITEMS_FIELD_NAME);
           isArray = true;
@@ -116,7 +116,7 @@ public class CedarUtils {
   }
 
   /**
-   * Checks if a Json node corresponds to a CEDAR template field
+   * Checks if a Json resource corresponds to a CEDAR template field
    *
    * @param node
    * @return
@@ -131,7 +131,7 @@ public class CedarUtils {
   }
 
   /**
-   * Checks if a Json node corresponds to a CEDAR template element
+   * Checks if a Json resource corresponds to a CEDAR template element
    *
    * @param node
    * @return
@@ -160,7 +160,7 @@ public class CedarUtils {
   }
 
   /**
-   * Returns the instance type of a field node
+   * Returns the instance type of a field resource
    * @param fieldNode
    * @return
    */

@@ -255,7 +255,7 @@ public class AssociationRulesUtils {
         // (e.g., Publication[0].title)
         // TODO: it may be a mistake here when dealing with arrays of arrays. Test it
         if (i > 0) {
-          // Generate paths in JsonPath format for all nodes from the root to the current node and check if they exist
+          // Generate paths in JsonPath format for all nodes from the root to the current resource and check if they exist
           String jsonPath = "$";
           String path = "";
           TemplateNode currentArrayNode = arrayNodes.get(indexOfCurrentArray);
