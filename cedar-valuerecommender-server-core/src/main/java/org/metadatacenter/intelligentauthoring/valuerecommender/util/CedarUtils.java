@@ -2,7 +2,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.ArffAttributeValue;
-import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.CedarResourceType;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -17,7 +17,7 @@ public class CedarUtils {
    * Returns basic information of all template nodes (only for elements and fields)
    *
    * @param template
-   * @param currentPath Used internally to store the current node path
+   * @param currentPath Used internally to store the current resource path
    * @param results     Used internally to store the results
    * @return A list all template elements and fields represented using the TemplateNode class
    */
@@ -36,12 +36,12 @@ public class CedarUtils {
       if (jsonField.getValue().isContainerNode()) {
         JsonNode jsonFieldNode;
         boolean isArray;
-        // Single-instance node
+        // Single-instance resource
         if (!jsonField.getValue().has(ITEMS_FIELD_NAME)) {
           jsonFieldNode = jsonField.getValue();
           isArray = false;
         }
-        // Multi-instance node
+        // Multi-instance resource
         else {
           jsonFieldNode = jsonField.getValue().get(ITEMS_FIELD_NAME);
           isArray = true;
@@ -73,12 +73,12 @@ public class CedarUtils {
                 isValueRecommendationEnabled = true;
               }
             }
-            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarNodeType.FIELD, instanceType, isArray,
+            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarResourceType.FIELD, instanceType, isArray,
                 isValueRecommendationEnabled));
           }
           // Element
           else if (isTemplateElementNode(jsonFieldNode)) {
-            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarNodeType.ELEMENT, Optional.empty(),
+            results.add(new TemplateNode(id, jsonFieldKey, jsonFieldPath, CedarResourceType.ELEMENT, Optional.empty(),
                 isArray, null));
             getTemplateNodes(jsonFieldNode, jsonFieldPath, results);
           }
@@ -116,13 +116,13 @@ public class CedarUtils {
   }
 
   /**
-   * Checks if a Json node corresponds to a CEDAR template field
+   * Checks if a Json resource corresponds to a CEDAR template field
    *
    * @param node
    * @return
    */
   public static boolean isTemplateFieldNode(JsonNode node) {
-    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType.FIELD.getAtType
+    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarResourceType.FIELD.getAtType
         ())) {
       return true;
     } else {
@@ -131,13 +131,13 @@ public class CedarUtils {
   }
 
   /**
-   * Checks if a Json node corresponds to a CEDAR template element
+   * Checks if a Json resource corresponds to a CEDAR template element
    *
    * @param node
    * @return
    */
   public static boolean isTemplateElementNode(JsonNode node) {
-    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarNodeType.ELEMENT
+    if (node.get(TYPE_FIELD_NAME) != null && node.get(TYPE_FIELD_NAME).asText().equals(CedarResourceType.ELEMENT
         .getAtType())) {
       return true;
     } else {
@@ -160,7 +160,7 @@ public class CedarUtils {
   }
 
   /**
-   * Returns the instance type of a field node
+   * Returns the instance type of a field resource
    * @param fieldNode
    * @return
    */

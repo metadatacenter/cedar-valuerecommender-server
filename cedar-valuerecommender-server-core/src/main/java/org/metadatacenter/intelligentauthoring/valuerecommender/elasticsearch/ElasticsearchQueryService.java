@@ -90,7 +90,7 @@ public class ElasticsearchQueryService {
   public List<String> getTemplateIds() {
     List<String> templateIds = new ArrayList<>();
 
-    QueryBuilder templateIdsQuery = termQuery("info.nodeType", "template");
+    QueryBuilder templateIdsQuery = termQuery("info.resourceType", "template");
 
     SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdsQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();

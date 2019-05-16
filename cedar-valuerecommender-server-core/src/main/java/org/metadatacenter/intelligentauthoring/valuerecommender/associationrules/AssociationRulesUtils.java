@@ -20,7 +20,7 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.mappings.Mapping
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.TemplateNode;
-import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.CedarResourceType;
 import org.metadatacenter.server.service.TemplateInstanceService;
 import org.metadatacenter.server.service.TemplateService;
 import org.metadatacenter.server.service.mongodb.TemplateInstanceServiceMongoDB;
@@ -66,10 +66,10 @@ public class AssociationRulesUtils {
       MongoConfig artifactServerConfig = ConfigManager.getCedarConfig().getArtifactServerConfig();
       templateService = new TemplateServiceMongoDB(mongoClientForDocuments,
           artifactServerConfig.getDatabaseName(),
-          artifactServerConfig.getMongoCollectionName(CedarNodeType.TEMPLATE));
+          artifactServerConfig.getMongoCollectionName(CedarResourceType.TEMPLATE));
       templateInstanceService = new TemplateInstanceServiceMongoDB(mongoClientForDocuments,
           artifactServerConfig.getDatabaseName(),
-          artifactServerConfig.getMongoCollectionName(CedarNodeType.INSTANCE));
+          artifactServerConfig.getMongoCollectionName(CedarResourceType.INSTANCE));
     } catch (UnknownHostException e) {
       logger.error(e.getMessage());
       e.printStackTrace();
@@ -108,7 +108,7 @@ public class AssociationRulesUtils {
     // Field nodes
     List<TemplateNode> fieldNodes = new ArrayList<>();
     for (TemplateNode node : nodes) {
-      if (node.getType().equals(CedarNodeType.FIELD)) {
+      if (node.getType().equals(CedarResourceType.FIELD)) {
         if (USE_ALL_FIELDS) { // Use all fields to generate rules
           fieldNodes.add(node);
         } else { // Consider only field for which valueRecommendations are enabled
@@ -128,7 +128,7 @@ public class AssociationRulesUtils {
     else {
       // Generate ARFF attributes
       for (TemplateNode node : fieldNodes) {
-        if (node.getType().equals(CedarNodeType.FIELD)) {
+        if (node.getType().equals(CedarResourceType.FIELD)) {
           fileWriter.println(toWekaAttributeFormat(node, " string"));
         }
       }
@@ -255,7 +255,7 @@ public class AssociationRulesUtils {
         // (e.g., Publication[0].title)
         // TODO: it may be a mistake here when dealing with arrays of arrays. Test it
         if (i > 0) {
-          // Generate paths in JsonPath format for all nodes from the root to the current node and check if they exist
+          // Generate paths in JsonPath format for all nodes from the root to the current resource and check if they exist
           String jsonPath = "$";
           String path = "";
           TemplateNode currentArrayNode = arrayNodes.get(indexOfCurrentArray);
