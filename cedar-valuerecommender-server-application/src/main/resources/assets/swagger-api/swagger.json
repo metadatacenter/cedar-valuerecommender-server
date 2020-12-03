@@ -3,7 +3,7 @@
   "info": {
     "title": "CEDAR Value Recommender Server API",
     "description": "CEDAR Value Recommender Server API",
-    "version": "2.5.35"
+    "version": "2.5.37"
   },
   "basePath": "/command",
   "schemes": [
