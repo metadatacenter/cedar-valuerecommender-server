@@ -1,9 +1,9 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.bulk.*;
 import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -11,22 +11,17 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.unit.ByteSizeUnit;
 import org.elasticsearch.common.unit.ByteSizeValue;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.index.reindex.DeleteByQueryRequestBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.metadatacenter.config.ElasticsearchConfig;
-import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants;
 import org.metadatacenter.search.IndexedDocumentType;
-import org.metadatacenter.server.search.IndexedDocumentId;
-import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,7 +189,7 @@ public class ElasticsearchQueryService {
    * Remove all indexed rules
    */
   public void removeAllRules() {
-    BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
+    BulkByScrollResponse response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
         .filter(QueryBuilders.matchAllQuery())
         .source(elasticsearchConfig.getIndexes().getRulesIndex().getName()).get();
     long deleted = response.getDeleted();
@@ -220,7 +215,8 @@ public class ElasticsearchQueryService {
       requestBuilder.setQuery(QueryBuilders.matchAllQuery()); // return all rules in the index
     }
     requestBuilder.setSize(0); // Don't return any documents, we don't need them.
-    return requestBuilder.get().getHits().getTotalHits(); // Execute query and count results
+    TotalHits totalHits = requestBuilder.get().getHits().getTotalHits();// Execute query and count results
+    return totalHits == null ? 0 : totalHits.value;
   }
 
 
