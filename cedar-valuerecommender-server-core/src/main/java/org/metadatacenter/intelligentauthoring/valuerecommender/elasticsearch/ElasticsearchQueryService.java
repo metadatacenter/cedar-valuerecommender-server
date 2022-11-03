@@ -206,8 +206,7 @@ public class ElasticsearchQueryService {
   public long getNumberOfRules(String templateId) {
 
     SearchRequestBuilder requestBuilder =
-        client.prepareSearch(elasticsearchConfig.getIndexes().getRulesIndex().getName())
-            .setTypes(IndexedDocumentType.DOC.getValue());
+        client.prepareSearch(elasticsearchConfig.getIndexes().getRulesIndex().getName());
 
     if (templateId != null && !templateId.isEmpty()) {
       requestBuilder.setQuery(QueryBuilders.termQuery(INDEX_TEMPLATE_ID, templateId));
