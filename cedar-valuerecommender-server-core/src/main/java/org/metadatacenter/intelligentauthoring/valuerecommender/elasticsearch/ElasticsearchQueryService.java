@@ -19,7 +19,7 @@ import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.index.reindex.DeleteByQueryRequestBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.metadatacenter.config.ElasticsearchConfig;
+import org.metadatacenter.config.OpensearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.search.IndexedDocumentType;
 import org.slf4j.Logger;
@@ -38,15 +38,15 @@ import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Cons
 
 public class ElasticsearchQueryService {
 
-  private ElasticsearchConfig elasticsearchConfig;
+  private OpensearchConfig opensearchConfig;
   private Client client = null;
   private TimeValue scrollTimeout;
   private int scrollLimit = 5000;
 
   protected final Logger logger = LoggerFactory.getLogger(ElasticsearchQueryService.class);
 
-  public ElasticsearchQueryService(ElasticsearchConfig esc) throws UnknownHostException {
-    this.elasticsearchConfig = esc;
+  public ElasticsearchQueryService(OpensearchConfig esc) throws UnknownHostException {
+    this.opensearchConfig = esc;
     this.scrollTimeout = TimeValue.timeValueMinutes(2);
 
     Settings settings = Settings.builder()
@@ -70,7 +70,7 @@ public class ElasticsearchQueryService {
 
     //logger.info("Search query: " + templateIdQuery.toString());
 
-    SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
+    SearchResponse scrollResp = client.prepareSearch(opensearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
 
     while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
@@ -87,7 +87,7 @@ public class ElasticsearchQueryService {
 
     QueryBuilder templateIdsQuery = termQuery("info.resourceType", "template");
 
-    SearchResponse scrollResp = client.prepareSearch(elasticsearchConfig.getIndexes().getSearchIndex().getName())
+    SearchResponse scrollResp = client.prepareSearch(opensearchConfig.getIndexes().getSearchIndex().getName())
         .setQuery(templateIdsQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
 
     while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
@@ -116,7 +116,7 @@ public class ElasticsearchQueryService {
       for (EsRule rule : rules) {
         // either use client#prepare, or use Requests# to directly build index/delete requests
         bulkRequest.add(client.prepareIndex(
-            elasticsearchConfig.getIndexes().getRulesIndex().getName(),
+            opensearchConfig.getIndexes().getRulesIndex().getName(),
             IndexedDocumentType.DOC.getValue()).setSource(mapper.convertValue(rule, Map.class))
         );
       }
@@ -173,7 +173,7 @@ public class ElasticsearchQueryService {
 
     for (EsRule rule : rules) {
       IndexRequestBuilder indexRequestBuilder =
-          client.prepareIndex(elasticsearchConfig.getIndexes().getRulesIndex().getName(),
+          client.prepareIndex(opensearchConfig.getIndexes().getRulesIndex().getName(),
               IndexedDocumentType.DOC.getValue()).setSource(mapper.convertValue(rule, Map.class));
       bulkProcessor.add(indexRequestBuilder.request());
     }
@@ -191,7 +191,7 @@ public class ElasticsearchQueryService {
   public void removeAllRules() {
     BulkByScrollResponse response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
         .filter(QueryBuilders.matchAllQuery())
-        .source(elasticsearchConfig.getIndexes().getRulesIndex().getName()).get();
+        .source(opensearchConfig.getIndexes().getRulesIndex().getName()).get();
     long deleted = response.getDeleted();
     logger.info("No. rules removed: " + deleted);
   }
@@ -206,7 +206,7 @@ public class ElasticsearchQueryService {
   public long getNumberOfRules(String templateId) {
 
     SearchRequestBuilder requestBuilder =
-        client.prepareSearch(elasticsearchConfig.getIndexes().getRulesIndex().getName());
+        client.prepareSearch(opensearchConfig.getIndexes().getRulesIndex().getName());
 
     if (templateId != null && !templateId.isEmpty()) {
       requestBuilder.setQuery(QueryBuilders.termQuery(INDEX_TEMPLATE_ID, templateId));
