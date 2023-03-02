@@ -465,7 +465,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     /**  Execute query and return search results **/
     String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
     SearchRequestBuilder search =
-        esQueryService.getClient().prepareSearch(indexName).setTypes(IndexedDocumentType.DOC.getValue())
+        esQueryService.getClient().prepareSearch(indexName)
             .setQuery(mainBoolQuery).setSize(MAX_ES_RESULTS);
     //logger.info("Search query in Query DSL:\n" + search);
     SearchResponse response = search.execute().actionGet();
