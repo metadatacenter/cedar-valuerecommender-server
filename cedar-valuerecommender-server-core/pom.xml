@@ -93,17 +93,17 @@
     <!-- CEDAR -->
     <dependency>
       <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-search-operations</artifactId>
+      <artifactId>cedar-search-operations-library</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-template-operations</artifactId>
+      <artifactId>cedar-template-operations-library</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-valuerecommender-operations</artifactId>
+      <artifactId>cedar-valuerecommender-operations-library</artifactId>
     </dependency>
 
   </dependencies>
