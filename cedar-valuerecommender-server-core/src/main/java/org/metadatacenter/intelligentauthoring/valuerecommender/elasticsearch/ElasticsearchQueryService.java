@@ -214,6 +214,7 @@ public class ElasticsearchQueryService {
       requestBuilder.setQuery(QueryBuilders.matchAllQuery()); // return all rules in the index
     }
     requestBuilder.setSize(0); // Don't return any documents, we don't need them.
+    requestBuilder.setTrackTotalHits(true);
     TotalHits totalHits = requestBuilder.get().getHits().getTotalHits();// Execute query and count results
     return totalHits == null ? 0 : totalHits.value;
   }
