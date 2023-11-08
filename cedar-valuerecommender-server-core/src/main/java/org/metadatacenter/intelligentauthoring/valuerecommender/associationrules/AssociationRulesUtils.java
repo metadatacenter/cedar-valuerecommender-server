@@ -323,22 +323,22 @@ public class AssociationRulesUtils {
 
     // Build the JsonPath expression
     for (TemplateNode field : fields) {
-      String jsonPath = "$";
+      StringBuilder jsonPath = new StringBuilder("$");
       // Analyze the field path to check if it contains arrays. For every array we need to specify an index (e.g., a[2])
       String path = "";
       for (String key : field.getPath()) {
-        jsonPath = jsonPath + ("['" + key + "']");
+        jsonPath.append("['").append(key).append("']");
         // If it is an array, concat index
         path = generatePathDotNotation(path, key);
         if (arraysPaths != null && arraysPaths.contains(path)) {
           int index = arraysPaths.indexOf(path);
-          jsonPath = jsonPath + ("[" + arraysIndexes.get(index) + "]");
+          jsonPath.append("[").append(arraysIndexes.get(index)).append("]");
         }
       }
       // Query the instance to extract the value
       //System.out.println("Path: " + jsonPath);
       try {
-        Map attValueMap = JsonPath.read(templateInstanceDocument, jsonPath);
+        Map attValueMap = JsonPath.read(templateInstanceDocument, jsonPath.toString());
         Optional<ArffAttributeValue> attValue = CedarUtils.getValueOfField(attValueMap);
         if (attValue.isPresent()) {
           attValues.add(attValue.get().getArffValueString()); // Escape single quote
@@ -593,17 +593,13 @@ public class AssociationRulesUtils {
 
       // Build premise
       List<EsRuleItem> esPremise = new ArrayList<>();
-      Iterator<Item> itPremise = rule.getPremise().iterator();
-      while (itPremise.hasNext()) {
-        Item item = itPremise.next();
+      for (Item item : rule.getPremise()) {
         esPremise.add(buildEsRuleItem(item));
       }
 
       // Build consequence
       List<EsRuleItem> esConsequence = new ArrayList<>();
-      Iterator<Item> itConsequence = rule.getConsequence().iterator();
-      while (itConsequence.hasNext()) {
-        Item item = itConsequence.next();
+      for (Item item : rule.getConsequence()) {
         esConsequence.add(buildEsRuleItem(item));
       }
 
@@ -789,16 +785,16 @@ public class AssociationRulesUtils {
   }
 
   public static String ruleItemsToString(List<EsRuleItem> ruleItems, boolean showNullTypes) {
-    String result = "";
+    StringBuilder result = new StringBuilder();
     boolean firstPremiseItem = true;
     for (EsRuleItem ruleItem : ruleItems) {
       if (!firstPremiseItem) {
-        result += " AND ";
+        result.append(" AND ");
       }
-      result += ruleItem.toPrettyString(false);
+      result.append(ruleItem.toPrettyString(false));
       firstPremiseItem = false;
     }
-    return result;
+    return result.toString();
   }
 
 }

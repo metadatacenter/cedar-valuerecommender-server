@@ -23,6 +23,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -121,11 +122,9 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.RULES_INDEX_REINDEX);
 
-    List<String> templateIds = new ArrayList<>(Arrays.asList(templateId));
+    List<String> templateIds = new ArrayList<>(Collections.singletonList(templateId));
     // Run the rules generation process in a new thread
-    Executors.newSingleThreadExecutor().submit(() -> {
-      valueRecommenderService.generateRules(templateIds);
-    });
+    Executors.newSingleThreadExecutor().submit(() -> valueRecommenderService.generateRules(templateIds));
     return Response.ok().build();
   }
 

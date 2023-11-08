@@ -1,11 +1,9 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
 
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
-import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import weka.associations.Apriori;
-import weka.associations.AssociationRule;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
 

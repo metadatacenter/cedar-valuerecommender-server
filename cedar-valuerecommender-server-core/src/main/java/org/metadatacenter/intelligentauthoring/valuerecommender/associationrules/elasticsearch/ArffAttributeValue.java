@@ -1,7 +1,5 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch;
 
-import java.util.Optional;
-
 /**
  * This class represents an attribute value.
  */

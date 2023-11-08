@@ -1,7 +1,5 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch;
 
-import org.metadatacenter.intelligentauthoring.valuerecommender.util.FieldValueResultUtils;
-
 import java.util.List;
 
 /**

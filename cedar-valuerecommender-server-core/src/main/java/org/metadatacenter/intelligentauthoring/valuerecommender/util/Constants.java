@@ -1,7 +1,5 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 
-import java.util.List;
-
 /**
  * Constants of general utility.
  * All member of this class are immutable.

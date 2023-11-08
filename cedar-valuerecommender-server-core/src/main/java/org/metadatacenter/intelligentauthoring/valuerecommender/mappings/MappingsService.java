@@ -48,7 +48,7 @@ public class MappingsService {
   }
 
   public static boolean isSameConcept(String uri1, String uri2) {
-    if (uri1.toLowerCase().equals(uri2.toLowerCase())) {
+    if (uri1.equalsIgnoreCase(uri2)) {
       return true;
     } else {
       return false;
