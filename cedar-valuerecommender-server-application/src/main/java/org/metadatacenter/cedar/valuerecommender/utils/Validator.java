@@ -35,11 +35,11 @@ public class Validator {
 
   public static String extractProcessingReportMessages(ProcessingReport report) {
     if (!report.isSuccess()) {
-      String msg = "";
+      StringBuilder msg = new StringBuilder();
       for (final ProcessingMessage reportLine : report) {
-        msg += reportLine.getMessage() + "\n";
+        msg.append(reportLine.getMessage()).append("\n");
       }
-      return msg;
+      return msg.toString();
     }
     return null;
   }

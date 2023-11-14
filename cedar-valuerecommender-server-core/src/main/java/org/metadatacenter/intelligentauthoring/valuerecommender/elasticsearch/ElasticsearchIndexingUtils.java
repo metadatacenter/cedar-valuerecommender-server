@@ -25,8 +25,7 @@ public class ElasticsearchIndexingUtils {
     File[] listOfFiles = folder.listFiles();
 
 
-    for (int i = 0; i < listOfFiles.length; i++) {
-      File file = listOfFiles[i];
+    for (File file : listOfFiles) {
       if (file.isFile()) {
         String fileContent = readFile(file.getPath(), StandardCharsets.UTF_8);
         indexJson(client, indexName, typeName, fileContent);

@@ -10,7 +10,6 @@ import org.elasticsearch.search.SearchHit;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
-import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.RulesGenerationStatusManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
@@ -19,7 +18,6 @@ import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.El
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarFieldUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
-import org.metadatacenter.search.IndexedDocumentType;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.io.*;
 import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
@@ -244,7 +242,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
           double newSupport = labelSupportMap.get(valueLabel) + rule.getSupport();
           labelSupportMap.put(valueLabel, newSupport);
         }
-        totalSupport += rule.getSupport();
+        totalSupport += (int) rule.getSupport();
       }
 
       // Calculate the recommendation score for each value based on the support

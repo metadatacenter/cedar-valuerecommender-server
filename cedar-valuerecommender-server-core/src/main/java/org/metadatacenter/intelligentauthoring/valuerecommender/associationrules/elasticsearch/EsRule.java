@@ -1,8 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch;
 
-import com.sun.nio.sctp.AssociationChangeNotification;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesUtils;
-import weka.associations.AssociationRule;
 
 import java.util.List;
 
