@@ -86,7 +86,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
           logger.info(removedCount + " rules removed");
 
           // Index the new rules in bulk in Elasticsearch
-          logger.info("Indexing rules in Elasticsearch");
+          logger.info("Indexing rules in Opensearch. Number of rules: " + rules.size());
           esQueryService.indexRulesBulkProcessor(rules);
           logger.info("Indexing completed");
 
