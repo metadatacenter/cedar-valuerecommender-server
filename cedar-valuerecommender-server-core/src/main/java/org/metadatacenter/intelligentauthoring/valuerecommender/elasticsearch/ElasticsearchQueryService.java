@@ -1,45 +1,51 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.lucene.search.TotalHits;
-import org.elasticsearch.action.bulk.*;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
-import org.elasticsearch.common.unit.ByteSizeUnit;
-import org.elasticsearch.common.unit.ByteSizeValue;
-import org.elasticsearch.core.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.index.reindex.DeleteByQueryRequestBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.apache.http.HttpHost;
 import org.metadatacenter.config.OpensearchConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
-import org.metadatacenter.search.IndexedDocumentType;
+import org.opensearch.action.bulk.BackoffPolicy;
+import org.opensearch.action.bulk.BulkProcessor;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.search.ClearScrollRequest;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.action.search.SearchResponse;
+import org.opensearch.action.search.SearchScrollRequest;
+import org.opensearch.client.RequestOptions;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.common.settings.Settings;
+import org.opensearch.common.unit.TimeValue;
+import org.opensearch.core.common.unit.ByteSizeUnit;
+import org.opensearch.core.common.unit.ByteSizeValue;
+import org.opensearch.index.query.QueryBuilder;
+import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.index.reindex.BulkByScrollResponse;
+import org.opensearch.index.reindex.DeleteByQueryRequest;
+import org.opensearch.search.SearchHit;
+import org.opensearch.search.SearchHits;
+import org.opensearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.metadatacenter.constant.ElasticsearchConstants.*;
+import static org.metadatacenter.constant.ElasticsearchConstants.DOCUMENT_CEDAR_ID;
+import static org.metadatacenter.constant.ElasticsearchConstants.INFO_IS_BASED_ON;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.INDEX_TEMPLATE_ID;
 
 public class ElasticsearchQueryService {
 
   private OpensearchConfig opensearchConfig;
-  private Client client = null;
+  private RestHighLevelClient client = null;
   private TimeValue scrollTimeout;
   private int scrollLimit = 5000;
 
@@ -52,11 +58,12 @@ public class ElasticsearchQueryService {
     Settings settings = Settings.builder()
         .put("cluster.name", esc.getClusterName()).build();
 
-    client = new PreBuiltTransportClient(settings).addTransportAddress(new
-        TransportAddress(InetAddress.getByName(esc.getHost()), esc.getTransportPort()));
+    RestClientBuilder builder = RestClient.builder(
+        new HttpHost(esc.getHost(), esc.getRestPort(), "http"));
+    client = new RestHighLevelClient(builder);
   }
 
-  public Client getClient() {
+  public RestHighLevelClient getClient() {
     return client;
   }
 
@@ -66,35 +73,74 @@ public class ElasticsearchQueryService {
   public List<String> getTemplateInstancesIdsByTemplateId(String templateId) {
     List<String> templateInstancesIds = new ArrayList<>();
 
-    QueryBuilder templateIdQuery = termQuery(INFO_IS_BASED_ON, templateId);
+    QueryBuilder templateIdQuery = QueryBuilders.termQuery(INFO_IS_BASED_ON, templateId);
 
-    //logger.info("Search query: " + templateIdQuery.toString());
+    SearchRequest searchRequest = new SearchRequest(opensearchConfig.getIndexes().getSearchIndex().getName());
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(templateIdQuery);
+    searchSourceBuilder.size(scrollLimit);
+    searchRequest.source(searchSourceBuilder);
+    searchRequest.scroll(scrollTimeout);
 
-    SearchResponse scrollResp = client.prepareSearch(opensearchConfig.getIndexes().getSearchIndex().getName())
-        .setQuery(templateIdQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
+    try {
+      SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
-    while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        templateInstancesIds.add(hit.getSourceAsMap().get(DOCUMENT_CEDAR_ID).toString());
+      while (searchResponse.getHits().getHits().length != 0) {
+        for (SearchHit hit : searchResponse.getHits().getHits()) {
+          templateInstancesIds.add(hit.getSourceAsMap().get(DOCUMENT_CEDAR_ID).toString());
+        }
+
+        SearchScrollRequest scrollRequest = new SearchScrollRequest(searchResponse.getScrollId());
+        scrollRequest.scroll(scrollTimeout);
+        searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
       }
-      scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(scrollTimeout).execute().actionGet();
+
+      // Clear scroll context
+      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      clearScrollRequest.addScrollId(searchResponse.getScrollId());
+      client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+
+    } catch (IOException e) {
+      // Handle the exception as needed
+      e.printStackTrace();
     }
+
     return templateInstancesIds;
   }
 
   public List<String> getTemplateIds() {
     List<String> templateIds = new ArrayList<>();
 
-    QueryBuilder templateIdsQuery = termQuery("info.resourceType", "template");
+    QueryBuilder templateIdsQuery = QueryBuilders.termQuery("info.resourceType", "template");
 
-    SearchResponse scrollResp = client.prepareSearch(opensearchConfig.getIndexes().getSearchIndex().getName())
-        .setQuery(templateIdsQuery).setScroll(scrollTimeout).setSize(scrollLimit).get();
+    SearchRequest searchRequest = new SearchRequest(opensearchConfig.getIndexes().getSearchIndex().getName());
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(templateIdsQuery);
+    searchSourceBuilder.size(scrollLimit);
+    searchRequest.source(searchSourceBuilder);
+    searchRequest.scroll(scrollTimeout);
 
-    while (scrollResp.getHits().getHits().length != 0) { // Zero hits mark the end of the scroll and the while loop
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        templateIds.add(hit.getSourceAsMap().get(DOCUMENT_CEDAR_ID).toString());
+    try {
+      SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+      while (searchResponse.getHits().getHits().length != 0) {
+        for (SearchHit hit : searchResponse.getHits().getHits()) {
+          templateIds.add(hit.getSourceAsMap().get(DOCUMENT_CEDAR_ID).toString());
+        }
+
+        SearchScrollRequest scrollRequest = new SearchScrollRequest(searchResponse.getScrollId());
+        scrollRequest.scroll(scrollTimeout);
+        searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
       }
-      scrollResp = client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(scrollTimeout).execute().actionGet();
+
+      // Clear scroll context
+      ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+      clearScrollRequest.addScrollId(searchResponse.getScrollId());
+      client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
+
+    } catch (IOException e) {
+      // Handle the exception as needed
+      e.printStackTrace();
     }
     return templateIds;
   }
@@ -107,25 +153,26 @@ public class ElasticsearchQueryService {
    * @param rules
    */
   public void indexRulesBulk(List<EsRule> rules) {
-
     if (rules.size() > 0) {
-
-      BulkRequestBuilder bulkRequest = client.prepareBulk();
+      BulkRequest bulkRequest = new BulkRequest();
       ObjectMapper mapper = new ObjectMapper();
 
       for (EsRule rule : rules) {
-        // either use client#prepare, or use Requests# to directly build index/delete requests
-        bulkRequest.add(client.prepareIndex(
-            opensearchConfig.getIndexes().getRulesIndex().getName(),
-            IndexedDocumentType.DOC.getValue()).setSource(mapper.convertValue(rule, Map.class))
-        );
+        Map<String, Object> ruleMap = mapper.convertValue(rule, Map.class);
+        IndexRequest indexRequest = new IndexRequest(opensearchConfig.getIndexes().getRulesIndex().getName())
+            .source(ruleMap);
+        bulkRequest.add(indexRequest);
       }
 
-      BulkResponse bulkResponse = bulkRequest.get();
-      if (bulkResponse.hasFailures()) {
-        // process failures by iterating through each bulk response item
-        logger.error("Failure when processing bulk request:");
-        logger.error(bulkResponse.buildFailureMessage());
+      try {
+        BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        if (bulkResponse.hasFailures()) {
+          // process failures by iterating through each bulk response item
+          logger.error("Failure when processing bulk request:");
+          logger.error(bulkResponse.buildFailureMessage());
+        }
+      } catch (IOException e) {
+        logger.error("Error executing bulk request", e);
       }
     } else {
       logger.warn("There are no rules to index");
@@ -142,28 +189,27 @@ public class ElasticsearchQueryService {
     ObjectMapper mapper = new ObjectMapper();
 
     // Create bulk processor
-    BulkProcessor bulkProcessor = BulkProcessor.builder(client,
-        new BulkProcessor.Listener() {
-          @Override
-          public void beforeBulk(long executionId,
-                                 BulkRequest request) {
-            logger.info("Before bulk. Number of rules indexed: " + request.numberOfActions());
-          }
+    BulkProcessor bulkProcessor = BulkProcessor.builder(
+            (request, bulkListener) -> client.bulkAsync(request, RequestOptions.DEFAULT, bulkListener),
+            new BulkProcessor.Listener() {
+              @Override
+              public void beforeBulk(long executionId, BulkRequest request) {
+                logger.info("Before bulk. Number of rules indexed: " + request.numberOfActions());
+              }
 
-          @Override
-          public void afterBulk(long executionId,
-                                BulkRequest request,
-                                BulkResponse response) {
-            logger.info("After bulk. Any failures? " + response.hasFailures());
-          }
+              @Override
+              public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+                logger.info("After bulk. Any failures? " + response.hasFailures());
+                if (response.hasFailures()) {
+                  logger.error(response.buildFailureMessage());
+                }
+              }
 
-          @Override
-          public void afterBulk(long executionId,
-                                BulkRequest request,
-                                Throwable failure) {
-            logger.error("Bulk failed. Message: " + failure.getMessage());
-          }
-        })
+              @Override
+              public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
+                logger.error("Bulk failed. Message: " + failure.getMessage(), failure);
+              }
+            })
         .setBulkActions(10000)
         .setBulkSize(new ByteSizeValue(5, ByteSizeUnit.MB))
         .setFlushInterval(TimeValue.timeValueSeconds(5))
@@ -172,16 +218,16 @@ public class ElasticsearchQueryService {
         .build();
 
     for (EsRule rule : rules) {
-      IndexRequestBuilder indexRequestBuilder =
-          client.prepareIndex(opensearchConfig.getIndexes().getRulesIndex().getName(),
-              IndexedDocumentType.DOC.getValue()).setSource(mapper.convertValue(rule, Map.class));
-      bulkProcessor.add(indexRequestBuilder.request());
+      Map<String, Object> ruleMap = mapper.convertValue(rule, Map.class);
+      IndexRequest indexRequest = new IndexRequest(opensearchConfig.getIndexes().getRulesIndex().getName())
+          .source(ruleMap);
+      bulkProcessor.add(indexRequest);
     }
 
     try {
       bulkProcessor.awaitClose(10, TimeUnit.MINUTES);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      logger.error("Error closing bulk processor", e);
     }
   }
 
@@ -189,11 +235,17 @@ public class ElasticsearchQueryService {
    * Remove all indexed rules
    */
   public void removeAllRules() {
-    BulkByScrollResponse response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
-        .filter(QueryBuilders.matchAllQuery())
-        .source(opensearchConfig.getIndexes().getRulesIndex().getName()).get();
-    long deleted = response.getDeleted();
-    logger.info("No. rules removed: " + deleted);
+    DeleteByQueryRequest request = new DeleteByQueryRequest(opensearchConfig.getIndexes().getRulesIndex().getName());
+    request.setQuery(QueryBuilders.matchAllQuery());
+    request.setScroll(TimeValue.timeValueMinutes(2));
+
+    try {
+      BulkByScrollResponse response = client.deleteByQuery(request, RequestOptions.DEFAULT);
+      long deleted = response.getDeleted();
+      logger.info("No. rules removed: " + deleted);
+    } catch (IOException e) {
+      logger.error("Error executing delete by query request", e);
+    }
   }
 
   /**
@@ -204,20 +256,28 @@ public class ElasticsearchQueryService {
    * @return
    */
   public long getNumberOfRules(String templateId) {
+    try {
+      SearchRequest searchRequest = new SearchRequest(opensearchConfig.getIndexes().getRulesIndex().getName());
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
 
-    SearchRequestBuilder requestBuilder =
-        client.prepareSearch(opensearchConfig.getIndexes().getRulesIndex().getName());
+      if (templateId != null && !templateId.isEmpty()) {
+        searchSourceBuilder.query(QueryBuilders.termQuery(INDEX_TEMPLATE_ID, templateId));
+      } else {
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery()); // return all rules in the index
+      }
 
-    if (templateId != null && !templateId.isEmpty()) {
-      requestBuilder.setQuery(QueryBuilders.termQuery(INDEX_TEMPLATE_ID, templateId));
-    } else {
-      requestBuilder.setQuery(QueryBuilders.matchAllQuery()); // return all rules in the index
+      searchSourceBuilder.size(0); // Don't return any documents, we don't need them.
+      searchSourceBuilder.trackTotalHits(true);
+      searchRequest.source(searchSourceBuilder);
+
+      // Execute query and count results
+      SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+      SearchHits hits = response.getHits();
+      return hits.getTotalHits().value;
+    } catch (IOException e) {
+      logger.error("Error executing search request", e);
+      return 0;
     }
-    requestBuilder.setSize(0); // Don't return any documents, we don't need them.
-    requestBuilder.setTrackTotalHits(true);
-    TotalHits totalHits = requestBuilder.get().getHits().getTotalHits();// Execute query and count results
-    return totalHits == null ? 0 : totalHits.value;
   }
-
 
 }
