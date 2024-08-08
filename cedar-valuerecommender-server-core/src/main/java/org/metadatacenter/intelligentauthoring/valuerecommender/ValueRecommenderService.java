@@ -3,24 +3,29 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.apache.lucene.search.join.ScoreMode;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.*;
-import org.elasticsearch.search.SearchHit;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.RulesGenerationStatusManager;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRuleItem;
-import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.*;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendationDetails;
+import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.RecommendedValue;
 import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
+import org.metadatacenter.intelligentauthoring.valuerecommender.io.CanGenerateRecommendationsStatus;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarFieldUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarTextUtils;
 import org.metadatacenter.intelligentauthoring.valuerecommender.util.CedarUtils;
 import org.metadatacenter.server.search.elasticsearch.service.RulesIndexingService;
-import org.metadatacenter.intelligentauthoring.valuerecommender.io.*;
 import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.action.search.SearchResponse;
+import org.opensearch.client.RequestOptions;
+import org.opensearch.index.query.*;
+import org.opensearch.search.SearchHit;
+import org.opensearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,8 +77,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
       for (String templateId : templateIds) {
         if (Arrays.asList(IGNORED_TEMPLATES).contains(templateId)) {
           logger.info("The template is in the list of ignored templates. Rule generation has been skipped");
-        }
-        else {
+        } else {
           RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.PROCESSING);
           // Generate rules for the template
           logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
@@ -462,13 +466,21 @@ public class ValueRecommenderService implements IValueRecommenderService {
 
     /**  Execute query and return search results **/
     String indexName = ConfigManager.getCedarConfig().getElasticsearchConfig().getIndexes().getRulesIndex().getName();
-    SearchRequestBuilder search =
-        esQueryService.getClient().prepareSearch(indexName)
-            .setQuery(mainBoolQuery).setSize(MAX_ES_RESULTS);
-    //logger.info("Search query in Query DSL:\n" + search);
-    SearchResponse response = search.execute().actionGet();
+    SearchRequest searchRequest = new SearchRequest(indexName);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(mainBoolQuery);
+    searchSourceBuilder.size(MAX_ES_RESULTS);
+    searchRequest.source(searchSourceBuilder);
 
-    return response;
+    //logger.info("Search query in Query DSL:\n" + searchRequest);
+
+    try {
+      SearchResponse response = esQueryService.getClient().search(searchRequest, RequestOptions.DEFAULT);
+      return response;
+    } catch (IOException e) {
+      logger.error("Error executing search request", e);
+      return null;
+    }
   }
 
   private boolean ruleItemMatchesPopulatedField(EsRuleItem ruleItem, Field populatedField) {
