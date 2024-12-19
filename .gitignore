@@ -16,6 +16,7 @@ dist
 *.cache
 data
 cedar-valuerecommender-server-core/${assembly.targetDir}/
+.DS_Store
 
 pom.xml.releaseBackup
 release.properties
