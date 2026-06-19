@@ -4,6 +4,15 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonschema.core.report.ProcessingReport;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.Authorization;
+import org.metadatacenter.cedar.valuerecommender.resources.swaggermodel.RecommendationInput;
 import org.metadatacenter.cedar.valuerecommender.utils.Validator;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
@@ -27,12 +36,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 
-import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
+import static org.metadatacenter.constant.CedarPathParameters.PP_TEMPLATE_ID;
 import static org.metadatacenter.intelligentauthoring.valuerecommender.util.Constants.*;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/command")
 @Produces(MediaType.APPLICATION_JSON)
+@Api(value = "/command", tags = "Command", authorizations = {@Authorization("api_key")})
 public class CommandResource extends AbstractValuerecommenderServerResource {
 
   private static ValueRecommenderService valueRecommenderService;
@@ -52,6 +62,20 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
   @POST
   @Timed
   @Path("/recommend")
+  @ApiOperation(value = "Get recommendation", notes = "Get metadata recommendations for a target field.")
+  @ApiImplicitParams({
+      @ApiImplicitParam(name = "Input", value = "The recommendation input", required = true,
+          dataType = "org.metadatacenter.cedar.valuerecommender.resources.swaggermodel.RecommendationInput",
+          paramType = "body")
+  })
+  @ApiResponses({
+      @ApiResponse(code = 200, message = "Successful operation"),
+      @ApiResponse(code = 400, message = "Bad request"),
+      @ApiResponse(code = 401, message = "Unauthorized"),
+      @ApiResponse(code = 403, message = "Forbidden"),
+      @ApiResponse(code = 404, message = "Not found"),
+      @ApiResponse(code = 500, message = "Internal server error")
+  })
   public Response recommendValues() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -116,8 +140,20 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
    */
   @POST
   @Timed
-  @Path("/generate-rules/{id}")
-  public Response generateRules(@PathParam(PP_ID) String templateId) throws CedarException {
+  @Path("/generate-rules/{template_id}")
+  @ApiOperation(value = "Generate rules for a template", notes = "Generate the mining rules that the value "
+      + "recommender uses to produce recommendations for a template.")
+  @ApiResponses({
+      @ApiResponse(code = 200, message = "Successful operation"),
+      @ApiResponse(code = 400, message = "Bad request"),
+      @ApiResponse(code = 401, message = "Unauthorized"),
+      @ApiResponse(code = 403, message = "Forbidden"),
+      @ApiResponse(code = 404, message = "Not found"),
+      @ApiResponse(code = 500, message = "Internal server error")
+  })
+  public Response generateRules(
+      @ApiParam(value = "Template identifier.", required = true)
+      @PathParam(PP_TEMPLATE_ID) String templateId) throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.RULES_INDEX_REINDEX);
@@ -139,6 +175,16 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
   @POST
   @Timed
   @Path("/can-generate-recommendations")
+  @ApiOperation(value = "Check whether recommendations can be generated", notes = "Check whether the value "
+      + "recommender can generate recommendations for a template (or for any template if none is provided).")
+  @ApiResponses({
+      @ApiResponse(code = 200, message = "Successful operation"),
+      @ApiResponse(code = 400, message = "Bad request"),
+      @ApiResponse(code = 401, message = "Unauthorized"),
+      @ApiResponse(code = 403, message = "Forbidden"),
+      @ApiResponse(code = 404, message = "Not found"),
+      @ApiResponse(code = 500, message = "Internal server error")
+  })
   public Response areRecommendationsEnabled() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
@@ -161,8 +207,20 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
    */
   @GET
   @Timed
-  @Path("/generate-rules/status/{id}")
-  public Response getRulesGenerationStatus(@PathParam(PP_ID) String templateId) throws CedarException {
+  @Path("/generate-rules/status/{template_id}")
+  @ApiOperation(value = "Get rule-generation status for a template", notes = "Get status information about the "
+      + "rule-generation process for a template.")
+  @ApiResponses({
+      @ApiResponse(code = 200, message = "Successful operation"),
+      @ApiResponse(code = 400, message = "Bad request"),
+      @ApiResponse(code = 401, message = "Unauthorized"),
+      @ApiResponse(code = 403, message = "Forbidden"),
+      @ApiResponse(code = 404, message = "Not found"),
+      @ApiResponse(code = 500, message = "Internal server error")
+  })
+  public Response getRulesGenerationStatus(
+      @ApiParam(value = "Template identifier.", required = true)
+      @PathParam(PP_TEMPLATE_ID) String templateId) throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.RULES_INDEX_REINDEX);
@@ -177,6 +235,16 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
   @GET
   @Timed
   @Path("/generate-rules/status")
+  @ApiOperation(value = "Get rule-generation status for all templates", notes = "Get status information about the "
+      + "rule-generation process for all templates.")
+  @ApiResponses({
+      @ApiResponse(code = 200, message = "Successful operation"),
+      @ApiResponse(code = 400, message = "Bad request"),
+      @ApiResponse(code = 401, message = "Unauthorized"),
+      @ApiResponse(code = 403, message = "Forbidden"),
+      @ApiResponse(code = 404, message = "Not found"),
+      @ApiResponse(code = 500, message = "Internal server error")
+  })
   public Response getRulesGenerationStatusAll() throws CedarException {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
