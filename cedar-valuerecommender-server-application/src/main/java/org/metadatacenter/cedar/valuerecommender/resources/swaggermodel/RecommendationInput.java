@@ -1,7 +1,6 @@
 package org.metadatacenter.cedar.valuerecommender.resources.swaggermodel;
 
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
@@ -13,24 +12,24 @@ import java.util.List;
  * mirrors that schema exactly: a template identifier, a list of populated fields, a target field,
  * and the {@code strictMatch} / {@code includeDetails} flags.</p>
  */
-@ApiModel(value = "RecommendationInput", description = "The input used to request metadata recommendations for a "
+@Schema(name = "RecommendationInput", description = "The input used to request metadata recommendations for a "
     + "target field.")
 public class RecommendationInput {
 
-  @ApiModelProperty(value = "Example: https://repo.metadatacenter.org/templates/"
+  @Schema(description = "Example: https://repo.metadatacenter.org/templates/"
       + "8bc64av5-df6b-48c8-8c61-6c016245918e")
   private String templateId;
 
-  @ApiModelProperty(value = "The fields that have already been populated in the metadata.")
+  @Schema(description = "The fields that have already been populated in the metadata.")
   private List<PopulatedField> populatedFields;
 
-  @ApiModelProperty(value = "The field for which recommendations are requested.")
+  @Schema(description = "The field for which recommendations are requested.")
   private TargetField targetField;
 
-  @ApiModelProperty(value = "If set to true, only exact matches are considered.")
+  @Schema(description = "If set to true, only exact matches are considered.")
   private Boolean strictMatch;
 
-  @ApiModelProperty(value = "If set to true, it returns details about how the recommendations were generated.")
+  @Schema(description = "If set to true, it returns details about how the recommendations were generated.")
   private Boolean includeDetails;
 
   public String getTemplateId() {
@@ -73,16 +72,16 @@ public class RecommendationInput {
     this.includeDetails = includeDetails;
   }
 
-  @ApiModel(value = "PopulatedField", description = "A field that has already been populated in the metadata.")
+  @Schema(name = "PopulatedField", description = "A field that has already been populated in the metadata.")
   public static class PopulatedField {
 
-    @ApiModelProperty(value = "Example: disease", required = true)
+    @Schema(description = "Example: disease", requiredMode = Schema.RequiredMode.REQUIRED)
     private String fieldPath;
 
-    @ApiModelProperty(value = "Example: atopic dermatitis", required = true)
+    @Schema(description = "Example: atopic dermatitis", requiredMode = Schema.RequiredMode.REQUIRED)
     private String fieldValueLabel;
 
-    @ApiModelProperty(value = "Example: atopic dermatitis")
+    @Schema(description = "Example: atopic dermatitis")
     private String fieldValueType;
 
     public String getFieldPath() {
@@ -110,10 +109,10 @@ public class RecommendationInput {
     }
   }
 
-  @ApiModel(value = "TargetField", description = "The field for which recommendations are requested.")
+  @Schema(name = "TargetField", description = "The field for which recommendations are requested.")
   public static class TargetField {
 
-    @ApiModelProperty(value = "Example: tissue")
+    @Schema(description = "Example: tissue")
     private String fieldPath;
 
     public String getFieldPath() {

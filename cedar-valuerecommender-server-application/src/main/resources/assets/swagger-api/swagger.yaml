@@ -1,209 +1,194 @@
----
-swagger: "2.0"
+openapi: 3.0.1
 info:
-  description: "CEDAR Value Recommender Server API"
-  version: "2.8.5-SNAPSHOT"
-  title: "CEDAR Value Recommender Server API"
-tags:
-- name: "Command"
-schemes:
-- "https"
+  description: CEDAR Value Recommender Server API
+  title: CEDAR Value Recommender Server API
+  version: 2.8.5-SNAPSHOT
 paths:
   /command/can-generate-recommendations:
     post:
-      tags:
-      - "Command"
-      summary: "Check whether recommendations can be generated"
-      description: "Check whether the value recommender can generate recommendations\
-        \ for a template (or for any template if none is provided)."
-      operationId: "areRecommendationsEnabled"
-      produces:
-      - "application/json"
-      parameters: []
+      description: Check whether the value recommender can generate recommendations
+        for a template (or for any template if none is provided).
+      operationId: areRecommendationsEnabled
       responses:
-        200:
-          description: "Successful operation"
-        400:
-          description: "Bad request"
-        401:
-          description: "Unauthorized"
-        403:
-          description: "Forbidden"
-        404:
-          description: "Not found"
-        500:
-          description: "Internal server error"
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
       security:
       - api_key: []
+      summary: Check whether recommendations can be generated
+      tags:
+      - Command
   /command/generate-rules/status:
     get:
-      tags:
-      - "Command"
-      summary: "Get rule-generation status for all templates"
-      description: "Get status information about the rule-generation process for all\
-        \ templates."
-      operationId: "getRulesGenerationStatusAll"
-      produces:
-      - "application/json"
-      parameters: []
+      description: Get status information about the rule-generation process for all
+        templates.
+      operationId: getRulesGenerationStatusAll
       responses:
-        200:
-          description: "Successful operation"
-        400:
-          description: "Bad request"
-        401:
-          description: "Unauthorized"
-        403:
-          description: "Forbidden"
-        404:
-          description: "Not found"
-        500:
-          description: "Internal server error"
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
       security:
       - api_key: []
+      summary: Get rule-generation status for all templates
+      tags:
+      - Command
   /command/generate-rules/status/{template_id}:
     get:
-      tags:
-      - "Command"
-      summary: "Get rule-generation status for a template"
-      description: "Get status information about the rule-generation process for a\
-        \ template."
-      operationId: "getRulesGenerationStatus"
-      produces:
-      - "application/json"
+      description: Get status information about the rule-generation process for a
+        template.
+      operationId: getRulesGenerationStatus
       parameters:
-      - name: "template_id"
-        in: "path"
-        description: "Template identifier."
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "Successful operation"
-        400:
-          description: "Bad request"
-        401:
-          description: "Unauthorized"
-        403:
-          description: "Forbidden"
-        404:
-          description: "Not found"
-        500:
-          description: "Internal server error"
-      security:
-      - api_key: []
-  /command/generate-rules/{template_id}:
-    post:
-      tags:
-      - "Command"
-      summary: "Generate rules for a template"
-      description: "Generate the mining rules that the value recommender uses to produce\
-        \ recommendations for a template."
-      operationId: "generateRules"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "template_id"
-        in: "path"
-        description: "Template identifier."
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "Successful operation"
-        400:
-          description: "Bad request"
-        401:
-          description: "Unauthorized"
-        403:
-          description: "Forbidden"
-        404:
-          description: "Not found"
-        500:
-          description: "Internal server error"
-      security:
-      - api_key: []
-  /command/recommend:
-    post:
-      tags:
-      - "Command"
-      summary: "Get recommendation"
-      description: "Get metadata recommendations for a target field."
-      operationId: "recommendValues"
-      produces:
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "Input"
-        description: "The recommendation input"
+      - description: Template identifier.
+        in: path
+        name: template_id
         required: true
         schema:
-          $ref: "#/definitions/RecommendationInput"
+          type: string
       responses:
-        200:
-          description: "Successful operation"
-        400:
-          description: "Bad request"
-        401:
-          description: "Unauthorized"
-        403:
-          description: "Forbidden"
-        404:
-          description: "Not found"
-        500:
-          description: "Internal server error"
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
       security:
       - api_key: []
-securityDefinitions:
-  api_key:
-    description: "Your CEDAR API key, using the format 'apiKey <yourApiKey>'"
-    type: "apiKey"
-    name: "Authorization"
-    in: "header"
-definitions:
-  PopulatedField:
-    type: "object"
-    required:
-    - "fieldPath"
-    - "fieldValueLabel"
-    properties:
-      fieldPath:
-        type: "string"
-        description: "Example: disease"
-      fieldValueLabel:
-        type: "string"
-        description: "Example: atopic dermatitis"
-      fieldValueType:
-        type: "string"
-        description: "Example: atopic dermatitis"
-    description: "A field that has already been populated in the metadata."
-  RecommendationInput:
-    type: "object"
-    properties:
-      templateId:
-        type: "string"
-        description: "Example: https://repo.metadatacenter.org/templates/8bc64av5-df6b-48c8-8c61-6c016245918e"
-      populatedFields:
-        type: "array"
-        description: "The fields that have already been populated in the metadata."
-        items:
-          $ref: "#/definitions/PopulatedField"
-      targetField:
-        description: "The field for which recommendations are requested."
-        $ref: "#/definitions/TargetField"
-      strictMatch:
-        type: "boolean"
-        description: "If set to true, only exact matches are considered."
-      includeDetails:
-        type: "boolean"
-        description: "If set to true, it returns details about how the recommendations\
-          \ were generated."
-    description: "The input used to request metadata recommendations for a target\
-      \ field."
-  TargetField:
-    type: "object"
-    properties:
-      fieldPath:
-        type: "string"
-        description: "Example: tissue"
-    description: "The field for which recommendations are requested."
+      summary: Get rule-generation status for a template
+      tags:
+      - Command
+  /command/generate-rules/{template_id}:
+    post:
+      description: Generate the mining rules that the value recommender uses to produce
+        recommendations for a template.
+      operationId: generateRules
+      parameters:
+      - description: Template identifier.
+        in: path
+        name: template_id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+      security:
+      - api_key: []
+      summary: Generate rules for a template
+      tags:
+      - Command
+  /command/recommend:
+    post:
+      description: Get metadata recommendations for a target field.
+      operationId: recommendValues
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: "#/components/schemas/RecommendationInput"
+        description: The recommendation input
+        required: true
+      responses:
+        "200":
+          description: Successful operation
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+      security:
+      - api_key: []
+      summary: Get recommendation
+      tags:
+      - Command
+components:
+  schemas:
+    PopulatedField:
+      type: object
+      description: A field that has already been populated in the metadata.
+      properties:
+        fieldPath:
+          type: string
+          description: "Example: disease"
+        fieldValueLabel:
+          type: string
+          description: "Example: atopic dermatitis"
+        fieldValueType:
+          type: string
+          description: "Example: atopic dermatitis"
+      required:
+      - fieldPath
+      - fieldValueLabel
+    RecommendationInput:
+      type: object
+      description: The input used to request metadata recommendations for a target
+        field.
+      properties:
+        includeDetails:
+          type: boolean
+          description: "If set to true, it returns details about how the recommendations\
+            \ were generated."
+        populatedFields:
+          type: array
+          description: The fields that have already been populated in the metadata.
+          items:
+            $ref: "#/components/schemas/PopulatedField"
+        strictMatch:
+          type: boolean
+          description: "If set to true, only exact matches are considered."
+        targetField:
+          $ref: "#/components/schemas/TargetField"
+        templateId:
+          type: string
+          description: "Example: https://repo.metadatacenter.org/templates/8bc64av5-df6b-48c8-8c61-6c016245918e"
+    TargetField:
+      type: object
+      description: The field for which recommendations are requested.
+      properties:
+        fieldPath:
+          type: string
+          description: "Example: tissue"
+  securitySchemes:
+    api_key:
+      description: "Your CEDAR API key, using the format 'apiKey <yourApiKey>'"
+      in: header
+      name: Authorization
+      type: apiKey
