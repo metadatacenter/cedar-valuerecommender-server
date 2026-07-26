@@ -3,7 +3,7 @@ package org.metadatacenter.cedar.valuerecommender.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonschema.core.report.ProcessingReport;
+import com.networknt.schema.ValidationMessage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -86,9 +86,9 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     JsonNode output = null;
     try {
       // Input validation against JSON schema
-      ProcessingReport validationReport = Validator.validateInput(input);
-      if (!validationReport.isSuccess()) {
-        String validationMsg = Validator.extractProcessingReportMessages(validationReport);
+      java.util.Set<ValidationMessage> validationReport = Validator.validateInput(input);
+      if (!validationReport.isEmpty()) {
+        String validationMsg = Validator.extractValidationMessages(validationReport);
         return CedarResponse.badRequest()
             .errorKey(CedarErrorKey.INVALID_INPUT)
             .errorMessage(validationMsg)
