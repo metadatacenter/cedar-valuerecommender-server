@@ -27,9 +27,9 @@ import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
 import org.metadatacenter.util.http.CedarResponse;
 
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
