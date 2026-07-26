@@ -1,7 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -82,7 +81,6 @@ public class AssociationRulesUtils {
    * @param templateId
    * @return The name of the ARFF file that was created
    * @throws IOException
-   * @throws ProcessingException
    */
   public static Optional<String> generateInstancesFile(String templateId) throws Exception {
 

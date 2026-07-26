@@ -32,11 +32,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.github.java-json-tools</groupId>
-      <artifactId>json-schema-validator</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-high-level-client</artifactId>
     </dependency>

@@ -1,7 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.apache.lucene.search.join.ScoreMode;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarProcessingException;
@@ -101,8 +100,6 @@ public class ValueRecommenderService implements IValueRecommenderService {
         }
       }
     } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ProcessingException e) {
       e.printStackTrace();
     } catch (Exception e) {
       e.printStackTrace();
