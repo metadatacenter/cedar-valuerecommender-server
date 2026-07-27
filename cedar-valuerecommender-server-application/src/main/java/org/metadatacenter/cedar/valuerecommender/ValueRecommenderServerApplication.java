@@ -1,9 +1,9 @@
 package org.metadatacenter.cedar.valuerecommender;
 
-import io.dropwizard.setup.Bootstrap;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Bootstrap;
+import io.dropwizard.core.setup.Environment;
+import org.metadatacenter.cedar.util.dw.CedarDefaultHealthCheck;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
-import org.metadatacenter.cedar.valuerecommender.health.ValueRecommenderServerHealthCheck;
 import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.CommandResource;
 import org.metadatacenter.config.CedarConfig;
@@ -47,7 +47,7 @@ public class ValueRecommenderServerApplication extends
 
     environment.jersey().register(new CommandResource(cedarConfig));
 
-    final ValueRecommenderServerHealthCheck healthCheck = new ValueRecommenderServerHealthCheck();
+    final CedarDefaultHealthCheck healthCheck = new CedarDefaultHealthCheck();
     environment.healthChecks().register("message", healthCheck);
   }
 }

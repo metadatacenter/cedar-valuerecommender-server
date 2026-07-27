@@ -25,8 +25,7 @@ public class RulesGenerationStatusManager {
       statusMap = new HashMap<>();
       esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
     } catch (UnknownHostException e) {
-      logger.error(e.getMessage());
-      e.printStackTrace();
+      logger.error("Error initializing the OpenSearch query service used to track rules generation status", e);
     }
   }
 

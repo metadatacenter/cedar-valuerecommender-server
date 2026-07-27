@@ -1,7 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -71,8 +70,7 @@ public class AssociationRulesUtils {
           artifactServerConfig.getDatabaseName(),
           artifactServerConfig.getMongoCollectionName(CedarResourceType.INSTANCE));
     } catch (UnknownHostException e) {
-      logger.error(e.getMessage());
-      e.printStackTrace();
+      logger.error("Error initializing the OpenSearch query service and the template services", e);
     }
   }
 
@@ -82,7 +80,6 @@ public class AssociationRulesUtils {
    * @param templateId
    * @return The name of the ARFF file that was created
    * @throws IOException
-   * @throws ProcessingException
    */
   public static Optional<String> generateInstancesFile(String templateId) throws Exception {
 
@@ -194,9 +191,9 @@ public class AssociationRulesUtils {
                 }
               }
             } catch (FileNotFoundException e) {
-              e.printStackTrace();
+              logger.error("Instance file not found while generating the ARFF file: " + p, e);
             } catch (IOException e) {
-              e.printStackTrace();
+              logger.error("Error reading instance file while generating the ARFF file: " + p, e);
             }
           });
         }
