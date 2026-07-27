@@ -5,6 +5,8 @@ import org.opensearch.action.index.IndexResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.common.xcontent.XContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +16,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class ElasticsearchIndexingUtils {
+
+  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchIndexingUtils.class);
+
   /**
    * Index all files in a folder in ElasticSearch.
    *
@@ -47,8 +52,7 @@ public class ElasticsearchIndexingUtils {
       IndexResponse response = client.index(indexRequest, RequestOptions.DEFAULT);
       System.out.println(response.toString());
     } catch (IOException e) {
-      System.err.println("Error indexing JSON document: " + e.getMessage());
-      e.printStackTrace();
+      logger.error("Error indexing JSON document in OpenSearch index " + indexName, e);
     }
   }
 

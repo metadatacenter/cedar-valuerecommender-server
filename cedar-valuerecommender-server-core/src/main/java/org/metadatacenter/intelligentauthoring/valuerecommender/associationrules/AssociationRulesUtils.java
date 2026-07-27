@@ -70,8 +70,7 @@ public class AssociationRulesUtils {
           artifactServerConfig.getDatabaseName(),
           artifactServerConfig.getMongoCollectionName(CedarResourceType.INSTANCE));
     } catch (UnknownHostException e) {
-      logger.error(e.getMessage());
-      e.printStackTrace();
+      logger.error("Error initializing the OpenSearch query service and the template services", e);
     }
   }
 
@@ -192,9 +191,9 @@ public class AssociationRulesUtils {
                 }
               }
             } catch (FileNotFoundException e) {
-              e.printStackTrace();
+              logger.error("Instance file not found while generating the ARFF file: " + p, e);
             } catch (IOException e) {
-              e.printStackTrace();
+              logger.error("Error reading instance file while generating the ARFF file: " + p, e);
             }
           });
         }

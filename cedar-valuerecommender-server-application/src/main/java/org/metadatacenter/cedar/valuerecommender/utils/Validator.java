@@ -10,6 +10,8 @@ import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import com.networknt.schema.format.AbstractFormat;
 import org.metadatacenter.util.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -17,6 +19,8 @@ import java.net.URISyntaxException;
 import java.util.Set;
 
 public class Validator {
+
+  private static final Logger logger = LoggerFactory.getLogger(Validator.class);
 
   private static JsonSchema schema = null;
 
@@ -37,8 +41,7 @@ public class Validator {
           Validator.class.getClassLoader().getResourceAsStream(Constants.RECOMMEND_VALUES_SCHEMA_PATH));
       schema = factory.getSchema(schemaNode, config);
     } catch (IOException e) {
-      //TODO: add logging
-      e.printStackTrace();
+      logger.error("Error loading the request validation schema: " + Constants.RECOMMEND_VALUES_SCHEMA_PATH, e);
     }
   }
 

@@ -101,8 +101,7 @@ public class ElasticsearchQueryService {
       client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
 
     } catch (IOException e) {
-      // Handle the exception as needed
-      e.printStackTrace();
+      logger.error("Error retrieving from OpenSearch the ids of the instances of template " + templateId, e);
     }
 
     return templateInstancesIds;
@@ -139,8 +138,7 @@ public class ElasticsearchQueryService {
       client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
 
     } catch (IOException e) {
-      // Handle the exception as needed
-      e.printStackTrace();
+      logger.error("Error retrieving the ids of all templates from OpenSearch", e);
     }
     return templateIds;
   }

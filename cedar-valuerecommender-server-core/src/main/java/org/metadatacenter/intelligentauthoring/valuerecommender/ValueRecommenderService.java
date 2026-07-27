@@ -49,8 +49,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     try {
       esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
     } catch (UnknownHostException e) {
-      logger.error(e.getMessage());
-      e.printStackTrace();
+      logger.error("Error initializing the OpenSearch query service", e);
     }
   }
 
@@ -100,9 +99,9 @@ public class ValueRecommenderService implements IValueRecommenderService {
         }
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      logger.error("Error generating and indexing rules for templates: " + templateIds, e);
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.error("Error generating and indexing rules for templates: " + templateIds, e);
     }
   }
 
@@ -155,8 +154,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
         EsRule rule = new ObjectMapper().readValue(hit.getSourceAsString(), EsRule.class);
         relevantRules.add(rule);
       } catch (IOException e) {
-        logger.error("Error transforming SearchHit to EsRule");
-        e.printStackTrace();
+        logger.error("Error transforming SearchHit to EsRule while generating recommendations for field " +
+            targetField.getFieldPath() + " of template " + templateId, e);
       }
     }
 

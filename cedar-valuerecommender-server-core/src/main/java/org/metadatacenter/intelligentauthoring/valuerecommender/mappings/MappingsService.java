@@ -31,8 +31,7 @@ public class MappingsService {
 
       }
     } catch (IOException e) {
-      logger.error(e.getMessage());
-      e.printStackTrace();
+      logger.error("Error loading the URI mappings file: " + MAPPINGS_FILE_PATH, e);
     }
   }
 
