@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_TEMPLATE_ID;
@@ -158,7 +159,9 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
 
     List<String> templateIds = new ArrayList<>(Collections.singletonList(templateId));
     // Run the rules generation process in a new thread
-    Executors.newSingleThreadExecutor().submit(() -> valueRecommenderService.generateRules(templateIds));
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    executor.submit(() -> valueRecommenderService.generateRules(templateIds));
+    executor.shutdown();
     return Response.ok().build();
   }
 
