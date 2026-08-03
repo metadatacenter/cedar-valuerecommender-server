@@ -61,7 +61,7 @@ public class AssociationRulesUtils {
       // Initialize template and template instance services
       CedarDataServices.initializeMongoClientFactoryForDocuments(ConfigManager.getCedarConfig()
           .getArtifactServerConfig().getMongoConnection());
-      MongoClient mongoClientForDocuments = CedarDataServices.getMongoClientFactoryForDocuments().getClient();
+      MongoClient mongoClientForDocuments = CedarDataServices.getInstance().getMongoClientFactoryForDocuments().getClient();
       MongoConfig artifactServerConfig = ConfigManager.getCedarConfig().getArtifactServerConfig();
       templateService = new TemplateServiceMongoDB(mongoClientForDocuments,
           artifactServerConfig.getDatabaseName(),
