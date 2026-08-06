@@ -1,6 +1,6 @@
 # cedar-valuerecommender-server
 
-[![Build Status](https://travis-ci.com/metadatacenter/cedar-valuerecommender-server.svg?branch=master)](https://travis-ci.com/metadatacenter/cedar-valuerecommender-server)
+[![CI](https://github.com/metadatacenter/cedar-valuerecommender-server/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/metadatacenter/cedar-valuerecommender-server/actions/workflows/ci.yml)
 
 A service that provides metadata recommendations for CEDAR template fields.
 
