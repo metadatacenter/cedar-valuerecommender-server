@@ -129,7 +129,6 @@
       <plugin>
         <groupId>io.swagger.core.v3</groupId>
         <artifactId>swagger-maven-plugin-jakarta</artifactId>
-        <version>${swagger.version}</version>
         <configuration>
           <outputPath>${project.basedir}/src/main/resources/assets/swagger-api</outputPath>
           <outputFileName>swagger</outputFileName>
@@ -159,7 +158,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-resources-plugin</artifactId>
-        <version>2.7</version>
         <executions>
           <execution>
             <id>copy-resources</id>
