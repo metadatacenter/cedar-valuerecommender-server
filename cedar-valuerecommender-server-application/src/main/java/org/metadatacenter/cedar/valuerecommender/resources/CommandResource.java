@@ -17,6 +17,7 @@ import org.metadatacenter.cedar.valuerecommender.resources.swaggermodel.Recommen
 import org.metadatacenter.cedar.valuerecommender.utils.Validator;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
+import org.metadatacenter.exception.CedarDependencyUnavailableException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
@@ -73,7 +74,8 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
       @ApiResponse(responseCode = "401", description = "Unauthorized"),
       @ApiResponse(responseCode = "403", description = "Forbidden"),
       @ApiResponse(responseCode = "404", description = "Not found"),
-      @ApiResponse(responseCode = "500", description = "Internal server error")
+      @ApiResponse(responseCode = "500", description = "Internal server error"),
+      @ApiResponse(responseCode = "503", description = "OpenSearch unavailable")
   })
   public Response recommendValues() throws CedarException {
     CedarRequestContext c = buildRequestContext();
@@ -118,6 +120,8 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
           includeDetails);
 
       output = mapper.valueToTree(recommendation);
+    } catch (CedarDependencyUnavailableException e) {
+      throw e;
     } catch (IllegalArgumentException e) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.INVALID_INPUT)
@@ -184,7 +188,8 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
       @ApiResponse(responseCode = "401", description = "Unauthorized"),
       @ApiResponse(responseCode = "403", description = "Forbidden"),
       @ApiResponse(responseCode = "404", description = "Not found"),
-      @ApiResponse(responseCode = "500", description = "Internal server error")
+      @ApiResponse(responseCode = "500", description = "Internal server error"),
+      @ApiResponse(responseCode = "503", description = "OpenSearch unavailable")
   })
   public Response areRecommendationsEnabled() throws CedarException {
     CedarRequestContext c = buildRequestContext();
@@ -198,6 +203,8 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
       }
       CanGenerateRecommendationsStatus status = valueRecommenderService.canGenerateRecommendations(templateId);
       return Response.ok().entity(status).build();
+    } catch (CedarDependencyUnavailableException e) {
+      throw e;
     } catch (Exception e) {
       throw new CedarProcessingException(e);
     }

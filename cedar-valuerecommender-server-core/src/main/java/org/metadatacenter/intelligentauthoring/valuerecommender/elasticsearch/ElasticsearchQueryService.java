@@ -3,6 +3,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.metadatacenter.config.OpensearchConfig;
+import org.metadatacenter.exception.CedarDependencyUnavailableException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.elasticsearch.EsRule;
 import org.opensearch.action.bulk.BackoffPolicy;
 import org.opensearch.action.bulk.BulkProcessor;
@@ -253,7 +254,7 @@ public class ElasticsearchQueryService {
    * @param templateId
    * @return
    */
-  public long getNumberOfRules(String templateId) {
+  public long getNumberOfRules(String templateId) throws CedarDependencyUnavailableException {
     try {
       SearchRequest searchRequest = new SearchRequest(opensearchConfig.getIndexes().getRulesIndex().getName());
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -274,7 +275,7 @@ public class ElasticsearchQueryService {
       return hits.getTotalHits().value;
     } catch (IOException e) {
       logger.error("Error executing search request", e);
-      return 0;
+      throw new CedarDependencyUnavailableException("OpenSearch is unavailable", e);
     }
   }
 
