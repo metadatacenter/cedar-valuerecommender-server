@@ -51,11 +51,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.opensearch.client</groupId>
-      <artifactId>transport</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>net.java.dev.jna</groupId>
       <artifactId>jna</artifactId>
     </dependency>
