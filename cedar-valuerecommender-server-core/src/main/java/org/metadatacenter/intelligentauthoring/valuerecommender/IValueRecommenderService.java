@@ -1,5 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
+import org.metadatacenter.exception.CedarDependencyUnavailableException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Field;
 import org.metadatacenter.intelligentauthoring.valuerecommender.domainobjects.Recommendation;
@@ -16,12 +17,13 @@ public interface IValueRecommenderService {
 
   void generateRules(List<String> templateId);
 
-  CanGenerateRecommendationsStatus canGenerateRecommendations(String templateId);
+  CanGenerateRecommendationsStatus canGenerateRecommendations(String templateId)
+      throws CedarDependencyUnavailableException;
 
   Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField,
                                    boolean strictMatch, boolean filterByRecommendationScore,
                                    boolean filterByConfidence, boolean filterBySupport, boolean useMappings,
-                                   boolean includeDetails) throws IOException;
+                                   boolean includeDetails) throws IOException, CedarDependencyUnavailableException;
 
   List<RulesGenerationStatus> getRulesGenerationStatus();
 

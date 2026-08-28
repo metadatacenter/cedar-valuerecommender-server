@@ -3,6 +3,7 @@ package org.metadatacenter.intelligentauthoring.valuerecommender;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.lucene.search.join.ScoreMode;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.exception.CedarDependencyUnavailableException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.AssociationRulesService;
 import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.RulesGenerationStatusManager;
@@ -127,7 +128,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
    * @return
    */
   @Override
-  public CanGenerateRecommendationsStatus canGenerateRecommendations(String templateId) {
+  public CanGenerateRecommendationsStatus canGenerateRecommendations(String templateId)
+      throws CedarDependencyUnavailableException {
     long numberOfRules = esQueryService.getNumberOfRules(templateId);
     boolean canGenerateRecommendations = false;
     if (numberOfRules > 0) {
@@ -140,7 +142,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
   public Recommendation getRecommendation(String templateId, List<Field> populatedFields, Field targetField,
                                           boolean strictMatch, boolean filterByRecommendationScore,
                                           boolean filterByConfidence, boolean filterBySupport, boolean useMappings,
-                                          boolean includeDetails) {
+                                          boolean includeDetails) throws CedarDependencyUnavailableException {
 
     // Perform query to find the rules that match the condition
     SearchResponse rulesSearchResponse = esQueryRules(Optional.ofNullable(templateId), populatedFields, targetField,
@@ -339,7 +341,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
    */
   private SearchResponse esQueryRules(Optional<String> templateId, List<Field> populatedFields, Field targetField,
                                       boolean strictMatch, boolean filterByConfidence, boolean filterBySupport,
-                                      boolean useMappings) {
+                                      boolean useMappings) throws CedarDependencyUnavailableException {
 
     /** Query definition **/
 
@@ -475,7 +477,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
       return response;
     } catch (IOException e) {
       logger.error("Error executing search request", e);
-      return null;
+      throw new CedarDependencyUnavailableException("OpenSearch is unavailable", e);
     }
   }
 
@@ -492,4 +494,3 @@ public class ValueRecommenderService implements IValueRecommenderService {
   }
 
 }
-
