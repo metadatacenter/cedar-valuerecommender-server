@@ -2,9 +2,9 @@ package org.metadatacenter.cedar.valuerecommender;
 
 import io.dropwizard.core.setup.Bootstrap;
 import io.dropwizard.core.setup.Environment;
+import org.metadatacenter.cedar.util.dw.CedarMicroserviceIndexResource;
 import org.metadatacenter.cedar.util.dw.CedarDefaultHealthCheck;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
-import org.metadatacenter.cedar.valuerecommender.resources.IndexResource;
 import org.metadatacenter.cedar.valuerecommender.resources.CommandResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.intelligentauthoring.valuerecommender.ValueRecommenderService;
@@ -42,7 +42,8 @@ public class ValueRecommenderServerApplication extends
 
   @Override
   public void runApp(ValueRecommenderServerConfiguration configuration, Environment environment) {
-    final IndexResource index = new IndexResource(cedarConfig);
+    final CedarMicroserviceIndexResource index =
+        new CedarMicroserviceIndexResource(cedarConfig, getServerName());
     environment.jersey().register(index);
 
     environment.jersey().register(new CommandResource(cedarConfig));
