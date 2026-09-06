@@ -24,11 +24,11 @@ public class ValueRecommenderServerApplicationSmokeTest {
 
   static {
     // Must run before the test support boots the server, which reads the port env vars.
-    // Alternate server ports, so the test instance never collides with a running dev server.
+    // OS-assigned ports keep concurrent test processes isolated.
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
-    environment.put("CEDAR_VALUERECOMMENDER_HTTP_PORT", "19006");
-    environment.put("CEDAR_VALUERECOMMENDER_ADMIN_PORT", "19106");
-    environment.put("CEDAR_VALUERECOMMENDER_STOP_PORT", "19206");
+    environment.put("CEDAR_VALUERECOMMENDER_HTTP_PORT", "0");
+    environment.put("CEDAR_VALUERECOMMENDER_ADMIN_PORT", "0");
+    environment.put("CEDAR_VALUERECOMMENDER_STOP_PORT", "0");
     CedarEnvironmentSource.setOverride(environment);
   }
 
