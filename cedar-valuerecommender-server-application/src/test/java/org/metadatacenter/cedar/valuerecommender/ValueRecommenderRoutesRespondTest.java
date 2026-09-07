@@ -32,12 +32,12 @@ import java.util.Map;
 public class ValueRecommenderRoutesRespondTest {
 
   static {
-    // Must run before the test support boots the server, which reads the port env vars. Ports are
-    // distinct from the dev server and from every other booting test class.
+    // Must run before the test support boots the server, which reads the port env vars.
+    // OS-assigned ports keep concurrent test processes isolated.
     Map<String, String> environment = new HashMap<>(CedarEnvironmentSource.getAll());
-    environment.put("CEDAR_VALUERECOMMENDER_HTTP_PORT", "19022");
-    environment.put("CEDAR_VALUERECOMMENDER_ADMIN_PORT", "19122");
-    environment.put("CEDAR_VALUERECOMMENDER_STOP_PORT", "19222");
+    environment.put("CEDAR_VALUERECOMMENDER_HTTP_PORT", "0");
+    environment.put("CEDAR_VALUERECOMMENDER_ADMIN_PORT", "0");
+    environment.put("CEDAR_VALUERECOMMENDER_STOP_PORT", "0");
     environment.put("CEDAR_OPENSEARCH_REST_PORT", "1");
     CedarEnvironmentSource.setOverride(environment);
   }
