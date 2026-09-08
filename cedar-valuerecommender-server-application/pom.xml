@@ -146,6 +146,7 @@
         <configuration>
           <resourcePackages>
             <package>org.metadatacenter.cedar.valuerecommender.resources</package>
+            <package>org.metadatacenter.cedar.util.dw</package>
           </resourcePackages>
         </configuration>
       </plugin>
