@@ -22,7 +22,7 @@ public class MappingsService {
 
   static {
     try {
-      JsonNode mappingsJson = JsonMapper.MAPPER.readTree(MappingsService.class.getClassLoader().getResourceAsStream
+      JsonNode mappingsJson = JsonMapper.STRICT_MAPPER.readTree(MappingsService.class.getClassLoader().getResourceAsStream
           (MAPPINGS_FILE_PATH));
       if (mappingsJson != null) {
         mappings = new ObjectMapper().convertValue(mappingsJson, Map.class);
