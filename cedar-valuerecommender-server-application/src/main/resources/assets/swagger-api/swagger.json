@@ -629,6 +629,7 @@
       },
       "RecommendationInput" : {
         "type" : "object",
+        "additionalProperties" : false,
         "description" : "The input used to request metadata recommendations for a target field.",
         "properties" : {
           "includeDetails" : {

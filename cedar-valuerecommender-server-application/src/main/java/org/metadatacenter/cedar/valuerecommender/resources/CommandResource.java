@@ -195,7 +195,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
-    JsonNode input = c.request().getRequestBody().asJson();
+    JsonNode input = c.request().getRequestBody().mustHaveOnly(INPUT_TEMPLATE_ID).asJson();
     try {
       String templateId = null;
       if (input.get(INPUT_TEMPLATE_ID) != null) {
