@@ -92,7 +92,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
         String validationMsg = Validator.extractValidationMessages(validationReport);
         return CedarResponse.badRequest()
             .errorKey(CedarErrorKey.INVALID_INPUT)
-            .errorMessage(validationMsg)
+            .message(validationMsg)
             .build();
       }
       String templateId = null;
@@ -125,7 +125,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     } catch (IllegalArgumentException e) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.INVALID_INPUT)
-          .errorMessage(e.getMessage())
+          .message(e.getMessage())
           .build();
     } catch (Exception e) {
       throw new CedarProcessingException(e);
