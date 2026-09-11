@@ -13,7 +13,8 @@ import java.util.List;
  * and the {@code strictMatch} / {@code includeDetails} flags.</p>
  */
 @Schema(name = "RecommendationInput", description = "The input used to request metadata recommendations for a "
-    + "target field.")
+    + "target field.",
+    additionalProperties = Schema.AdditionalPropertiesValue.FALSE)
 public class RecommendationInput {
 
   @Schema(description = "Example: https://repo.metadatacenter.org/templates/"

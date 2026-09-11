@@ -37,7 +37,7 @@ public class Validator {
         .formatAssertionsEnabled(true)
         .build();
     try {
-      JsonNode schemaNode = JsonMapper.MAPPER.readTree(
+      JsonNode schemaNode = JsonMapper.STRICT_MAPPER.readTree(
           Validator.class.getClassLoader().getResourceAsStream(Constants.RECOMMEND_VALUES_SCHEMA_PATH));
       schema = factory.getSchema(schemaNode, config);
     } catch (IOException e) {

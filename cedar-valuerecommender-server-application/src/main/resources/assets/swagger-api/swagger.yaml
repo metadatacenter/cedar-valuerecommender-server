@@ -2,7 +2,7 @@ openapi: 3.0.1
 info:
   description: CEDAR Value Recommender Server API
   title: CEDAR Value Recommender Server API
-  version: 2.9.10
+  version: 2.9.11
 paths:
   /:
     get:
@@ -355,7 +355,7 @@ components:
   schemas:
     CedarError:
       type: object
-      additionalProperties: true
+      additionalProperties: false
       description: A CEDAR error response. Diagnostic fields are populated only when
         they are relevant to the failure.
       properties:
@@ -499,12 +499,9 @@ components:
           - doiCanNotBeSet
           - doiAlreadyExists
           - dataCiteDOIDisabled
+          - pinnedVersionUnavailable
           - resourceNotFound
           - internalError
-          nullable: true
-        errorMessage:
-          type: string
-          description: Alias of message retained for compatibility.
           nullable: true
         errorReasonKey:
           type: string
@@ -607,6 +604,7 @@ components:
       - fieldValueLabel
     RecommendationInput:
       type: object
+      additionalProperties: false
       description: The input used to request metadata recommendations for a target
         field.
       properties:
