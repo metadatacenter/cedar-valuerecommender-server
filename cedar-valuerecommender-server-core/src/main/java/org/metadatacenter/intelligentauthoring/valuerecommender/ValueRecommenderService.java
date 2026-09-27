@@ -1,6 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.metadatacenter.util.json.JsonMapper;
+
 import org.apache.lucene.search.join.ScoreMode;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarDependencyUnavailableException;
@@ -153,7 +154,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     List<EsRule> relevantRules = new ArrayList<>();
     for (SearchHit hit : rulesSearchResponse.getHits()) {
       try {
-        EsRule rule = new ObjectMapper().readValue(hit.getSourceAsString(), EsRule.class);
+        EsRule rule = JsonMapper.TOLERANT_MAPPER.readValue(hit.getSourceAsString(), EsRule.class);
         relevantRules.add(rule);
       } catch (IOException e) {
         logger.error("Error transforming SearchHit to EsRule while generating recommendations for field " +

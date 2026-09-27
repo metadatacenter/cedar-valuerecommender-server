@@ -1,7 +1,6 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.mappings;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +24,7 @@ public class MappingsService {
       JsonNode mappingsJson = JsonMapper.STRICT_MAPPER.readTree(MappingsService.class.getClassLoader().getResourceAsStream
           (MAPPINGS_FILE_PATH));
       if (mappingsJson != null) {
-        mappings = new ObjectMapper().convertValue(mappingsJson, Map.class);
+        mappings = JsonMapper.TOLERANT_MAPPER.convertValue(mappingsJson, Map.class);
       } else {
         throw new IOException("Couldn't open the mappings file");
 

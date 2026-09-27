@@ -1,5 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch;
 
+import org.metadatacenter.util.json.JsonMapper;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
 import org.metadatacenter.config.OpensearchConfig;
@@ -154,7 +156,7 @@ public class ElasticsearchQueryService {
   public void indexRulesBulk(List<EsRule> rules) {
     if (rules.size() > 0) {
       BulkRequest bulkRequest = new BulkRequest();
-      ObjectMapper mapper = new ObjectMapper();
+      ObjectMapper mapper = JsonMapper.TOLERANT_MAPPER;
 
       for (EsRule rule : rules) {
         Map<String, Object> ruleMap = mapper.convertValue(rule, Map.class);
@@ -185,7 +187,7 @@ public class ElasticsearchQueryService {
    * @param rules
    */
   public void indexRulesBulkProcessor(List<EsRule> rules) {
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = JsonMapper.TOLERANT_MAPPER;
 
     // Create bulk processor
     BulkProcessor bulkProcessor = BulkProcessor.builder(

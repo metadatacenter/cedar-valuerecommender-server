@@ -1,5 +1,7 @@
 package org.metadatacenter.cedar.valuerecommender.resources;
 
+import org.metadatacenter.util.json.JsonMapper;
+
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -82,7 +84,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     c.must(c.user()).be(LoggedIn);
 
     JsonNode input = c.request().getRequestBody().asJson();
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = JsonMapper.STRICT_MAPPER;
     Recommendation recommendation;
     JsonNode output = null;
     try {
