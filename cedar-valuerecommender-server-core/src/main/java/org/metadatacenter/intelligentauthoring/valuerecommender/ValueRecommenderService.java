@@ -1,6 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.metadatacenter.util.json.JsonMapper;
+
 import org.apache.lucene.search.join.ScoreMode;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarDependencyUnavailableException;
@@ -77,7 +78,8 @@ public class ValueRecommenderService implements IValueRecommenderService {
         if (Arrays.asList(IGNORED_TEMPLATES).contains(templateId)) {
           logger.info("The template is in the list of ignored templates. Rule generation has been skipped");
         } else {
-          RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.PROCESSING);
+          RulesGenerationStatusManager.started(templateId,
+              esQueryService.getTemplateInstancesIdsByTemplateId(templateId).size());
           // Generate rules for the template
           logger.info("\n\n****** Generating rules for templateId: " + templateId + " ******");
           long startTime = System.currentTimeMillis();
@@ -96,7 +98,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
           long totalTime = System.currentTimeMillis() - startTime;
           logger.info("Rules generation and indexing completed. Total execution time: " + totalTime / 1000 + " seg (" + totalTime + " ms)");
           logger.info("\n****** Finished generating rules for templateId: " + templateId + " ******");
-          RulesGenerationStatusManager.setStatus(templateId, RulesGenerationStatus.Status.COMPLETED, rules.size());
+          RulesGenerationStatusManager.completed(templateId, rules.size());
         }
       }
     } catch (IOException e) {
@@ -153,7 +155,7 @@ public class ValueRecommenderService implements IValueRecommenderService {
     List<EsRule> relevantRules = new ArrayList<>();
     for (SearchHit hit : rulesSearchResponse.getHits()) {
       try {
-        EsRule rule = new ObjectMapper().readValue(hit.getSourceAsString(), EsRule.class);
+        EsRule rule = JsonMapper.TOLERANT_MAPPER.readValue(hit.getSourceAsString(), EsRule.class);
         relevantRules.add(rule);
       } catch (IOException e) {
         logger.error("Error transforming SearchHit to EsRule while generating recommendations for field " +

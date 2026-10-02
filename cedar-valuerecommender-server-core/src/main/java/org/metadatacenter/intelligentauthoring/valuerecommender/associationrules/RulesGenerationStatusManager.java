@@ -1,73 +1,49 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
 
 import org.metadatacenter.exception.CedarProcessingException;
-import org.metadatacenter.intelligentauthoring.valuerecommender.ConfigManager;
-import org.metadatacenter.intelligentauthoring.valuerecommender.elasticsearch.ElasticsearchQueryService;
 import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RulesGenerationStatusManager {
 
-  private static final Logger logger = LoggerFactory.getLogger(RulesGenerationStatusManager.class);
-  private static ElasticsearchQueryService esQueryService;
-  private static HashMap<String, RulesGenerationStatus> statusMap;
+  // Generation threads and HTTP readers share this map. Keep transitions and snapshots under
+  // one lock, and never expose the mutable entries to callers or asynchronous serialization.
+  private static final Map<String, RulesGenerationStatus> statusMap = new HashMap<>();
 
-  static {
-    try {
-      statusMap = new HashMap<>();
-      esQueryService = new ElasticsearchQueryService(ConfigManager.getCedarConfig().getElasticsearchConfig());
-    } catch (UnknownHostException e) {
-      logger.error("Error initializing the OpenSearch query service used to track rules generation status", e);
-    }
+  public static synchronized RulesGenerationStatus getStatus(String templateId) throws CedarProcessingException {
+    RulesGenerationStatus status = statusMap.get(templateId);
+    if (status == null) throw new CedarProcessingException("Template not found: " + templateId);
+    return copy(status);
   }
 
-  public static RulesGenerationStatus getStatus(String templateId) throws CedarProcessingException {
-    if (statusMap.containsKey(templateId)) {
-      return statusMap.get(templateId);
-    } else {
-      throw new CedarProcessingException("Template not found: " + templateId);
-    }
+  public static synchronized List<RulesGenerationStatus> getStatus() {
+    return statusMap.values().stream().map(RulesGenerationStatusManager::copy).toList();
   }
 
-  public static List<RulesGenerationStatus> getStatus() {
-    return new ArrayList<>(statusMap.values());
+  public static synchronized void started(String templateId, int numberOfInstances) {
+    RulesGenerationStatus status = new RulesGenerationStatus(templateId, numberOfInstances,
+        Instant.now(), RulesGenerationStatus.Status.PROCESSING);
+    status.setExecutionDuration(Duration.ZERO);
+    statusMap.put(templateId, status);
   }
 
-  public static void setStatus(String templateId, RulesGenerationStatus.Status newStatus)
+  public static synchronized void completed(String templateId, int rulesIndexedCount)
       throws CedarProcessingException {
-    setStatus(templateId, newStatus, null);
+    RulesGenerationStatus status = statusMap.get(templateId);
+    if (status == null) throw new CedarProcessingException("Missing status for templateId: " + templateId);
+    Instant finishTime = Instant.now();
+    statusMap.put(templateId, new RulesGenerationStatus(templateId, status.getTemplateInstancesCount(),
+        status.getStartTime(), finishTime, Duration.between(status.getStartTime(), finishTime),
+        rulesIndexedCount, RulesGenerationStatus.Status.COMPLETED));
   }
 
-  public static void setStatus(String templateId, RulesGenerationStatus.Status newStatus, Integer rulesIndexedCount)
-      throws CedarProcessingException {
-    if (newStatus.equals(RulesGenerationStatus.Status.PROCESSING)) {
-      int numberOfInstances = esQueryService.getTemplateInstancesIdsByTemplateId(templateId).size();
-      Instant startTime = Instant.now();
-      RulesGenerationStatus rgs = new RulesGenerationStatus(templateId, numberOfInstances, startTime, newStatus);
-      rgs.setExecutionDuration(Duration.between(startTime, Instant.now()));
-      statusMap.put(templateId, rgs);
-    } else if (newStatus.equals(RulesGenerationStatus.Status.COMPLETED)) {
-      if (statusMap.containsKey(templateId)) {
-        RulesGenerationStatus rgs = statusMap.get(templateId);
-        rgs.setFinishTime(Instant.now());
-        rgs.setExecutionDuration(Duration.between(rgs.getStartTime(), rgs.getFinishTime()));
-        rgs.setRulesIndexedCount(rulesIndexedCount);
-        rgs.setStatus(newStatus);
-        statusMap.put(templateId, rgs);
-      } else {
-        logger.error("Missing status for templateId: " + templateId);
-        throw new CedarProcessingException("Missing status for templateId: " + templateId);
-      }
-    } else {
-      logger.warn("Cannot set status: " + newStatus.name());
-    }
+  private static RulesGenerationStatus copy(RulesGenerationStatus status) {
+    return new RulesGenerationStatus(status.getTemplateId(), status.getTemplateInstancesCount(),
+        status.getStartTime(), status.getFinishTime(), status.getExecutionDuration(),
+        status.getRulesIndexedCount(), status.getStatus());
   }
 }
