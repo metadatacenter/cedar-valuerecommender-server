@@ -12,6 +12,7 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.config.environment.CedarEnvironmentSource;
 import org.metadatacenter.config.environment.CedarEnvironmentVariableProvider;
 import org.metadatacenter.model.SystemComponent;
+import org.metadatacenter.intelligentauthoring.valuerecommender.associationrules.RulesGenerationStatusManager;
 import org.metadatacenter.util.test.RouteSurface;
 import org.metadatacenter.util.test.TestAuthUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -22,6 +23,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Route safety net: probes every endpoint the value-recommender command resource declares,
@@ -47,6 +49,7 @@ public class ValueRecommenderRoutesRespondTest {
 
   private static final HttpClient CLIENT = HttpClient.newHttpClient();
   private static String authHeader;
+  private static String adminAuthHeader;
 
   @BeforeAll
   public static void startServer() throws Exception {
@@ -55,6 +58,7 @@ public class ValueRecommenderRoutesRespondTest {
     CedarConfig cedarConfig = CedarConfig.getInstance(environment);
     TestAuthUtil.installInMemoryUserService(cedarConfig);
     authHeader = TestAuthUtil.getTestUser1AuthHeader(cedarConfig);
+    adminAuthHeader = TestAuthUtil.getAdminUserAuthHeader(cedarConfig);
   }
 
   @AfterAll
@@ -91,6 +95,48 @@ public class ValueRecommenderRoutesRespondTest {
     Assertions.assertTrue(error.path("sourceException").isMissingNode()
         || error.path("sourceException").isNull(), response.body());
     Assertions.assertFalse(response.body().contains("127.0.0.1"), response.body());
+  }
+
+  @Test
+  public void statusEndpointPublishesCompleteSnapshotsAcrossRepeatedGenerations() throws Exception {
+    String id = "https://repo.metadatacenter.orgx/templates/" + UUID.randomUUID();
+    RulesGenerationStatusManager.started(id, 3);
+    JsonNode processing = readStatus(id);
+    Assertions.assertEquals("PROCESSING", processing.path("status").asText());
+    Assertions.assertEquals(3, processing.path("templateInstancesCount").asInt());
+
+    RulesGenerationStatusManager.completed(id, 2);
+    JsonNode completed = readStatus(id);
+    Assertions.assertEquals("COMPLETED", completed.path("status").asText());
+    Assertions.assertEquals(2, completed.path("rulesIndexedCount").asInt());
+    Assertions.assertTrue(completed.hasNonNull("finishTime"));
+
+    RulesGenerationStatusManager.started(id, 4);
+    JsonNode restarted = readStatus(id);
+    Assertions.assertEquals("PROCESSING", restarted.path("status").asText());
+    Assertions.assertEquals(4, restarted.path("templateInstancesCount").asInt());
+    Assertions.assertFalse(restarted.hasNonNull("finishTime"));
+    Assertions.assertFalse(restarted.hasNonNull("rulesIndexedCount"));
+    RulesGenerationStatusManager.completed(id, 0);
+  }
+
+  private JsonNode readStatus(String id) throws Exception {
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/command/generate-rules/status"))
+        .header("Authorization", adminAuthHeader).GET().build();
+    HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    Assertions.assertEquals(200, response.statusCode(), response.body());
+    JsonNode statuses = JsonMapper.STRICT_MAPPER.readTree(response.body());
+    Assertions.assertTrue(statuses.isArray(), response.body());
+    JsonNode match = null;
+    for (JsonNode status : statuses) {
+      Assertions.assertTrue(status.isObject(), "A status snapshot must never contain a null row: " + response.body());
+      Assertions.assertTrue(status.hasNonNull("templateId"), response.body());
+      Assertions.assertTrue(status.hasNonNull("status"), response.body());
+      if (id.equals(status.path("templateId").asText())) match = status;
+    }
+    Assertions.assertNotNull(match, response.body());
+    return match;
   }
 
 }
