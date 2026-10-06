@@ -99,7 +99,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
       }
       String templateId = null;
       if (input.get(INPUT_TEMPLATE_ID) != null) {
-        templateId = input.get(INPUT_TEMPLATE_ID).asText();
+        templateId = linkedDataUtil.resolveResourceId(org.metadatacenter.model.CedarResourceType.TEMPLATE, input.get(INPUT_TEMPLATE_ID).asText());
       }
       List<Field> populatedFields = new ArrayList<>();
       if (input.get(INPUT_POPULATED_FIELDS) != null) {
@@ -162,6 +162,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.RULES_INDEX_REINDEX);
+    templateId = linkedDataUtil.resolveResourceId(org.metadatacenter.model.CedarResourceType.TEMPLATE, templateId);
 
     List<String> templateIds = new ArrayList<>(Collections.singletonList(templateId));
     // Run the rules generation process in a new thread
@@ -201,7 +202,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     try {
       String templateId = null;
       if (input.get(INPUT_TEMPLATE_ID) != null) {
-        templateId = input.get(INPUT_TEMPLATE_ID).asText();
+        templateId = linkedDataUtil.resolveResourceId(org.metadatacenter.model.CedarResourceType.TEMPLATE, input.get(INPUT_TEMPLATE_ID).asText());
       }
       CanGenerateRecommendationsStatus status = valueRecommenderService.canGenerateRecommendations(templateId);
       return Response.ok().entity(status).build();
@@ -234,6 +235,7 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
     CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.RULES_INDEX_REINDEX);
+    templateId = linkedDataUtil.resolveResourceId(org.metadatacenter.model.CedarResourceType.TEMPLATE, templateId);
 
     RulesGenerationStatus status = valueRecommenderService.getRulesGenerationStatus(templateId);
     return Response.ok().entity(status).build();
