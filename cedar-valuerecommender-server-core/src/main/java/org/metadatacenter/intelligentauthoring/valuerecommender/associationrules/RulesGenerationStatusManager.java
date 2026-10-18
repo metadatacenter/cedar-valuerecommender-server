@@ -1,6 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.associationrules;
 
 import org.metadatacenter.exception.CedarProcessingException;
+import org.metadatacenter.http.CedarResponseStatus;
 import org.metadatacenter.server.valuerecommender.model.RulesGenerationStatus;
 import java.time.Duration;
 import java.time.Instant;
@@ -14,9 +15,18 @@ public class RulesGenerationStatusManager {
   // one lock, and never expose the mutable entries to callers or asynchronous serialization.
   private static final Map<String, RulesGenerationStatus> statusMap = new HashMap<>();
 
+  /**
+   * The status of the latest rule generation for a template. A template no generation has run for is
+   * refused as not found, since the request named something this server holds nothing about.
+   */
   public static synchronized RulesGenerationStatus getStatus(String templateId) throws CedarProcessingException {
     RulesGenerationStatus status = statusMap.get(templateId);
-    if (status == null) throw new CedarProcessingException("Template not found: " + templateId);
+    if (status == null) {
+      CedarProcessingException absent =
+          new CedarProcessingException("No rule generation has been recorded for the template " + templateId);
+      absent.getErrorPack().status(CedarResponseStatus.NOT_FOUND);
+      throw absent;
+    }
     return copy(status);
   }
 

@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.metadatacenter.util.http.CedarError;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -226,7 +227,8 @@ public class CommandResource extends AbstractValuerecommenderServerResource {
       @ApiResponse(responseCode = "400", description = "Bad request"),
       @ApiResponse(responseCode = "401", description = "Unauthorized"),
       @ApiResponse(responseCode = "403", description = "Forbidden"),
-      @ApiResponse(responseCode = "404", description = "Not found"),
+      @ApiResponse(responseCode = "404", description = "No rule generation has been recorded for the template",
+          content = @Content(schema = @Schema(implementation = CedarError.class))),
       @ApiResponse(responseCode = "500", description = "Internal server error")
   })
   public Response getRulesGenerationStatus(

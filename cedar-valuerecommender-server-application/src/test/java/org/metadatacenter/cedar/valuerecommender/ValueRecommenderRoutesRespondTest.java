@@ -120,6 +120,22 @@ public class ValueRecommenderRoutesRespondTest {
     RulesGenerationStatusManager.completed(id, 0);
   }
 
+  @Test
+  public void theStatusOfATemplateNoGenerationRanForIsNotFound() throws Exception {
+    String id = "https://repo.metadatacenter.orgx/templates/" + UUID.randomUUID();
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/command/generate-rules/status/"
+            + java.net.URLEncoder.encode(id, java.nio.charset.StandardCharsets.UTF_8)))
+        .header("Authorization", adminAuthHeader).GET().build();
+    HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    Assertions.assertEquals(404, response.statusCode(), response.body());
+    JsonNode error = JsonMapper.STRICT_MAPPER.readTree(response.body());
+    Assertions.assertEquals(404, error.path("statusCode").asInt(), response.body());
+    Assertions.assertEquals("No rule generation has been recorded for the template " + id,
+        error.path("message").asText(), response.body());
+  }
+
   private JsonNode readStatus(String id) throws Exception {
     HttpRequest request = HttpRequest.newBuilder()
         .uri(URI.create("http://localhost:" + SERVER.getLocalPort() + "/command/generate-rules/status"))
