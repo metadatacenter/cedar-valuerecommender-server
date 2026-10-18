@@ -6,6 +6,7 @@ import io.dropwizard.testing.ResourceHelpers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.metadatacenter.cedar.valuerecommender.resources.CommandResource;
 import org.metadatacenter.config.CedarConfig;
@@ -31,6 +32,7 @@ import java.util.UUID;
  * verb; any other status means an endpoint lost its authentication assertion. No fixtures and no
  * backend are involved.
  */
+@Tag("integration")
 public class ValueRecommenderRoutesRespondTest {
 
   static {
