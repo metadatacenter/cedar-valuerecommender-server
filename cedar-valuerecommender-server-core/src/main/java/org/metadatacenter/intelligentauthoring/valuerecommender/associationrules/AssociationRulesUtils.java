@@ -499,8 +499,8 @@ public class AssociationRulesUtils {
     if (rule.getConsequence().size() == 1) {
       List<Item> consequenceItems = new ArrayList(rule.getConsequence());
       for (Item consequenceItem : consequenceItems) {
-        String attributeName = consequenceItem.getAttribute().name().toLowerCase();
-        if (targetField.getFieldPath().toLowerCase().equals(attributeName)) {
+        String attributeName = consequenceItem.getAttribute().name().toLowerCase(Locale.ROOT);
+        if (targetField.getFieldPath().toLowerCase(Locale.ROOT).equals(attributeName)) {
           targetFieldFound = true;
         }
       }
@@ -515,9 +515,9 @@ public class AssociationRulesUtils {
     if (rule.getPremise().size() == fieldValues.size()) {
       List<Item> premiseItems = new ArrayList(rule.getPremise());
       for (Item premiseItem : premiseItems) {
-        String attributeName = premiseItem.getAttribute().name().toLowerCase();
-        String attributeValue = premiseItem.getItemValueAsString().toLowerCase();
-        if (!fieldValues.containsKey(attributeName) || !fieldValues.get(attributeName).toLowerCase().equals
+        String attributeName = premiseItem.getAttribute().name().toLowerCase(Locale.ROOT);
+        String attributeValue = premiseItem.getItemValueAsString().toLowerCase(Locale.ROOT);
+        if (!fieldValues.containsKey(attributeName) || !fieldValues.get(attributeName).toLowerCase(Locale.ROOT).equals
             (attributeValue)) {
           return false;
         }
