@@ -1,5 +1,7 @@
 package org.metadatacenter.intelligentauthoring.valuerecommender.util;
 
+import java.util.Locale;
+
 import java.text.Normalizer;
 
 public class CedarTextUtils {
@@ -22,7 +24,7 @@ public class CedarTextUtils {
     // Remove unsupported characters
     //value = value.replaceAll("[^A-Z0-9_]", "");
     // Uppercase
-    value = value.toUpperCase();
+    value = value.toUpperCase(Locale.ROOT);
 
     return value;
   }
@@ -38,7 +40,7 @@ public class CedarTextUtils {
       return path;
     }
     else {
-      return path.toUpperCase();
+      return path.toUpperCase(Locale.ROOT);
     }
   }
 }

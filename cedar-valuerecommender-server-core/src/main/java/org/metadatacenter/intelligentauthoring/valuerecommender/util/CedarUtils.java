@@ -203,7 +203,7 @@ public class CedarUtils {
    * @return
    */
   public static boolean isUri(String value) {
-    value = value.toLowerCase();
+    value = value.toLowerCase(Locale.ROOT);
     if (value.startsWith("http://") || value.startsWith("https://")) {
       return true;
     }

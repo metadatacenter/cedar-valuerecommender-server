@@ -3,7 +3,7 @@
   "info" : {
     "description" : "CEDAR Value Recommender Server API",
     "title" : "CEDAR Value Recommender Server API",
-    "version" : "2.9.24"
+    "version" : "2.9.25"
   },
   "paths" : {
     "/" : {
@@ -117,7 +117,14 @@
             "description" : "Forbidden"
           },
           "404" : {
-            "description" : "Not found"
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CedarError"
+                }
+              }
+            },
+            "description" : "No rule generation has been recorded for the template"
           },
           "500" : {
             "description" : "Internal server error"
